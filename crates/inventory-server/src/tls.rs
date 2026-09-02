@@ -37,7 +37,11 @@ fn parse_tls_files(
         .map_err(|e| anyhow::anyhow!("Failed to parse certificate: {}", e))?;
 
     let keys: Vec<PrivateKeyDer<'static>> = rustls_pemfile::pkcs8_private_keys(&mut key_pem)
-        .map(|result| result.map_err(|e| anyhow::anyhow!("{e}")).map(PrivateKeyDer::from))
+        .map(|result| {
+            result
+                .map_err(|e| anyhow::anyhow!("{e}"))
+                .map(PrivateKeyDer::from)
+        })
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| anyhow::anyhow!("Failed to parse private key: {}", e))?;
 
@@ -52,8 +56,8 @@ fn parse_tls_files(
 fn generate_self_signed_cert(
     data_dir: &Path,
 ) -> anyhow::Result<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)> {
-    let key_pair = KeyPair::generate()
-        .map_err(|e| anyhow::anyhow!("Failed to generate key pair: {}", e))?;
+    let key_pair =
+        KeyPair::generate().map_err(|e| anyhow::anyhow!("Failed to generate key pair: {}", e))?;
 
     let mut params = CertificateParams::new(vec!["localhost".to_string(), "127.0.0.1".to_string()])
         .map_err(|e| anyhow::anyhow!("Failed to create certificate params: {}", e))?;
@@ -95,7 +99,9 @@ pub fn create_axum_rustls_config(
     key: PrivateKeyDer<'static>,
 ) -> anyhow::Result<axum_server::tls_rustls::RustlsConfig> {
     let rustls_config = create_rustls_config(certs, key)?;
-    Ok(axum_server::tls_rustls::RustlsConfig::from_config(rustls_config))
+    Ok(axum_server::tls_rustls::RustlsConfig::from_config(
+        rustls_config,
+    ))
 }
 
 /// Retorna la ruta del certificado TLS para que el viewer pueda validarla.

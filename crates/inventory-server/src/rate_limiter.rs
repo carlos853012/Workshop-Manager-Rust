@@ -23,9 +23,10 @@ impl RateLimiter {
     /// Verifica si una clave puede realizar un intento.
     /// Retorna `true` si está dentro del límite, `false` si excedió.
     pub fn check(&self, key: &str) -> anyhow::Result<bool> {
-        let mut attempts = self.attempts.write().map_err(|e| {
-            anyhow::anyhow!("Rate limiter lock poisoned: {}", e)
-        })?;
+        let mut attempts = self
+            .attempts
+            .write()
+            .map_err(|e| anyhow::anyhow!("Rate limiter lock poisoned: {}", e))?;
         let now = Instant::now();
 
         if let Some((count, first_attempt)) = attempts.get(key) {
@@ -43,9 +44,10 @@ impl RateLimiter {
 
     /// Registra un intento para una clave.
     pub fn record_attempt(&self, key: &str) -> anyhow::Result<()> {
-        let mut attempts = self.attempts.write().map_err(|e| {
-            anyhow::anyhow!("Rate limiter lock poisoned: {}", e)
-        })?;
+        let mut attempts = self
+            .attempts
+            .write()
+            .map_err(|e| anyhow::anyhow!("Rate limiter lock poisoned: {}", e))?;
         let now = Instant::now();
 
         let new_entry = match attempts.get(key) {

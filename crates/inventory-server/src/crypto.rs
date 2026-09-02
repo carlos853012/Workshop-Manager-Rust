@@ -2,7 +2,7 @@ use aes_gcm::{
     aead::{Aead, KeyInit, OsRng},
     Aes256Gcm, Nonce,
 };
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
 use rand::RngCore;
 use std::path::Path;
 use std::sync::OnceLock;
@@ -13,7 +13,9 @@ pub fn init(data_dir: &Path) -> anyhow::Result<()> {
     let key_path = data_dir.join(".crypto_key");
 
     if !key_path.exists() {
-        return Err(anyhow::anyhow!("Crypto key not found. Run secrets::init_secrets first."));
+        return Err(anyhow::anyhow!(
+            "Crypto key not found. Run secrets::init_secrets first."
+        ));
     }
 
     let key = std::fs::read(&key_path)?;
@@ -31,7 +33,9 @@ pub fn init(data_dir: &Path) -> anyhow::Result<()> {
 
 #[allow(dead_code)]
 fn get_cipher() -> anyhow::Result<&'static Aes256Gcm> {
-    CIPHER.get().ok_or_else(|| anyhow::anyhow!("Cipher not initialized"))
+    CIPHER
+        .get()
+        .ok_or_else(|| anyhow::anyhow!("Cipher not initialized"))
 }
 
 #[allow(dead_code)]

@@ -2,14 +2,14 @@ use axum::Router;
 
 use crate::state::AppState;
 
+mod analytics;
 mod auth;
 mod products;
-mod sales;
 mod repairs;
-mod suppliers;
-mod analytics;
-mod users;
 mod reports;
+mod sales;
+mod suppliers;
+mod users;
 
 /// Rutas públicas de /api (no requieren autenticación).
 pub fn public_routes() -> Router<AppState> {
@@ -32,5 +32,3 @@ pub fn protected_routes() -> Router<AppState> {
 pub fn admin_routes() -> Router<AppState> {
     Router::new().nest("/users", users::routes())
 }
-
-

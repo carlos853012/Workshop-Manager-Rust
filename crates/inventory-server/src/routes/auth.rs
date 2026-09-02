@@ -1,9 +1,12 @@
 use axum::{
-    Router, extract::State, http::HeaderMap, routing::{get, post}, Json,
+    extract::State,
+    http::HeaderMap,
+    routing::{get, post},
+    Json, Router,
 };
-use inventory_common::UserRole;
-use inventory_common::User;
 use inventory_common::dto::{ApiResponse, LoginRequest, LoginResponse};
+use inventory_common::User;
+use inventory_common::UserRole;
 use uuid::Uuid;
 
 use crate::auth::{self, Claims};
@@ -46,8 +49,13 @@ async fn login(
         return Err(AppError::Unauthorized);
     }
 
-    let token = auth::create_token(user.id, &user.email, user.role.clone(), &state.secrets.jwt_secret)
-        .map_err(|e| AppError::Internal(format!("Token creation error: {}", e)))?;
+    let token = auth::create_token(
+        user.id,
+        &user.email,
+        user.role.clone(),
+        &state.secrets.jwt_secret,
+    )
+    .map_err(|e| AppError::Internal(format!("Token creation error: {}", e)))?;
 
     let response = LoginResponse {
         token,
@@ -92,7 +100,7 @@ async fn register(
 
     sqlx::query(
         "INSERT INTO users (id, email, password_hash, role, status, created_at) \
-         VALUES ($1, $2, $3, $4, 'active', NOW())"
+         VALUES ($1, $2, $3, $4, 'active', NOW())",
     )
     .bind(user_id)
     .bind(&req.email)
@@ -125,8 +133,7 @@ async fn status(
 ) -> Result<Json<ApiResponse<User>>, AppError> {
     let claims = extract_claims(&headers, &state.secrets.jwt_secret)?;
 
-    let user_id = Uuid::parse_str(&claims.sub)
-        .map_err(|_| AppError::Unauthorized)?;
+    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| AppError::Unauthorized)?;
 
     let user: Option<User> = sqlx::query_as(
         "SELECT id, email, display_name, password_hash, role as \"role!: UserRole\", status, created_at \
@@ -146,9 +153,7 @@ fn extract_claims(headers: &HeaderMap, secret: &str) -> Result<Claims, AppError>
         .get(axum::http::header::AUTHORIZATION)
         .ok_or(AppError::Unauthorized)?;
 
-    let auth_value = auth_header
-        .to_str()
-        .map_err(|_| AppError::Unauthorized)?;
+    let auth_value = auth_header.to_str().map_err(|_| AppError::Unauthorized)?;
 
     if !auth_value.starts_with("Bearer ") {
         return Err(AppError::Unauthorized);

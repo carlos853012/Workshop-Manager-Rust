@@ -1,8 +1,8 @@
-use axum::{Router, extract::State, routing::get, Json};
+use axum::{extract::State, routing::get, Json, Router};
 use inventory_common::dto::ApiResponse;
-use sqlx::Row;
 use rust_decimal::Decimal;
 use serde::Serialize;
+use sqlx::Row;
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -35,7 +35,7 @@ async fn report_clients(
          FROM sales \
          WHERE customer_email IS NOT NULL AND status = 'completed' \
          GROUP BY customer_email \
-         ORDER BY total_spent DESC"
+         ORDER BY total_spent DESC",
     )
     .fetch_all(&state.pool)
     .await
@@ -86,15 +86,25 @@ async fn report_history(
         .into_iter()
         .map(|row| {
             Ok(HistoryReport {
-                id: row.try_get("id").map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
-                entity_type: row.try_get("entity_type").map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
-                entity_id: row.try_get("entity_id").map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
-                action: row.try_get("action").map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
+                id: row
+                    .try_get("id")
+                    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
+                entity_type: row
+                    .try_get("entity_type")
+                    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
+                entity_id: row
+                    .try_get("entity_id")
+                    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
+                action: row
+                    .try_get("action")
+                    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
                 old_values: row.try_get("old_values").ok(),
                 new_values: row.try_get("new_values").ok(),
                 reason: row.try_get("reason").ok(),
                 performed_by: row.try_get("performed_by").ok(),
-                created_at: row.try_get("created_at").map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
+                created_at: row
+                    .try_get("created_at")
+                    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
             })
         })
         .collect();

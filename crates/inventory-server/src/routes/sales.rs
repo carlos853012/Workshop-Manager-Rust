@@ -1,8 +1,7 @@
 use axum::{
-    Extension, Router,
     extract::{Path, Query, State},
     routing::{get, post},
-    Json,
+    Extension, Json, Router,
 };
 use chrono::Utc;
 use inventory_common::dto::{ApiResponse, CreateSaleRequest, PaginatedResponse};
@@ -40,7 +39,9 @@ async fn list_sales(
         return Err(AppError::Validation("page must be >= 1".to_string()));
     }
     if params.per_page < 1 || params.per_page > 100 {
-        return Err(AppError::Validation("per_page must be between 1 and 100".to_string()));
+        return Err(AppError::Validation(
+            "per_page must be between 1 and 100".to_string(),
+        ));
     }
 
     let offset = (params.page - 1) * params.per_page;
@@ -88,7 +89,7 @@ async fn get_sale(
 
     let items: Vec<SaleItem> = sqlx::query_as(
         "SELECT id, sale_id, product_id, product_name, quantity, unit_price, total \
-         FROM sale_items WHERE sale_id = $1"
+         FROM sale_items WHERE sale_id = $1",
     )
     .bind(id)
     .fetch_all(&state.pool)
@@ -148,14 +149,12 @@ async fn create_sale(
             Ok(Json(ApiResponse::success(sale_detail)))
         }
         Err(e) => {
-            tx.rollback()
-                .await
-                .map_err(|rollback_err| {
-                    AppError::Internal(format!(
-                        "Transaction rollback error: {} (original error: {})",
-                        rollback_err, e
-                    ))
-                })?;
+            tx.rollback().await.map_err(|rollback_err| {
+                AppError::Internal(format!(
+                    "Transaction rollback error: {} (original error: {})",
+                    rollback_err, e
+                ))
+            })?;
             Err(e)
         }
     }
@@ -168,7 +167,9 @@ async fn create_sale_in_transaction(
     _user_id: Uuid,
 ) -> Result<SaleDetail, AppError> {
     if req.items.is_empty() {
-        return Err(AppError::Validation("Sale must have at least one item".to_string()));
+        return Err(AppError::Validation(
+            "Sale must have at least one item".to_string(),
+        ));
     }
 
     let sale_id = Uuid::new_v4();
@@ -191,11 +192,9 @@ async fn create_sale_in_transaction(
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
-        let (product_name, unit_price, current_stock) =
-            product.ok_or(AppError::NotFound(format!(
-                "Product {} not found",
-                item_req.product_id
-            )))?;
+        let (product_name, unit_price, current_stock) = product.ok_or(AppError::NotFound(
+            format!("Product {} not found", item_req.product_id),
+        ))?;
 
         if current_stock < item_req.quantity {
             return Err(AppError::Conflict(format!(
@@ -248,7 +247,7 @@ async fn create_sale_in_transaction(
         sqlx::query(
             "INSERT INTO sale_items \
              (id, sale_id, product_id, product_name, quantity, unit_price, total) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7)"
+             VALUES ($1, $2, $3, $4, $5, $6, $7)",
         )
         .bind(item.id)
         .bind(item.sale_id)
@@ -273,7 +272,10 @@ async fn create_sale_in_transaction(
         created_at: now,
     };
 
-    Ok(SaleDetail { sale, items: sale_items })
+    Ok(SaleDetail {
+        sale,
+        items: sale_items,
+    })
 }
 
 fn validate_create_sale_request(req: &CreateSaleRequest) -> Result<(), AppError> {
@@ -292,7 +294,9 @@ fn validate_create_sale_request(req: &CreateSaleRequest) -> Result<(), AppError>
     }
 
     if req.items.is_empty() {
-        return Err(AppError::Validation("Sale must have at least one item".to_string()));
+        return Err(AppError::Validation(
+            "Sale must have at least one item".to_string(),
+        ));
     }
 
     Ok(())

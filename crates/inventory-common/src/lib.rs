@@ -1,6 +1,6 @@
+pub mod dto;
 pub mod features;
 pub mod license;
-pub mod dto;
 
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;

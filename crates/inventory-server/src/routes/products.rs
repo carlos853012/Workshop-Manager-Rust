@@ -1,8 +1,7 @@
 use axum::{
-    Extension, Router,
     extract::{Path, Query, State},
     routing::{delete, get, post, put},
-    Json,
+    Extension, Json, Router,
 };
 use chrono::Utc;
 use inventory_common::dto::{ApiResponse, CreateProductRequest, PaginatedResponse};
@@ -51,7 +50,9 @@ async fn list_products(
         return Err(AppError::Validation("page must be >= 1".to_string()));
     }
     if params.per_page < 1 || params.per_page > 100 {
-        return Err(AppError::Validation("per_page must be between 1 and 100".to_string()));
+        return Err(AppError::Validation(
+            "per_page must be between 1 and 100".to_string(),
+        ));
     }
 
     let offset = (params.page - 1) * params.per_page;
@@ -332,7 +333,9 @@ fn validate_create_product_request(req: &CreateProductRequest) -> Result<(), App
 
     if let Some(ref sku) = req.sku {
         if sku.len() > 100 {
-            return Err(AppError::Validation("sku must be <= 100 characters".to_string()));
+            return Err(AppError::Validation(
+                "sku must be <= 100 characters".to_string(),
+            ));
         }
     }
 

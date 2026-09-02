@@ -3,20 +3,20 @@ use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
-mod state;
-mod config;
-mod secrets;
-mod crypto;
+mod audit;
 mod auth;
+mod backup;
+mod config;
+mod crypto;
+mod db_manager;
 mod error;
 mod middleware;
 mod rate_limiter;
-mod audit;
-mod schema;
-mod db_manager;
-mod backup;
-mod tls;
 mod routes;
+mod schema;
+mod secrets;
+mod state;
+mod tls;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -67,12 +67,18 @@ async fn main() -> anyhow::Result<()> {
     let state = state::AppState::new(secrets, config, pool);
 
     // 9. Build router
-    let protected_api = routes::protected_routes()
-        .route_layer(axum_middleware::from_fn_with_state(state.clone(), middleware::authenticate_middleware));
+    let protected_api = routes::protected_routes().route_layer(
+        axum_middleware::from_fn_with_state(state.clone(), middleware::authenticate_middleware),
+    );
 
     let admin_api = routes::admin_routes()
-        .route_layer(axum_middleware::from_fn_with_state(state.clone(), middleware::authenticate_middleware))
-        .route_layer(axum_middleware::from_fn(middleware::require_admin_middleware));
+        .route_layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            middleware::authenticate_middleware,
+        ))
+        .route_layer(axum_middleware::from_fn(
+            middleware::require_admin_middleware,
+        ));
 
     let api = Router::new()
         .merge(routes::public_routes())
@@ -104,12 +110,19 @@ async fn health() -> &'static str {
     "OK"
 }
 
-async fn backup_scheduler(pg_dump_path: std::path::PathBuf, database_url: String, backups_dir: std::path::PathBuf) {
+async fn backup_scheduler(
+    pg_dump_path: std::path::PathBuf,
+    database_url: String,
+    backups_dir: std::path::PathBuf,
+) {
     const BACKUP_INTERVAL_HOURS: u64 = 24;
     const KEEP_BACKUP_COUNT: usize = 7;
 
     loop {
-        tokio::time::sleep(tokio::time::Duration::from_secs(BACKUP_INTERVAL_HOURS * 3600)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(
+            BACKUP_INTERVAL_HOURS * 3600,
+        ))
+        .await;
 
         if let Err(e) = backup::create_backup(&pg_dump_path, &database_url, &backups_dir).await {
             tracing::error!(error = %e, "Backup failed");

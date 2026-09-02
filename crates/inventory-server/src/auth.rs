@@ -2,7 +2,7 @@ use argon2::password_hash::{PasswordHash, PasswordHasher, SaltString};
 use argon2::{Argon2, PasswordVerifier};
 use chrono::{Duration, Utc};
 use inventory_common::UserRole;
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -36,8 +36,8 @@ pub fn hash_password(password: &str) -> anyhow::Result<String> {
 
 /// Verifica una contraseña contra un hash Argon2.
 pub fn verify_password(hash: &str, password: &str) -> anyhow::Result<bool> {
-    let parsed_hash = PasswordHash::new(hash)
-        .map_err(|e| anyhow::anyhow!("Failed to parse hash: {}", e))?;
+    let parsed_hash =
+        PasswordHash::new(hash).map_err(|e| anyhow::anyhow!("Failed to parse hash: {}", e))?;
 
     let result = Argon2::default().verify_password(password.as_bytes(), &parsed_hash);
 

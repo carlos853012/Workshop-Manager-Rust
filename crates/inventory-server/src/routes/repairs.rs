@@ -1,8 +1,7 @@
 use axum::{
-    Extension, Router,
     extract::{Path, Query, State},
     routing::{get, post, put},
-    Json,
+    Extension, Json, Router,
 };
 use chrono::Utc;
 use inventory_common::dto::{ApiResponse, CreateRepairRequest, PaginatedResponse};
@@ -39,7 +38,9 @@ async fn list_repairs(
         return Err(AppError::Validation("page must be >= 1".to_string()));
     }
     if params.per_page < 1 || params.per_page > 100 {
-        return Err(AppError::Validation("per_page must be between 1 and 100".to_string()));
+        return Err(AppError::Validation(
+            "per_page must be between 1 and 100".to_string(),
+        ));
     }
 
     let offset = (params.page - 1) * params.per_page;
@@ -152,7 +153,7 @@ async fn create_repair(
     sqlx::query(
         "INSERT INTO repair_updates \
          (id, repair_id, status, description, created_by, created_at) \
-         VALUES ($1, $2, $3, $4, $5, $6)"
+         VALUES ($1, $2, $3, $4, $5, $6)",
     )
     .bind(initial_update.id)
     .bind(initial_update.repair_id)
@@ -251,7 +252,7 @@ async fn update_repair(
         "UPDATE repairs SET \
          status = $2, diagnosis = $3, technician_id = $4, estimated_cost = $5, final_cost = $6, \
          estimated_delivery = $7, updated_at = $8 \
-         WHERE id = $1 AND status != 'deleted'"
+         WHERE id = $1 AND status != 'deleted'",
     )
     .bind(id)
     .bind(&new_status)
@@ -270,12 +271,15 @@ async fn update_repair(
         sqlx::query(
             "INSERT INTO repair_updates \
              (id, repair_id, status, description, created_by, created_at) \
-             VALUES ($1, $2, $3, $4, $5, $6)"
+             VALUES ($1, $2, $3, $4, $5, $6)",
         )
         .bind(Uuid::new_v4())
         .bind(id)
         .bind(&new_status)
-        .bind(Some(format!("Status changed from {} to {}", old_status, new_status)))
+        .bind(Some(format!(
+            "Status changed from {} to {}",
+            old_status, new_status
+        )))
         .bind(Some(user.id))
         .bind(now)
         .execute(&state.pool)

@@ -1,5 +1,5 @@
-use sha2::{Sha256, Digest};
 use crate::features::License;
+use sha2::{Digest, Sha256};
 
 /// Extrae un hash del hardware para vincular la licencia a una máquina específica
 pub fn extract_hardware_hash(cpu_id: &str, motherboard: &str, disk: &str) -> String {
@@ -28,7 +28,7 @@ pub fn verify_license_signature(_license: &License, _public_key: &[u8]) -> bool 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::features::{LicenseTier, Feature};
+    use crate::features::{Feature, LicenseTier};
 
     #[test]
     fn test_extract_hardware_hash() {

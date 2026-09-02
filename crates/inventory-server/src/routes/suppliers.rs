@@ -1,8 +1,7 @@
 use axum::{
-    Extension, Router,
     extract::{Path, Query, State},
     routing::{get, post, put},
-    Json,
+    Extension, Json, Router,
 };
 use chrono::Utc;
 use inventory_common::dto::{ApiResponse, PaginatedResponse};
@@ -50,7 +49,9 @@ async fn list_suppliers(
         return Err(AppError::Validation("page must be >= 1".to_string()));
     }
     if params.per_page < 1 || params.per_page > 100 {
-        return Err(AppError::Validation("per_page must be between 1 and 100".to_string()));
+        return Err(AppError::Validation(
+            "per_page must be between 1 and 100".to_string(),
+        ));
     }
 
     let offset = (params.page - 1) * params.per_page;
@@ -187,7 +188,7 @@ async fn update_supplier(
         "UPDATE suppliers SET \
          name = $2, contact_person = $3, email = $4, phone = $5, address = $6, tax_id = $7, \
          payment_terms = $8, updated_at = $9 \
-         WHERE id = $1 AND status = 'active'"
+         WHERE id = $1 AND status = 'active'",
     )
     .bind(id)
     .bind(&req.name)

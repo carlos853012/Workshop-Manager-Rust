@@ -1,8 +1,7 @@
 use axum::{
-    Extension, Router,
     extract::{Path, Query, State},
     routing::{delete, get, post, put},
-    Json,
+    Extension, Json, Router,
 };
 use chrono::Utc;
 use inventory_common::dto::{ApiResponse, PaginatedResponse};
@@ -56,7 +55,9 @@ async fn list_users(
         return Err(AppError::Validation("page must be >= 1".to_string()));
     }
     if params.per_page < 1 || params.per_page > 100 {
-        return Err(AppError::Validation("per_page must be between 1 and 100".to_string()));
+        return Err(AppError::Validation(
+            "per_page must be between 1 and 100".to_string(),
+        ));
     }
 
     let offset = (params.page - 1) * params.per_page;
@@ -132,7 +133,7 @@ async fn create_user(
 
     sqlx::query(
         "INSERT INTO users (id, email, display_name, password_hash, role, status, created_at) \
-         VALUES ($1, $2, $3, $4, $5, 'active', $6)"
+         VALUES ($1, $2, $3, $4, $5, 'active', $6)",
     )
     .bind(id)
     .bind(&req.email)
@@ -205,19 +206,19 @@ async fn update_user(
     let new_status = req.status.unwrap_or(old_user.status.clone());
 
     if new_status != "active" && new_status != "inactive" {
-        return Err(AppError::Validation("status must be active or inactive".to_string()));
+        return Err(AppError::Validation(
+            "status must be active or inactive".to_string(),
+        ));
     }
 
-    sqlx::query(
-        "UPDATE users SET display_name = $2, role = $3, status = $4 WHERE id = $1"
-    )
-    .bind(id)
-    .bind(&new_display_name)
-    .bind(&new_role)
-    .bind(&new_status)
-    .execute(&state.pool)
-    .await
-    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+    sqlx::query("UPDATE users SET display_name = $2, role = $3, status = $4 WHERE id = $1")
+        .bind(id)
+        .bind(&new_display_name)
+        .bind(&new_role)
+        .bind(&new_status)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let user = User {
         id,
