@@ -121,7 +121,7 @@ pub struct User {
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct AuditLog {
-    pub id: i32,
+    pub id: i64,
     pub user_id: Option<uuid::Uuid>,
     pub action: String,
     pub entity_type: Option<String>,

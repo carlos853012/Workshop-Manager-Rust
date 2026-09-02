@@ -5,8 +5,9 @@ use aes_gcm::{
 use base64::{Engine as _, engine::general_purpose};
 use rand::RngCore;
 use std::path::Path;
+use std::sync::OnceLock;
 
-static mut CIPHER: Option<Aes256Gcm> = None;
+static CIPHER: OnceLock<Aes256Gcm> = OnceLock::new();
 
 pub fn init(data_dir: &Path) -> anyhow::Result<()> {
     let key_path = data_dir.join(".crypto_key");
@@ -23,17 +24,17 @@ pub fn init(data_dir: &Path) -> anyhow::Result<()> {
     let cipher = Aes256Gcm::new_from_slice(&key)
         .map_err(|e| anyhow::anyhow!("Failed to create cipher: {}", e))?;
 
-    unsafe {
-        CIPHER = Some(cipher);
-    }
+    let _ = CIPHER.set(cipher);
 
     Ok(())
 }
 
+fn get_cipher() -> anyhow::Result<&'static Aes256Gcm> {
+    CIPHER.get().ok_or_else(|| anyhow::anyhow!("Cipher not initialized"))
+}
+
 pub fn encrypt(plaintext: &str) -> anyhow::Result<String> {
-    let cipher = unsafe {
-        CIPHER.as_ref().ok_or_else(|| anyhow::anyhow!("Cipher not initialized"))?
-    };
+    let cipher = get_cipher()?;
 
     let mut nonce_bytes = [0u8; 12];
     OsRng.fill_bytes(&mut nonce_bytes);
@@ -51,9 +52,7 @@ pub fn encrypt(plaintext: &str) -> anyhow::Result<String> {
 }
 
 pub fn decrypt(ciphertext: &str) -> anyhow::Result<String> {
-    let cipher = unsafe {
-        CIPHER.as_ref().ok_or_else(|| anyhow::anyhow!("Cipher not initialized"))?
-    };
+    let cipher = get_cipher()?;
 
     let combined = general_purpose::STANDARD.decode(ciphertext)?;
     if combined.len() < 12 {
@@ -75,41 +74,48 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    fn setup_test() {
+    fn setup_test() -> anyhow::Result<()> {
+        if CIPHER.get().is_some() {
+            return Ok(());
+        }
+
         let test_dir = PathBuf::from("test_data");
-        std::fs::create_dir_all(&test_dir).unwrap();
+        std::fs::create_dir_all(&test_dir)?;
 
         let key_path = test_dir.join(".crypto_key");
         if !key_path.exists() {
             let mut key = vec![0u8; 32];
             OsRng.fill_bytes(&mut key);
-            std::fs::write(&key_path, &key).unwrap();
+            std::fs::write(&key_path, &key)?;
         }
 
-        init(&test_dir).unwrap();
+        init(&test_dir)?;
+        Ok(())
     }
 
     #[test]
-    fn test_encrypt_decrypt() {
-        setup_test();
+    fn test_encrypt_decrypt() -> anyhow::Result<()> {
+        setup_test()?;
 
         let original = "Hello, WorkshopManager!";
-        let encrypted = encrypt(original).unwrap();
-        let decrypted = decrypt(&encrypted).unwrap();
+        let encrypted = encrypt(original)?;
+        let decrypted = decrypt(&encrypted)?;
 
         assert_eq!(original, decrypted);
         assert_ne!(original, encrypted);
+        Ok(())
     }
 
     #[test]
-    fn test_different_ciphertexts() {
-        setup_test();
+    fn test_different_ciphertexts() -> anyhow::Result<()> {
+        setup_test()?;
 
         let original = "Same text";
-        let enc1 = encrypt(original).unwrap();
-        let enc2 = encrypt(original).unwrap();
+        let enc1 = encrypt(original)?;
+        let enc2 = encrypt(original)?;
 
         // Nonces aleatorios hacen que los ciphertexts sean diferentes
         assert_ne!(enc1, enc2);
+        Ok(())
     }
 }

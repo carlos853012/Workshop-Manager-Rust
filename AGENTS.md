@@ -41,10 +41,12 @@ License: `Feature` enum (15 features across 4 tiers), `License` struct with Ed25
 - Entrypoint: `crates/inventory-server/src/main.rs`
 - Config: `config/server.toml` (TOML, loaded but `host`/`port` not used — binding hardcoded to `0.0.0.0:8443`)
 - Secrets: generated/persisted at `dirs::data_local_dir()/WorkshopManager/data/`
-- Crypto: AES-256-GCM via `crypto::init()` with static cipher
+- Crypto: AES-256-GCM via `crypto::init()` with `OnceLock` (no `unsafe`)
+- DB: PostgreSQL embebido via `postgresql_embedded` (`bundled` feature), pool en `AppState`
+- Migrations: SQLx migrations in `crates/inventory-server/migrations/`
 - Routes: stub JSON responses under `/api` (auth, products, sales, repairs, suppliers, analytics, users)
 - Health: `GET /health` returns `"OK"`
-- No database connection, no migrations, no TLS, no audit logging yet
+- No TLS, no audit logging yet
 
 ## Viewer architecture
 - Entrypoint: `crates/inventory-viewer/src/main.rs`
@@ -54,12 +56,8 @@ License: `Feature` enum (15 features across 4 tiers), `License` struct with Ed25
 
 ## Known issues
 - **Server unused deps:** `jsonwebtoken`, `tracing-appender`, `obfstr` in Cargo.toml but never imported
-- **`static mut` in crypto.rs:** uses `unsafe` blocks (violates constitutional rule)
-- **`unwrap()` in rate_limiter.rs:** lines 24, 41 (violates constitutional rule)
-- **`.clinerules`/`.cursorrules`/`.geminirules`:** broken link to `file:///C:/Users/carlos/Desktop/Equipos-Rust/CONSTITUCION.md` — actual path is `CONSTITUCION.md` in workspace root
-- **CONSTITUCION.md:** still contains OT/SCADA rules (Section 16) from Equipos-Rust — should be adapted to motorcycle workshop domain
+- **`.clinerules`/`.cursorrules`/`.geminirules`:** links and OT/SCADA references fixed
 - **`scripts/bump.ps1`:** works correctly (updates workspace version, builds, commits, tags)
-- **`.gitignore`:** references `crates/server/data/` and `crates/viewer/data/` — actual paths are `crates/inventory-server/` and `crates/inventory-viewer/`
 
 ## Constitutional rules (from CONSTITUCION.md)
 All code MUST comply. Key rules:

@@ -13,6 +13,7 @@ mod middleware;
 mod rate_limiter;
 mod audit;
 mod schema;
+mod db_manager;
 mod routes;
 
 #[tokio::main]
@@ -42,10 +43,20 @@ async fn main() -> anyhow::Result<()> {
     crypto::init(&data_dir)?;
     tracing::info!("Crypto initialized");
 
-    // 5. Create AppState (sin PostgreSQL embebido por ahora)
-    let state = state::AppState::new(secrets, config);
+    // 5. Start embedded PostgreSQL
+    let mut db_manager = db_manager::DbManager::new(&data_dir)?;
+    let database_url = db_manager.start().await?;
+    tracing::info!("PostgreSQL embedded started");
 
-    // 6. Build router
+    // 6. Create connection pool and run migrations
+    let pool = db_manager::create_pool(&database_url).await?;
+    schema::run_migrations(&pool).await?;
+    tracing::info!("Database pool and migrations ready");
+
+    // 7. Create AppState
+    let state = state::AppState::new(secrets, config, pool);
+
+    // 8. Build router
     let app = Router::new()
         .route("/health", get(health))
         .nest("/api", routes::api_routes())
@@ -53,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 
-    // 7. Start server
+    // 9. Start server
     let addr = SocketAddr::from(([0, 0, 0, 0], 8443));
     tracing::info!("Server listening on {}", addr);
 

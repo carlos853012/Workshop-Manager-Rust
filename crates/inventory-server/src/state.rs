@@ -1,10 +1,12 @@
 use axum::extract::FromRef;
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 
 #[derive(Clone)]
 pub struct AppState {
     pub secrets: Secrets,
     pub config: ServerConfig,
+    pub pool: PgPool,
 }
 
 #[derive(Clone)]
@@ -31,8 +33,18 @@ impl FromRef<AppState> for ServerConfig {
     }
 }
 
+impl FromRef<AppState> for PgPool {
+    fn from_ref(state: &AppState) -> Self {
+        state.pool.clone()
+    }
+}
+
 impl AppState {
-    pub fn new(secrets: Secrets, config: ServerConfig) -> Self {
-        Self { secrets, config }
+    pub fn new(secrets: Secrets, config: ServerConfig, pool: PgPool) -> Self {
+        Self {
+            secrets,
+            config,
+            pool,
+        }
     }
 }
