@@ -49,10 +49,7 @@ pub struct NavItem {
 }
 
 #[component]
-pub fn Sidebar(
-    items: Vec<NavItem>,
-    active_route: String,
-) -> Element {
+pub fn Sidebar(items: Vec<NavItem>, active_route: String) -> Element {
     rsx! {
         aside { class: "sidebar",
             div { class: "sidebar-logo",
@@ -72,7 +69,11 @@ pub fn Sidebar(
 
 #[component]
 fn SidebarLink(item: NavItem, active: bool) -> Element {
-    let class = if active { "sidebar-link active" } else { "sidebar-link" };
+    let class = if active {
+        "sidebar-link active"
+    } else {
+        "sidebar-link"
+    };
     rsx! {
         a {
             class: "{class}",

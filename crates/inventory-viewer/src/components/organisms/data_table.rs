@@ -1,13 +1,17 @@
 use dioxus::prelude::*;
 
-use crate::components::atoms::button::{Button, ButtonVariant};
-
 /// Columna genérica de la tabla.
-#[derive(Clone, PartialEq)]
-pub struct Column<T: Clone + PartialEq + 'static> {
+#[derive(Clone)]
+pub struct Column<T: Clone + 'static> {
     pub key: String,
     pub header: String,
     pub render: fn(&T) -> Element,
+}
+
+impl<T: Clone + 'static> PartialEq for Column<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key && self.header == other.header
+    }
 }
 
 #[component]
@@ -22,7 +26,7 @@ pub fn DataTable<T: Clone + PartialEq + 'static>(
     let total_pages = if total == 0 {
         1
     } else {
-        (total + per_page - 1) / per_page
+        total.div_ceil(per_page)
     };
 
     rsx! {
@@ -31,7 +35,7 @@ pub fn DataTable<T: Clone + PartialEq + 'static>(
                 thead {
                     tr {
                         for col in columns.iter() {
-                            th { key: "{col.key}", "{col.header}" }
+                            th { "{col.header}" }
                         }
                     }
                 }
@@ -47,7 +51,7 @@ pub fn DataTable<T: Clone + PartialEq + 'static>(
                         for row in rows.iter() {
                             tr {
                                 for col in columns.iter() {
-                                    td { key: "{col.key}", (col.render)(row) }
+                                    td { { (col.render)(row) } }
                                 }
                             }
                         }
@@ -56,8 +60,8 @@ pub fn DataTable<T: Clone + PartialEq + 'static>(
             }
             if total_pages > 1 {
                 div { class: "pagination",
-                    Button {
-                        variant: ButtonVariant::Ghost,
+                    button {
+                        class: "btn btn-ghost",
                         disabled: page <= 1,
                         onclick: move |_evt| {
                             if let Some(handler) = on_page_change.as_ref() {
@@ -67,8 +71,8 @@ pub fn DataTable<T: Clone + PartialEq + 'static>(
                         "Anterior"
                     }
                     span { class: "text-muted", "Página {page} de {total_pages}" }
-                    Button {
-                        variant: ButtonVariant::Ghost,
+                    button {
+                        class: "btn btn-ghost",
                         disabled: page >= total_pages,
                         onclick: move |_evt| {
                             if let Some(handler) = on_page_change.as_ref() {

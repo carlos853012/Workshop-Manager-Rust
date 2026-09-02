@@ -1,2 +1,9 @@
-// Pages module
-// TODO: Implementar en Fase 5
+pub mod home;
+pub mod layout;
+pub mod login;
+pub mod products;
+pub mod repairs;
+pub mod reports;
+pub mod sales;
+pub mod suppliers;
+pub mod users;

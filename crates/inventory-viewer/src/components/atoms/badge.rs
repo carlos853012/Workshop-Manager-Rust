@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 
 #[derive(Clone, PartialEq, Default)]
+#[allow(dead_code)]
 pub enum BadgeVariant {
     #[default]
     Default,

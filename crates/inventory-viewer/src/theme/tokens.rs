@@ -67,12 +67,12 @@ pub struct ShadowTokens {
 impl DesignTokens {
     /// Tokens para modo claro.
     pub fn light() -> Self {
-        Self::from_toml(include_str!("../assets/tokens-light.toml"))
+        Self::from_toml(include_str!("../../assets/tokens-light.toml"))
     }
 
     /// Tokens para modo oscuro.
     pub fn dark() -> Self {
-        Self::from_toml(include_str!("../assets/tokens-dark.toml"))
+        Self::from_toml(include_str!("../../assets/tokens-dark.toml"))
     }
 
     /// Carga tokens desde una cadena TOML.

@@ -39,6 +39,7 @@ pub struct ApiClient {
     token: Option<String>,
 }
 
+#[allow(dead_code)]
 impl ApiClient {
     /// Crea un cliente nuevo. Si `accept_invalid_certs` es true, se permite conectar
     /// al certificado autofirmado del servidor en desarrollo local.
@@ -92,7 +93,10 @@ impl ApiClient {
     ) -> Result<PaginatedResponse<Product>, ApiError> {
         self.get_with_query(
             "/api/products",
-            &[("page", page.to_string()), ("per_page", per_page.to_string())],
+            &[
+                ("page", page.to_string()),
+                ("per_page", per_page.to_string()),
+            ],
         )
         .await
     }
@@ -105,7 +109,10 @@ impl ApiClient {
     ) -> Result<PaginatedResponse<Sale>, ApiError> {
         self.get_with_query(
             "/api/sales",
-            &[("page", page.to_string()), ("per_page", per_page.to_string())],
+            &[
+                ("page", page.to_string()),
+                ("per_page", per_page.to_string()),
+            ],
         )
         .await
     }
@@ -118,7 +125,10 @@ impl ApiClient {
     ) -> Result<PaginatedResponse<Repair>, ApiError> {
         self.get_with_query(
             "/api/repairs",
-            &[("page", page.to_string()), ("per_page", per_page.to_string())],
+            &[
+                ("page", page.to_string()),
+                ("per_page", per_page.to_string()),
+            ],
         )
         .await
     }
@@ -131,7 +141,10 @@ impl ApiClient {
     ) -> Result<PaginatedResponse<Supplier>, ApiError> {
         self.get_with_query(
             "/api/suppliers",
-            &[("page", page.to_string()), ("per_page", per_page.to_string())],
+            &[
+                ("page", page.to_string()),
+                ("per_page", per_page.to_string()),
+            ],
         )
         .await
     }
@@ -182,7 +195,9 @@ impl ApiClient {
         if status.is_success() {
             let parsed: ApiResponse<T> = serde_json::from_str(&body_text)
                 .map_err(|e| ApiError::Unknown(format!("JSON parse error: {}", e)))?;
-            Ok(parsed.data)
+            parsed
+                .data
+                .ok_or_else(|| ApiError::Unknown("Empty response data".to_string()))
         } else {
             match status.as_u16() {
                 401 => Err(ApiError::Unauthorized),

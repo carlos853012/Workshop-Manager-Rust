@@ -12,7 +12,7 @@ pub struct Theme {
 impl Theme {
     /// Devuelve los tokens activos según el modo actual.
     pub fn tokens(&self) -> DesignTokens {
-        if self.is_dark.read().clone() {
+        if *self.is_dark.read() {
             DesignTokens::dark()
         } else {
             DesignTokens::light()

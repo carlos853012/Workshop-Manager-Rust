@@ -12,6 +12,7 @@ pub fn Input(
     #[props(default = false)] required: bool,
     class: Option<String>,
 ) -> Element {
+    let input_type = r#type;
     let mut classes = vec!["input".to_string()];
     if error.is_some() {
         classes.push("input-error".to_string());
@@ -28,7 +29,7 @@ pub fn Input(
             }
             input {
                 class: "{class_str}",
-                r#type: "{r#type}",
+                r#type: "{input_type}",
                 value: "{value}",
                 placeholder: placeholder.unwrap_or_default(),
                 disabled: disabled,

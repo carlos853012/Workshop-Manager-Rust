@@ -1,10 +1,7 @@
 use dioxus::prelude::*;
 
 #[component]
-pub fn Tooltip(
-    children: Element,
-    text: String,
-) -> Element {
+pub fn Tooltip(children: Element, text: String) -> Element {
     rsx! {
         span {
             class: "tooltip",

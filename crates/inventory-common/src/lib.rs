@@ -9,7 +9,7 @@ use sqlx::FromRow;
 
 // ==================== PRODUCTOS ====================
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct Product {
     pub id: uuid::Uuid,
     pub name: String,
@@ -31,7 +31,7 @@ pub struct Product {
 
 // ==================== VENTAS ====================
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct Sale {
     pub id: uuid::Uuid,
     pub customer_name: Option<String>,
@@ -43,7 +43,7 @@ pub struct Sale {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct SaleItem {
     pub id: uuid::Uuid,
     pub sale_id: uuid::Uuid,
@@ -56,7 +56,7 @@ pub struct SaleItem {
 
 // ==================== REPARACIONES ====================
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct Repair {
     pub id: uuid::Uuid,
     pub customer_name: Option<String>,
@@ -76,7 +76,7 @@ pub struct Repair {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct RepairUpdate {
     pub id: uuid::Uuid,
     pub repair_id: uuid::Uuid,
@@ -88,7 +88,7 @@ pub struct RepairUpdate {
 
 // ==================== PROVEEDORES ====================
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct Supplier {
     pub id: uuid::Uuid,
     pub name: String,
@@ -105,7 +105,7 @@ pub struct Supplier {
 
 // ==================== USUARIOS ====================
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct User {
     pub id: uuid::Uuid,
     pub email: String,
@@ -119,7 +119,7 @@ pub struct User {
 
 // ==================== AUDITORÍA ====================
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct AuditLog {
     pub id: i64,
     pub user_id: Option<uuid::Uuid>,

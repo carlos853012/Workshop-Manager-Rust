@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 
 /// Variantes visuales de un botón.
 #[derive(Clone, PartialEq, Default)]
+#[allow(dead_code)]
 pub enum ButtonVariant {
     #[default]
     Primary,
@@ -13,6 +14,7 @@ pub enum ButtonVariant {
 
 /// Tamaños de botón.
 #[derive(Clone, PartialEq, Default)]
+#[allow(dead_code)]
 pub enum ButtonSize {
     #[default]
     Md,

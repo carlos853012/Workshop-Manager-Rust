@@ -1,4 +1,17 @@
+mod api;
+mod app_state;
+mod components;
+mod icons;
+mod pages;
+mod routes;
+mod theme;
+
 use dioxus::prelude::*;
+use dioxus_router::prelude::*;
+
+use crate::app_state::AuthProvider;
+use crate::routes::Route;
+use crate::theme::ThemeProvider;
 
 fn main() {
     dioxus::launch(App);
@@ -8,10 +21,10 @@ fn main() {
 fn App() -> Element {
     rsx! {
         style { {include_str!("../index.css")} }
-        div { class: "container",
-            h1 { "WorkshopManager" }
-            p { "Sistema de Gestión de Taller" }
-            p { "Versión 0.1.0" }
+        ThemeProvider {
+            AuthProvider {
+                Router::<Route> {}
+            }
         }
     }
 }
