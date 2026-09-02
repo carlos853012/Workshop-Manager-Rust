@@ -29,10 +29,12 @@ pub fn init(data_dir: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn get_cipher() -> anyhow::Result<&'static Aes256Gcm> {
     CIPHER.get().ok_or_else(|| anyhow::anyhow!("Cipher not initialized"))
 }
 
+#[allow(dead_code)]
 pub fn encrypt(plaintext: &str) -> anyhow::Result<String> {
     let cipher = get_cipher()?;
 
@@ -51,6 +53,7 @@ pub fn encrypt(plaintext: &str) -> anyhow::Result<String> {
     Ok(general_purpose::STANDARD.encode(combined))
 }
 
+#[allow(dead_code)]
 pub fn decrypt(ciphertext: &str) -> anyhow::Result<String> {
     let cipher = get_cipher()?;
 

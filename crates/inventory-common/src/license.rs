@@ -1,5 +1,5 @@
 use sha2::{Sha256, Digest};
-use crate::features::{License, LicenseTier, Feature};
+use crate::features::License;
 
 /// Extrae un hash del hardware para vincular la licencia a una máquina específica
 pub fn extract_hardware_hash(cpu_id: &str, motherboard: &str, disk: &str) -> String {
@@ -19,7 +19,7 @@ pub fn validate_hardware(license: &License) -> bool {
 }
 
 /// Verifica la firma Ed25519 de la licencia
-pub fn verify_license_signature(license: &License, _public_key: &[u8]) -> bool {
+pub fn verify_license_signature(_license: &License, _public_key: &[u8]) -> bool {
     // En producción, verificar firma Ed25519
     // Por ahora, retornar true para desarrollo
     true

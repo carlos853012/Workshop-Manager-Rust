@@ -1,10 +1,12 @@
 use postgresql_embedded::{PostgreSQL, Settings};
 use sqlx::PgPool;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Gestiona el ciclo de vida de una instancia embebida de PostgreSQL.
 pub struct DbManager {
     postgresql: PostgreSQL,
+    database_url: Option<String>,
+    database_name: String,
 }
 
 impl DbManager {
@@ -21,7 +23,11 @@ impl DbManager {
         };
 
         let postgresql = PostgreSQL::new(settings);
-        Ok(Self { postgresql })
+        Ok(Self {
+            postgresql,
+            database_url: None,
+            database_name: "workshop_manager".to_string(),
+        })
     }
 
     /// Descarga/instala PostgreSQL si es necesario, inicia el servidor, crea la base de datos y retorna el connection string.
@@ -29,19 +35,37 @@ impl DbManager {
         self.postgresql.setup().await?;
         self.postgresql.start().await?;
 
-        let database_name = "workshop_manager";
-        if !self.postgresql.database_exists(database_name).await? {
-            self.postgresql.create_database(database_name).await?;
+        if !self.postgresql.database_exists(&self.database_name).await? {
+            self.postgresql.create_database(&self.database_name).await?;
         }
 
-        let database_url = self.postgresql.settings().url(database_name);
+        let database_url = self.postgresql.settings().url(&self.database_name);
+        self.database_url = Some(database_url.clone());
         Ok(database_url)
     }
 
     /// Detiene el servidor PostgreSQL embebido.
+    #[allow(dead_code)]
     pub async fn stop(&self) -> anyhow::Result<()> {
         self.postgresql.stop().await?;
         Ok(())
+    }
+
+    /// Retorna el connection string si el servidor ya fue iniciado.
+    #[allow(dead_code)]
+    pub fn database_url(&self) -> Option<&str> {
+        self.database_url.as_deref()
+    }
+
+    /// Retorna el directorio donde se encuentran los binarios de PostgreSQL.
+    pub fn binary_dir(&self) -> PathBuf {
+        self.postgresql.settings().binary_dir()
+    }
+
+    /// Retorna el nombre de la base de datos gestionada.
+    #[allow(dead_code)]
+    pub fn database_name(&self) -> &str {
+        &self.database_name
     }
 }
 

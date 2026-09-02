@@ -1,7 +1,7 @@
 # AGENTS.md — WorkshopManager
 
 ## Project status
-Scaffold at **Phase 1-2 of 8** (`PLAN_DESARROLLO.md`). Most modules are stubs. Version `0.1.0`. Domain: motorcycle workshop (products, sales, repairs, suppliers).
+**Phase 3 of 8 complete** (`PLAN_DESARROLLO.md`). Server bootstrap done: DB, migrations, JWT auth, admin middleware, TLS, audit, backup. Version `0.1.0`. Domain: motorcycle workshop (products, sales, repairs, suppliers).
 
 ## Workspace structure
 3 crates in a Cargo workspace:
@@ -42,11 +42,14 @@ License: `Feature` enum (15 features across 4 tiers), `License` struct with Ed25
 - Config: `config/server.toml` (TOML, loaded but `host`/`port` not used — binding hardcoded to `0.0.0.0:8443`)
 - Secrets: generated/persisted at `dirs::data_local_dir()/WorkshopManager/data/`
 - Crypto: AES-256-GCM via `crypto::init()` with `OnceLock` (no `unsafe`)
+- Auth: JWT HS256 + Argon2id; middleware `require_auth` y `require_admin`
 - DB: PostgreSQL embebido via `postgresql_embedded` (`bundled` feature), pool en `AppState`
 - Migrations: SQLx migrations in `crates/inventory-server/migrations/`
-- Routes: stub JSON responses under `/api` (auth, products, sales, repairs, suppliers, analytics, users)
+- TLS: certificados autofirmados generados con `rcgen`, servidos por `axum-server` (`tls-rustls`)
+- Audit: `audit::log_change()` inserta en `audit_log` con redacción de credenciales
+- Backup: scheduler automático cada 24h vía `pg_dump` + gzip, retención de 7 días
+- Routes: `/api/auth/*` público (login/register) y protegido (status); resto de `/api/*` protegido; `/api/users/*` admin
 - Health: `GET /health` returns `"OK"`
-- No TLS, no audit logging yet
 
 ## Viewer architecture
 - Entrypoint: `crates/inventory-viewer/src/main.rs`
@@ -55,7 +58,7 @@ License: `Feature` enum (15 features across 4 tiers), `License` struct with Ed25
 - No routing, no pages, no icons yet
 
 ## Known issues
-- **Server unused deps:** `jsonwebtoken`, `tracing-appender`, `obfstr` in Cargo.toml but never imported
+- **Server unused deps:** `tracing-appender`, `obfstr` in Cargo.toml but never imported
 - **`.clinerules`/`.cursorrules`/`.geminirules`:** links and OT/SCADA references fixed
 - **`scripts/bump.ps1`:** works correctly (updates workspace version, builds, commits, tags)
 
@@ -87,7 +90,7 @@ Aggressive size optimization in workspace `Cargo.toml`: `strip = true`, `lto = t
 - Workspace: tray-icon 0.14 (all features disabled to avoid GTK/Linux init)
 
 ## Testing
-11 inline unit tests across 5 files. No integration tests. No test framework config.
+23 inline unit tests across 9 files. No integration tests yet.
 ```powershell
 cargo test --workspace
 ```

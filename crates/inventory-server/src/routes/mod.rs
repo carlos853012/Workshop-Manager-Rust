@@ -1,5 +1,4 @@
 use axum::Router;
-use axum::routing::get;
 
 use crate::state::AppState;
 
@@ -11,13 +10,25 @@ mod suppliers;
 mod analytics;
 mod users;
 
-pub fn api_routes() -> Router<AppState> {
+/// Rutas públicas de /api (no requieren autenticación).
+pub fn public_routes() -> Router<AppState> {
+    Router::new().nest("/auth", auth::public_routes())
+}
+
+/// Rutas protegidas de /api (requieren JWT).
+pub fn protected_routes() -> Router<AppState> {
     Router::new()
-        .nest("/auth", auth::routes())
+        .nest("/auth/status", auth::protected_routes())
         .nest("/products", products::routes())
         .nest("/sales", sales::routes())
         .nest("/repairs", repairs::routes())
         .nest("/suppliers", suppliers::routes())
         .nest("/analytics", analytics::routes())
-        .nest("/users", users::routes())
 }
+
+/// Rutas de administración de /api (requieren JWT + rol admin).
+pub fn admin_routes() -> Router<AppState> {
+    Router::new().nest("/users", users::routes())
+}
+
+
