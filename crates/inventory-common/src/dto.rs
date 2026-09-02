@@ -51,6 +51,7 @@ pub struct CreateRepairRequest {
     pub description: Option<String>,
     pub priority: crate::Priority,
     pub estimated_cost: Option<Decimal>,
+    pub estimated_delivery: Option<chrono::NaiveDate>,
 }
 
 // ==================== RESPONSES ====================

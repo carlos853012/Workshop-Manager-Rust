@@ -5,7 +5,7 @@ use axum::{
     Json,
 };
 use chrono::Utc;
-use inventory_common::dto::{ApiResponse, CreateSaleRequest, PaginatedResponse, SaleItemRequest};
+use inventory_common::dto::{ApiResponse, CreateSaleRequest, PaginatedResponse};
 use inventory_common::{PaymentMethod, Sale, SaleItem};
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -301,6 +301,7 @@ fn validate_create_sale_request(req: &CreateSaleRequest) -> Result<(), AppError>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use inventory_common::dto::SaleItemRequest;
 
     #[test]
     fn test_validate_create_sale_request_valid() {
