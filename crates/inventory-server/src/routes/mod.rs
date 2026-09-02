@@ -9,6 +9,7 @@ mod repairs;
 mod suppliers;
 mod analytics;
 mod users;
+mod reports;
 
 /// Rutas públicas de /api (no requieren autenticación).
 pub fn public_routes() -> Router<AppState> {
@@ -24,6 +25,7 @@ pub fn protected_routes() -> Router<AppState> {
         .nest("/repairs", repairs::routes())
         .nest("/suppliers", suppliers::routes())
         .nest("/analytics", analytics::routes())
+        .nest("/reports", reports::routes())
 }
 
 /// Rutas de administración de /api (requieren JWT + rol admin).
