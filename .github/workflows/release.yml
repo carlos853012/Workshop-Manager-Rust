@@ -1,0 +1,284 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verificar tag apunta a main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "${{ github.sha }}" refs/remotes/origin/main; then
+            echo "::error::El tag v* debe apuntar a un commit de main. Los tags creados en develop no publican release."
+            exit 1
+          fi
+
+  build:
+    needs: guard
+    runs-on: windows-latest
+    env:
+      POSTGRESQL_VERSION: "=18.3.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install WiX v3
+        shell: pwsh
+        run: |
+          $candle = "C:\Program Files (x86)\WiX Toolset v3.14\bin\candle.exe"
+          choco install wixtoolset -y --no-progress
+          if (-not (Test-Path $candle)) {
+            Invoke-WebRequest -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314.exe" -OutFile "$env:TEMP\wix314.exe"
+            Start-Process -FilePath "$env:TEMP\wix314.exe" -ArgumentList "/quiet", "/norestart" -Wait
+          }
+          if (-not (Test-Path $candle)) { throw "WiX v3.14 no instalado: candle.exe no encontrado en $candle" }
+
+      - name: Install cargo-wix
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-wix
+
+      # PostgreSQL embebido 18.3.0 (postgresql_embedded 0.20) — el main.wxs del
+      # server referencia estos binarios en ~/.theseus; mantener en sync con la
+      # versión de PostgreSQL que usa el crate. El tar.gz se deja también en la
+      # ruta de caché del build-script ($env:USERPROFILE\.theseus), así con
+      # POSTGRESQL_VERSION="=18.3.0" (exacta) no se llama a la API de GitHub.
+      - name: Descargar PostgreSQL embebido para el MSI del server
+        shell: pwsh
+        run: |
+          $pgRoot = "C:\Users\carlos\.theseus\postgresql"
+          $pgDir = Join-Path $pgRoot "18.3.0"
+          $cacheTgz = Join-Path $env:USERPROFILE ".theseus\postgresql\postgresql-18.3.0-x86_64-pc-windows-msvc.tar.gz"
+          if (-not ((Test-Path "$pgDir\bin\initdb.exe") -and (Test-Path $cacheTgz))) {
+            $tgz = Join-Path $env:TEMP "postgresql-18.3.0-x86_64-pc-windows-msvc.tar.gz"
+            Invoke-WebRequest -Uri "https://github.com/theseus-rs/postgresql-binaries/releases/download/18.3.0/postgresql-18.3.0-x86_64-pc-windows-msvc.tar.gz" -OutFile $tgz
+            New-Item -ItemType Directory -Path $pgRoot -Force | Out-Null
+            New-Item -ItemType Directory -Path (Split-Path $cacheTgz) -Force | Out-Null
+            Copy-Item $tgz $cacheTgz -Force
+            $staging = Join-Path $env:TEMP "pg1830"
+            New-Item -ItemType Directory -Path $staging -Force | Out-Null
+            tar -xzf $tgz -C $staging --strip-components=1
+            New-Item -ItemType Directory -Path $pgDir -Force | Out-Null
+            Get-ChildItem $staging | Move-Item -Destination $pgDir -Force
+            Remove-Item $staging -Recurse -Force
+          }
+          if (-not (Test-Path "$pgDir\bin\initdb.exe")) { throw "initdb.exe no encontrado en $pgDir" }
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Build release
+        run: cargo build --release --workspace
+
+      - name: Build MSI (server)
+        run: cargo wix -p inventory-server --nocapture
+
+      - name: Build MSI (viewer)
+        run: cargo wix -p inventory-viewer --nocapture
+
+      - name: Upload MSIs
+        uses: actions/upload-artifact@v4
+        with:
+          name: msi
+          path: target/wix/*.msi
+          if-no-files-found: error
+
+  # Servidores Linux x86_64 (Ubuntu/Debian amd64). ubuntu-22.04 → glibc 2.35:
+  # el binario corre en prácticamente cualquier distro actual (Debian 12,
+  # Ubuntu 22.04+). Compilando en 24.04 exigiría glibc 2.39.
+  build-linux-x64:
+    needs: guard
+    runs-on: ubuntu-22.04
+    env:
+      POSTGRESQL_VERSION: "=18.3.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Pre-descargar PostgreSQL embebido (caché build x86_64)
+        run: |
+          mkdir -p ~/.theseus/postgresql
+          curl -fL -o ~/.theseus/postgresql/postgresql-18.3.0-x86_64-unknown-linux-gnu.tar.gz \
+            https://github.com/theseus-rs/postgresql-binaries/releases/download/18.3.0/postgresql-18.3.0-x86_64-unknown-linux-gnu.tar.gz
+
+      # install-action descarga binarios precompilados con glibc 2.39
+      # (construidos en ubuntu-24.04) que no corren en nuestro runner 22.04;
+      # por eso se compila desde crates.io.
+      - name: Install cargo-deb
+        run: cargo install cargo-deb --locked
+
+      - name: Build release
+        run: cargo build --release -p inventory-server
+
+      - name: Smoke test (server nativo arranca y responde)
+        run: |
+          ./target/release/server > /tmp/server-smoke.log 2>&1 &
+          SERVER_PID=$!
+          ok=""
+          for i in $(seq 1 45); do
+            if curl -fsSk https://127.0.0.1:3000/ > /dev/null 2>&1; then ok=1; break; fi
+            sleep 2
+          done
+          kill $SERVER_PID 2>/dev/null || true
+          if [ -z "$ok" ]; then
+            echo "::error::Smoke test falló: el server no respondió en 90s"
+            cat /tmp/server-smoke.log
+            exit 1
+          fi
+          echo "Smoke test OK: server nativo x86_64 arrancó (PG embebido correcto)"
+
+      - name: Build .deb
+        run: cargo deb -p inventory-server
+
+      # upload-artifact@v4 preserva la jerarquía (raíz = LCA de los patrones),
+      # así que se sube un staging plano para que el job `release` encuentre
+      # *.deb y el binario en la raíz del artefacto.
+      - name: Preparar artefacto (binario + .deb)
+        run: |
+          mkdir -p staging
+          cp target/release/server staging/server
+          cp target/debian/*.deb staging/
+
+      - name: Upload binario y .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-linux-x86_64
+          path: staging/
+          if-no-files-found: error
+
+  # Raspberry Pi 64-bit (aarch64). Runner ARM NATIVO: el build script de
+  # postgresql_embedded (feature bundled) usa el triple del HOST para elegir
+  # el PostgreSQL embebido; cross-compilando desde x86_64 se incrustaba el PG
+  # x86_64 en el binario arm64 (v0.3.0 roto: "Exec format error"). En runner
+  # nativo el triple coincide y el artefacto es correcto.
+  build-linux-arm:
+    needs: guard
+    runs-on: ubuntu-22.04-arm
+    env:
+      POSTGRESQL_VERSION: "=18.3.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Pre-descargar PostgreSQL embebido (caché build aarch64)
+        run: |
+          mkdir -p ~/.theseus/postgresql
+          curl -fL -o ~/.theseus/postgresql/postgresql-18.3.0-aarch64-unknown-linux-gnu.tar.gz \
+            https://github.com/theseus-rs/postgresql-binaries/releases/download/18.3.0/postgresql-18.3.0-aarch64-unknown-linux-gnu.tar.gz
+
+      # install-action descarga binarios precompilados con glibc 2.39
+      # (construidos en ubuntu-24.04) que no corren en nuestro runner 22.04;
+      # por eso se compila desde crates.io.
+      - name: Install cargo-deb
+        run: cargo install cargo-deb --locked
+
+      - name: Build release
+        run: cargo build --release -p inventory-server
+
+      - name: Smoke test (server nativo arranca y responde)
+        run: |
+          ./target/release/server > /tmp/server-smoke.log 2>&1 &
+          SERVER_PID=$!
+          ok=""
+          for i in $(seq 1 45); do
+            if curl -fsSk https://127.0.0.1:3000/ > /dev/null 2>&1; then ok=1; break; fi
+            sleep 2
+          done
+          kill $SERVER_PID 2>/dev/null || true
+          if [ -z "$ok" ]; then
+            echo "::error::Smoke test falló: el server no respondió en 90s"
+            cat /tmp/server-smoke.log
+            exit 1
+          fi
+          echo "Smoke test OK: server nativo aarch64 arrancó (PG embebido correcto)"
+
+      - name: Build .deb
+        run: cargo deb -p inventory-server
+
+      - name: Preparar artefacto (binario + .deb)
+        run: |
+          mkdir -p staging
+          cp target/release/server staging/server
+          cp target/debian/*.deb staging/
+
+      - name: Upload binario y .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-aarch64
+          path: staging/
+          if-no-files-found: error
+
+  # Publica en el GitHub Release todos los artefactos de los jobs previos.
+  # Un solo job final evita condiciones de carrera entre jobs paralelos.
+  release:
+    needs: [build, build-linux-x64, build-linux-arm]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download MSIs
+        uses: actions/download-artifact@v4
+        with:
+          name: msi
+          path: msi
+
+      - name: Download server-linux-x86_64
+        uses: actions/download-artifact@v4
+        with:
+          name: server-linux-x86_64
+          path: server-linux-x86_64
+
+      - name: Download server-aarch64
+        uses: actions/download-artifact@v4
+        with:
+          name: server-aarch64
+          path: server-aarch64
+
+      - name: Renombrar .deb y binarios con nombre legible
+        run: |
+          VER="${GITHUB_REF_NAME}"
+          mkdir -p dist
+          cp server-linux-x86_64/*.deb "dist/equipos-server_${VER}_amd64.deb"
+          cp server-aarch64/*.deb "dist/equipos-server_${VER}_arm64.deb"
+          cp server-linux-x86_64/server "dist/equipos-server-linux-x86_64"
+          cp server-aarch64/server "dist/equipos-server-aarch64"
+          ls -la dist
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            msi/*.msi
+            dist/*
+          generate_release_notes: true
+          body: |
+            ## Instaladores
+
+            | Archivo | Plataforma |
+            |---|---|
+            | `equipos-server_${{ github.ref_name }}_amd64.deb` | Ubuntu/Debian x86_64 (servidores Intel/AMD) |
+            | `equipos-server_${{ github.ref_name }}_arm64.deb` | Raspberry Pi OS 64-bit |
+            | `*.msi` | Windows (server + viewer) |
+            | `equipos-server-linux-*` | Binarios crudos (cualquier distro) |
+
+            Para saber cuál usar en cada máquina: `uname -m` → `x86_64` = amd64, `aarch64` = arm64.
+            Raspberry Pi: requiere SO 64-bit (el 32-bit ya no está soportado).
+
+            Instalación: `sudo dpkg -i equipos-server_*.deb` (habilita el servicio systemd `equipos-server` automáticamente).

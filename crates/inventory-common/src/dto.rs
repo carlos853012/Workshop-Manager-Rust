@@ -1,0 +1,106 @@
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+
+// ==================== REQUESTS ====================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoginRequest {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateProductRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub category: Option<String>,
+    pub brand: Option<String>,
+    pub model: Option<String>,
+    pub sku: Option<String>,
+    pub price: Decimal,
+    pub cost: Decimal,
+    pub stock: i32,
+    pub min_stock: i32,
+    pub location: Option<String>,
+    pub supplier_id: Option<uuid::Uuid>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateSaleRequest {
+    pub customer_name: Option<String>,
+    pub customer_email: Option<String>,
+    pub customer_phone: Option<String>,
+    pub payment_method: crate::PaymentMethod,
+    pub items: Vec<SaleItemRequest>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SaleItemRequest {
+    pub product_id: uuid::Uuid,
+    pub quantity: i32,
+    pub unit_price: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateRepairRequest {
+    pub customer_name: Option<String>,
+    pub customer_email: Option<String>,
+    pub customer_phone: Option<String>,
+    pub motorcycle: Option<String>,
+    pub license_plate: Option<String>,
+    pub description: Option<String>,
+    pub priority: crate::Priority,
+    pub estimated_cost: Option<Decimal>,
+}
+
+// ==================== RESPONSES ====================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApiResponse<T> {
+    pub success: bool,
+    pub data: Option<T>,
+    pub error: Option<String>,
+}
+
+impl<T> ApiResponse<T> {
+    pub fn success(data: T) -> Self {
+        Self {
+            success: true,
+            data: Some(data),
+            error: None,
+        }
+    }
+
+    pub fn error(error: String) -> Self {
+        Self {
+            success: false,
+            data: None,
+            error: Some(error),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaginatedResponse<T> {
+    pub items: Vec<T>,
+    pub total: i64,
+    pub page: i32,
+    pub per_page: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoginResponse {
+    pub token: String,
+    pub user: crate::User,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DashboardResponse {
+    pub total_products: i64,
+    pub low_stock: i64,
+    pub total_sales: i64,
+    pub total_revenue: Decimal,
+    pub pending_repairs: i64,
+    pub completed_repairs: i64,
+    pub average_sale: Decimal,
+}

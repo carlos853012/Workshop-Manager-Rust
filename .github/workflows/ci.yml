@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  POSTGRESQL_VERSION: "=18.3.0"
+
+jobs:
+  check:
+    strategy:
+      matrix:
+        rust: [stable, beta]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust ${{ matrix.rust }}
+        run: |
+          rustup toolchain install ${{ matrix.rust }} --profile minimal
+          rustup component add rustfmt clippy --toolchain ${{ matrix.rust }}
+          rustup default ${{ matrix.rust }}
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+
+      # Pre-carga el tar.gz de PostgreSQL en la ruta de caché que usa el
+      # build-script de postgresql_embedded (~/.theseus según USERPROFILE);
+      # con POSTGRESQL_VERSION="=18.3.0" (exacta) el script usa la caché y
+      # evita llamar a la API de GitHub (rate limit / 504) en cada compilación.
+      - name: Pre-descargar PostgreSQL embebido (caché build)
+        shell: pwsh
+        run: |
+          $cacheTgz = Join-Path $env:USERPROFILE ".theseus\postgresql\postgresql-18.3.0-x86_64-pc-windows-msvc.tar.gz"
+          if (-not (Test-Path $cacheTgz)) {
+            New-Item -ItemType Directory -Path (Split-Path $cacheTgz) -Force | Out-Null
+            Invoke-WebRequest -Uri "https://github.com/theseus-rs/postgresql-binaries/releases/download/18.3.0/postgresql-18.3.0-x86_64-pc-windows-msvc.tar.gz" -OutFile $cacheTgz
+          }
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy common
+        run: cargo clippy -p inventory-common -- -D warnings
+
+      - name: Clippy server
+        run: cargo clippy -p inventory-server -- -D warnings
+
+      - name: Clippy viewer
+        run: cargo clippy -p inventory-viewer -- -D warnings
+
+      - name: Build server
+        run: cargo build -p inventory-server
+
+      - name: Build viewer
+        run: cargo build -p inventory-viewer
+
+      - name: Test server
+        run: cargo test -p inventory-server
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: Security audit
+        run: cargo audit
+        continue-on-error: true

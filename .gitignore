@@ -1,0 +1,14 @@
+/target/
+/target/wix/
+/dev-data/
+crates/inventory-server/data/
+crates/inventory-viewer/data/
+crates/inventory-server/.env
+data/
+.crypto_key
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+elimar_datos.md

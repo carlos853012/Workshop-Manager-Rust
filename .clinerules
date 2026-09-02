@@ -1,0 +1,24 @@
+# Developer Rules for Cline
+
+All development, debugging, and analysis in this repository MUST comply with the project's OT Constitution.
+
+## Mandatory Reading
+Before proposing changes or writing code, you are required to read and apply the guidelines defined in:
+- Path: [CONSTITUCION.md](CONSTITUCION.md)
+
+## Core Technical Requirements
+1. **Rust Safety:** Do not use `unsafe`. Avoid using `unwrap()`, `expect()`, or `panic!()` in production code. Propagate errors safely using `Result<T, E>`.
+2. **Secrets & Credentials:** Sensitive data must always be encrypted using the codebase cryptography module (`crypto::encrypt_opt`).
+3. **Database Queries:** Never concatenate strings to build SQL statements. Use parameterized queries with bindings (`sqlx::query().bind()`).
+4. **Input Verification:** Validate all external inputs (such as IP address syntax) prior to database insertion.
+5. **No Production Interruption:** This system manages workshop inventory and financial data. Never propose service disruptions or data loss without risk mitigation plans.
+6. **API Documentation:** Ensure all public structs and methods are fully documented (`///`).
+7. **Testing:** Write unit/integration tests for code modifications.
+
+## Execution Workflow (Mandatory)
+Before writing any file modifications, execute this 5-step process:
+1. Explain your understanding of the task.
+2. Identify target files and dependencies.
+3. List risks and mitigations.
+4. Draft a step-by-step implementation plan.
+5. Apply modifications only after outlining the plan.

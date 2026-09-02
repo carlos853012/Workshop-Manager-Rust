@@ -1,0 +1,22 @@
+# Normas de Desarrollo para el Asistente Gemini
+
+Cualquier cambio, análisis o adición de código en este workspace DEBE cumplir estrictamente con la Constitución del Proyecto.
+
+## Regla Suprema
+Antes de generar propuestas o modificar archivos, debes leer obligatoriamente el archivo de reglas de desarrollo industrial del proyecto:
+- RUTA: [CONSTITUCION.md](CONSTITUCION.md)
+
+## Directrices Críticas de Seguridad
+1. **Seguridad en Rust:** Prohibido el uso de `unsafe` y de pánicos/desenvolvimientos inseguros (`unwrap()`, `expect()`, `panic!()`) en código de producción. Usa propagación segura de errores con `Result<T, E>`.
+2. **Cifrado de Credenciales:** Todos los datos sensibles deben almacenarse cifrados usando la biblioteca criptográfica del proyecto (`crypto::encrypt_opt`).
+3. **Seguridad SQL:** Prohibida la concatenación manual de strings en consultas SQL. Usa siempre consultas parametrizadas (`sqlx::query().bind()`).
+4. **Validación de Datos:** Toda entrada de datos externos debe ser validada rigurosamente antes de ser procesada o guardada.
+5. **Testing Obligatorio:** Todo cambio lógico relevante debe contar con pruebas unitarias o de integración.
+6. **Seguridad del Taller:** Asumir siempre que el sistema gestiona datos financieros e inventario. Nunca propongas cambios destructivos sin advertir riesgos y detallar procedimientos de reversión.
+
+## Flujo de Trabajo Obligatorio (Antes de Editar)
+1. **Paso 1 (Entendimiento):** Explica qué entendiste y qué problema resuelves.
+2. **Paso 2 (Archivos):** Identifica los archivos y módulos afectados.
+3. **Paso 3 (Riesgos):** Analiza efectos secundarios e impacto operacional.
+4. **Paso 4 (Plan):** Propón el plan de implementación paso a paso.
+5. **Paso 5 (Implementación):** Genera los cambios una vez alineado el plan.

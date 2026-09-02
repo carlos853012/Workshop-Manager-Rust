@@ -1,0 +1,23 @@
+# Development Rules for Cursor AI
+
+All coding tasks, code refactoring, and bug fixes in this repository MUST comply with the project's OT Constitution.
+
+## Context Loading
+Before editing files or analyzing bugs, you are required to load and review the context from:
+- Path: [CONSTITUCION.md](CONSTITUCION.md)
+
+## Core Coding Principles
+1. **Rust Best Practices:** No `unsafe` blocks. No `.unwrap()`, `.expect()`, or `panic!()` in production. Always return a proper `Result` and handle errors gracefully.
+2. **Credentials Encryption:** Store all sensitive credentials in the database encrypted via AES-256-GCM using `crypto::encrypt_opt`.
+3. **Prevent SQL Injections:** Avoid raw SQL formatting or string concatenation. Use parameterized bindings (`sqlx::query().bind()`).
+4. **Input Sanitization:** Validate external parameters, including physical field IP addresses and usernames, before database upserts.
+5. **Operational Safety:** This system manages workshop inventory and financial data. Any destructive operation must provide rollback steps.
+6. **No undocumented APIs:** Document public types and functions with markdown docstrings (`///`).
+7. **Write Tests:** Include unit tests to verify any added logic.
+
+## Mandatory Step-by-Step Change Protocol
+1. **Step 1:** State your understanding of the user request.
+2. **Step 2:** Identify files and modules affected.
+3. **Step 3:** Highlight risks, side effects, and OT availability impact.
+4. **Step 4:** Present a step-by-step implementation plan.
+5. **Step 5:** Proceed to edit files once the plan has been clearly defined.
