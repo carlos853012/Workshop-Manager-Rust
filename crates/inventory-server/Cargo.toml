@@ -18,6 +18,7 @@ rcgen = "0.13"
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 rustls = { version = "0.23", features = ["ring"] }
 rustls-pemfile = "2.0"
+rust_decimal = "1.0"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 tracing-appender = "0.2"

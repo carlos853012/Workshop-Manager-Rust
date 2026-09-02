@@ -3004,6 +3004,7 @@ dependencies = [
  "postgresql_embedded",
  "rand 0.8.8",
  "rcgen",
+ "rust_decimal",
  "rustls",
  "rustls-pemfile",
  "serde",

@@ -116,7 +116,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&temp_dir);
         std::fs::create_dir_all(&temp_dir)?;
 
-        let (certs1, key1) = generate_self_signed_cert(&temp_dir)?;
+        let (certs1, _key1) = generate_self_signed_cert(&temp_dir)?;
         assert!(!certs1.is_empty());
 
         // Segunda carga debe leer desde disco
