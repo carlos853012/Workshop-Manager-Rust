@@ -35,11 +35,11 @@ struct PaginationParams {
     per_page: i32,
 }
 
-fn default_page() -> i32 {
+pub(crate) fn default_page() -> i32 {
     1
 }
 
-fn default_per_page() -> i32 {
+pub(crate) fn default_per_page() -> i32 {
     20
 }
 
