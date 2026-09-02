@@ -1,2 +1,3 @@
-// Components module
-// TODO: Implementar en Fase 5
+pub mod atoms;
+pub mod molecules;
+pub mod organisms;
