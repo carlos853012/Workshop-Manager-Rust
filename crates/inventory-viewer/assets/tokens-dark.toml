@@ -1,0 +1,43 @@
+[colors]
+background = "#0f172a"
+surface = "#1e293b"
+surface_hover = "#334155"
+border = "#334155"
+text = "#f8fafc"
+text_muted = "#94a3b8"
+primary = "#3b82f6"
+primary_hover = "#2563eb"
+primary_text = "#ffffff"
+danger = "#ef4444"
+danger_hover = "#dc2626"
+warning = "#f59e0b"
+success = "#22c55e"
+info = "#06b6d4"
+
+[typography]
+font_family = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+font_size_sm = "0.875rem"
+font_size_base = "1rem"
+font_size_lg = "1.125rem"
+font_size_xl = "1.25rem"
+font_size_2xl = "1.5rem"
+line_height = "1.5"
+
+[spacing]
+xs = "0.25rem"
+sm = "0.5rem"
+md = "1rem"
+lg = "1.5rem"
+xl = "2rem"
+xxl = "3rem"
+
+[radii]
+sm = "0.25rem"
+md = "0.5rem"
+lg = "0.75rem"
+full = "9999px"
+
+[shadows]
+sm = "0 1px 2px 0 rgba(0, 0, 0, 0.3)"
+md = "0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4)"
+lg = "0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4)"
