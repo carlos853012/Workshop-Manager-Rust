@@ -12,7 +12,7 @@ use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::molecules::modal::Modal;
 use crate::components::organisms::data_table::{Column, DataTable};
-use crate::pages::layout::{AppShell, require_auth};
+use crate::pages::layout::{require_auth, AppShell};
 
 #[component]
 pub fn Repairs() -> Element {
@@ -81,15 +81,17 @@ pub fn Repairs() -> Element {
         Column {
             key: "status".to_string(),
             header: "Estado".to_string(),
-            render: |r| rsx! {
-                Badge {
-                    variant: match r.status {
-                        RepairStatus::Completed => BadgeVariant::Success,
-                        RepairStatus::Cancelled => BadgeVariant::Danger,
-                        RepairStatus::InProgress => BadgeVariant::Warning,
-                        RepairStatus::Pending => BadgeVariant::Info,
-                    },
-                    "{r.status}"
+            render: |r| {
+                rsx! {
+                    Badge {
+                        variant: match r.status {
+                            RepairStatus::Completed => BadgeVariant::Success,
+                            RepairStatus::Cancelled => BadgeVariant::Danger,
+                            RepairStatus::InProgress => BadgeVariant::Warning,
+                            RepairStatus::Pending => BadgeVariant::Info,
+                        },
+                        "{r.status}"
+                    }
                 }
             },
         },

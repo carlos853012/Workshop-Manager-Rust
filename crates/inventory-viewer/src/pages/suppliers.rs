@@ -10,7 +10,7 @@ use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::molecules::modal::Modal;
 use crate::components::organisms::data_table::{Column, DataTable};
-use crate::pages::layout::{AppShell, require_auth};
+use crate::pages::layout::{require_auth, AppShell};
 
 #[component]
 pub fn Suppliers() -> Element {
@@ -130,7 +130,11 @@ pub fn Suppliers() -> Element {
 }
 
 #[component]
-fn SupplierFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandler<()>) -> Element {
+fn SupplierFormModal(
+    show: bool,
+    on_close: EventHandler<()>,
+    on_saved: EventHandler<()>,
+) -> Element {
     let auth = use_auth();
     let mut name = use_signal(|| "".to_string());
     let mut contact_person = use_signal(|| "".to_string());

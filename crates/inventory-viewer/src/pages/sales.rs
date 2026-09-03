@@ -12,7 +12,7 @@ use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::molecules::modal::Modal;
 use crate::components::organisms::data_table::{Column, DataTable};
-use crate::pages::layout::{AppShell, require_auth};
+use crate::pages::layout::{require_auth, AppShell};
 
 #[component]
 pub fn Sales() -> Element {
@@ -144,11 +144,13 @@ fn SaleFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandler<
     let mut customer_name = use_signal(|| "".to_string());
     let mut customer_email = use_signal(|| "".to_string());
     let mut payment_method = use_signal(|| "cash".to_string());
-    let mut items = use_signal(|| vec![SaleItemForm {
-        product_id: "".to_string(),
-        quantity: "1".to_string(),
-        unit_price: "".to_string(),
-    }]);
+    let mut items = use_signal(|| {
+        vec![SaleItemForm {
+            product_id: "".to_string(),
+            quantity: "1".to_string(),
+            unit_price: "".to_string(),
+        }]
+    });
     let saving = use_signal(|| false);
     let mut form_error = use_signal(|| None::<String>);
 

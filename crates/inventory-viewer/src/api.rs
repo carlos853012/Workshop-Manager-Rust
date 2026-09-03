@@ -1,6 +1,6 @@
 use inventory_common::dto::{
-    ApiResponse, CreateProductRequest, CreateRepairRequest, CreateSaleRequest, CreateSupplierRequest,
-    LoginRequest, LoginResponse, PaginatedResponse,
+    ApiResponse, CreateProductRequest, CreateRepairRequest, CreateSaleRequest,
+    CreateSupplierRequest, LoginRequest, LoginResponse, PaginatedResponse,
 };
 use inventory_common::{Product, Repair, Sale, Supplier, User};
 use serde::{Deserialize, Serialize};
@@ -153,7 +153,10 @@ impl ApiClient {
     }
 
     /// POST /api/products
-    pub async fn create_product(&self, request: &CreateProductRequest) -> Result<Product, ApiError> {
+    pub async fn create_product(
+        &self,
+        request: &CreateProductRequest,
+    ) -> Result<Product, ApiError> {
         self.post("/api/products", request).await
     }
 

@@ -12,7 +12,7 @@ use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::molecules::modal::Modal;
 use crate::components::organisms::data_table::{Column, DataTable};
-use crate::pages::layout::{AppShell, require_auth};
+use crate::pages::layout::{require_auth, AppShell};
 
 #[component]
 pub fn Products() -> Element {
@@ -86,11 +86,13 @@ pub fn Products() -> Element {
         Column {
             key: "stock".to_string(),
             header: "Stock".to_string(),
-            render: |p| rsx! {
-                if p.stock <= p.min_stock {
-                    Badge { variant: BadgeVariant::Danger, "{p.stock}" }
-                } else {
-                    span { "{p.stock}" }
+            render: |p| {
+                rsx! {
+                    if p.stock <= p.min_stock {
+                        Badge { variant: BadgeVariant::Danger, "{p.stock}" }
+                    } else {
+                        span { "{p.stock}" }
+                    }
                 }
             },
         },
