@@ -80,7 +80,7 @@ fn SidebarLink(item: NavItem, active: bool) -> Element {
         Link {
             class: "{class}",
             to: item.route.clone(),
-            span { "{item.icon.as_emoji()}" }
+            {item.icon.render()}
             span { "{item.label}" }
         }
     }
