@@ -28,7 +28,7 @@ pub fn Login() -> Element {
             let client = match crate::api::ApiClient::new(None, cfg.server.api_key.clone(), true) {
                 Ok(c) => c,
                 Err(e) => {
-                    error.set(Some(e.to_string()));
+                    error.set(Some(e.user_message().to_string()));
                     loading.set(false);
                     return;
                 }
@@ -36,14 +36,20 @@ pub fn Login() -> Element {
 
             match client.login(&email_value, &password_value).await {
                 Ok(response) => {
-                    auth.login(response.token.clone(), response.user.email.clone());
+                    auth.login(
+                        response.token.clone(),
+                        response.user.email.clone(),
+                        response.user.display_name.clone(),
+                        response.user.role.clone(),
+                        response.workshop.clone(),
+                    );
                     navigator.push(Route::Dashboard {});
                 }
                 Err(ApiError::Unauthorized) => {
                     error.set(Some("Credenciales inválidas".to_string()));
                 }
                 Err(e) => {
-                    error.set(Some(e.to_string()));
+                    error.set(Some(e.user_message().to_string()));
                 }
             }
             loading.set(false);

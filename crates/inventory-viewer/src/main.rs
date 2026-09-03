@@ -10,7 +10,7 @@ mod theme;
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 
-use crate::app_state::AuthProvider;
+use crate::app_state::{AuthProvider, TabsProvider};
 use crate::routes::Route;
 use crate::theme::ThemeProvider;
 
@@ -24,7 +24,9 @@ fn App() -> Element {
         style { {include_str!("../index.css")} }
         ThemeProvider {
             AuthProvider {
-                Router::<Route> {}
+                TabsProvider {
+                    Router::<Route> {}
+                }
             }
         }
     }

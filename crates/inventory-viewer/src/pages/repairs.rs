@@ -52,7 +52,7 @@ pub fn Repairs() -> Element {
                         error_set.set(Some("Sesión expirada".to_string()));
                     }
                     Err(e) => {
-                        error_set.set(Some(e.to_string()));
+                        error_set.set(Some(e.user_message().to_string()));
                     }
                 },
                 None => {
@@ -75,9 +75,9 @@ pub fn Repairs() -> Element {
             render: |r| rsx! { span { "{r.customer_name.as_deref().unwrap_or(\"-\")}" } },
         },
         Column {
-            key: "motorcycle".to_string(),
-            header: "Motocicleta".to_string(),
-            render: |r| rsx! { span { "{r.motorcycle.as_deref().unwrap_or(\"-\")}" } },
+            key: "vehicle".to_string(),
+            header: "Vehículo".to_string(),
+            render: |r| rsx! { span { "{r.vehicle.as_deref().unwrap_or(\"-\")}" } },
         },
         Column {
             key: "status".to_string(),
@@ -149,7 +149,7 @@ fn RepairFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandle
     let auth = use_auth();
     let mut customer_name = use_signal(|| "".to_string());
     let mut customer_email = use_signal(|| "".to_string());
-    let mut motorcycle = use_signal(|| "".to_string());
+    let mut vehicle = use_signal(|| "".to_string());
     let mut license_plate = use_signal(|| "".to_string());
     let mut description = use_signal(|| "".to_string());
     let mut priority = use_signal(|| "medium".to_string());
@@ -189,7 +189,7 @@ fn RepairFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandle
             customer_name: Some(name_value),
             customer_email: Some(customer_email.read().clone()).filter(|s| !s.is_empty()),
             customer_phone: None,
-            motorcycle: Some(motorcycle.read().clone()).filter(|s| !s.is_empty()),
+            vehicle: Some(vehicle.read().clone()).filter(|s| !s.is_empty()),
             license_plate: Some(license_plate.read().clone()).filter(|s| !s.is_empty()),
             description: Some(description.read().clone()).filter(|s| !s.is_empty()),
             priority: priority_enum,
@@ -212,7 +212,7 @@ fn RepairFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandle
                         on_saved_clone.call(());
                     }
                     Err(e) => {
-                        error_set.set(Some(e.to_string()));
+                        error_set.set(Some(e.user_message().to_string()));
                     }
                 },
                 None => {
@@ -230,6 +230,7 @@ fn RepairFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandle
             on_close: move |_| on_close.call(()),
             footer: rsx! {
                 Button {
+                    class: Some("cancel-button".to_string()),
                     variant: ButtonVariant::Ghost,
                     onclick: move |_| on_close.call(()),
                     "Cancelar"
@@ -259,9 +260,9 @@ fn RepairFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandle
             }
             div { class: "form-row mt-md",
                 Input {
-                    label: Some("Motocicleta".to_string()),
-                    value: motorcycle.read().clone(),
-                    oninput: move |evt: FormEvent| motorcycle.set(evt.value().clone()),
+                    label: Some("Vehículo".to_string()),
+                    value: vehicle.read().clone(),
+                    oninput: move |evt: FormEvent| vehicle.set(evt.value().clone()),
                 }
                 Input {
                     label: Some("Patente".to_string()),

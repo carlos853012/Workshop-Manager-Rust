@@ -2,6 +2,8 @@ use postgresql_embedded::{PostgreSQL, Settings};
 use sqlx::PgPool;
 use std::path::{Path, PathBuf};
 
+use crate::crypto;
+
 /// Gestiona el ciclo de vida de una instancia embebida de PostgreSQL.
 pub struct DbManager {
     postgresql: PostgreSQL,
@@ -14,10 +16,12 @@ impl DbManager {
     pub fn new(data_dir: &Path) -> anyhow::Result<Self> {
         let installation_dir = data_dir.join("postgresql");
         let pg_data_dir = data_dir.join("pgdata");
+        let password = load_or_generate_password(data_dir)?;
 
         let settings = Settings {
             installation_dir,
             data_dir: pg_data_dir,
+            password,
             temporary: false,
             ..Settings::default()
         };
@@ -67,6 +71,33 @@ impl DbManager {
     pub fn database_name(&self) -> &str {
         &self.database_name
     }
+}
+
+fn load_or_generate_password(data_dir: &Path) -> anyhow::Result<String> {
+    let password_path = data_dir.join(".postgres_password");
+
+    if password_path.exists() {
+        let encrypted = std::fs::read_to_string(&password_path)?;
+        let password = crypto::decrypt(encrypted.trim())?;
+        if password.is_empty() {
+            return Err(anyhow::anyhow!("Stored PostgreSQL password is empty"));
+        }
+        return Ok(password);
+    }
+
+    let password = uuid::Uuid::new_v4().to_string();
+    let encrypted = crypto::encrypt(&password)?;
+    std::fs::write(&password_path, encrypted)?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut permissions = std::fs::metadata(&password_path)?.permissions();
+        permissions.set_mode(0o600);
+        std::fs::set_permissions(&password_path, permissions)?;
+    }
+
+    Ok(password)
 }
 
 /// Crea un pool de conexiones contra PostgreSQL.

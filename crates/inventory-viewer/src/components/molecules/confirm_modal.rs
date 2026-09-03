@@ -39,6 +39,7 @@ pub fn ConfirmModal(
                 }
                 div { class: "modal-footer",
                     Button {
+                        class: Some("cancel-button".to_string()),
                         variant: ButtonVariant::Ghost,
                         onclick: move |_evt| on_cancel.call(()),
                         "{cancel}"

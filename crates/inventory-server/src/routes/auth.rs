@@ -4,9 +4,9 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use inventory_common::dto::{ApiResponse, LoginRequest, LoginResponse};
-use inventory_common::User;
+use inventory_common::dto::{ApiResponse, LoginRequest, LoginResponse, RegisterRequest};
 use inventory_common::UserRole;
+use inventory_common::{User, Workshop};
 use uuid::Uuid;
 
 use crate::auth::{self, Claims};
@@ -32,7 +32,7 @@ async fn login(
     validate_email(&req.email)?;
 
     let user: Option<User> = sqlx::query_as(
-        "SELECT id, email, display_name, password_hash, role, status, created_at \
+        "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
          FROM users WHERE email = $1 AND status = 'active'",
     )
     .bind(&req.email)
@@ -59,6 +59,7 @@ async fn login(
 
     let response = LoginResponse {
         token,
+        workshop: find_workshop(&state.pool, user.workshop_id).await?,
         user: hide_password_hash(user),
     };
 
@@ -67,8 +68,12 @@ async fn login(
 
 async fn register(
     State(state): State<AppState>,
-    Json(req): Json<LoginRequest>,
+    Json(req): Json<RegisterRequest>,
 ) -> Result<Json<ApiResponse<LoginResponse>>, AppError> {
+    validate_workshop_field(&req.workshop_name, "workshop name", 200)?;
+    validate_workshop_field(&req.workshop_address, "workshop address", 300)?;
+    validate_workshop_field(&req.workshop_city, "workshop city", 120)?;
+    validate_workshop_field(&req.admin_name, "admin name", 200)?;
     validate_email(&req.email)?;
     validate_password(&req.password)?;
 
@@ -96,34 +101,75 @@ async fn register(
         .map_err(|e| AppError::Internal(format!("Password hashing error: {}", e)))?;
 
     let user_id = Uuid::new_v4();
+    let workshop_id = Uuid::new_v4();
     let role = UserRole::Admin;
+    let now = chrono::Utc::now();
+    let mut transaction = state
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     sqlx::query(
-        "INSERT INTO users (id, email, password_hash, role, status, created_at) \
-         VALUES ($1, $2, $3, $4, 'active', NOW())",
+        "INSERT INTO workshops (id, name, address, city, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $5)",
+    )
+    .bind(workshop_id)
+    .bind(&req.workshop_name)
+    .bind(&req.workshop_address)
+    .bind(&req.workshop_city)
+    .bind(now)
+    .execute(&mut *transaction)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    sqlx::query(
+        "INSERT INTO users (id, workshop_id, email, display_name, password_hash, role, status, created_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)",
     )
     .bind(user_id)
+    .bind(workshop_id)
     .bind(&req.email)
+    .bind(&req.admin_name)
     .bind(&password_hash)
     .bind(&role)
-    .execute(&state.pool)
+    .bind(now)
+    .execute(&mut *transaction)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let token = auth::create_token(user_id, &req.email, role.clone(), &state.secrets.jwt_secret)
         .map_err(|e| AppError::Internal(format!("Token creation error: {}", e)))?;
 
+    transaction
+        .commit()
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
     let user = User {
         id: user_id,
+        workshop_id,
         email: req.email,
-        display_name: None,
+        display_name: Some(req.admin_name),
         password_hash: String::new(),
         role,
         status: "active".to_string(),
         created_at: chrono::Utc::now(),
     };
 
-    let response = LoginResponse { token, user };
+    let workshop = Workshop {
+        id: workshop_id,
+        name: req.workshop_name,
+        address: req.workshop_address,
+        city: req.workshop_city,
+        created_at: now,
+        updated_at: now,
+    };
+    let response = LoginResponse {
+        token,
+        user,
+        workshop: Some(workshop),
+    };
     Ok(Json(ApiResponse::success(response)))
 }
 
@@ -136,7 +182,7 @@ async fn status(
     let user_id = Uuid::parse_str(&claims.sub).map_err(|_| AppError::Unauthorized)?;
 
     let user: Option<User> = sqlx::query_as(
-        "SELECT id, email, display_name, password_hash, role, status, created_at \
+        "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
          FROM users WHERE id = $1 AND status = 'active'",
     )
     .bind(user_id)
@@ -146,6 +192,30 @@ async fn status(
 
     let user = user.ok_or(AppError::Unauthorized)?;
     Ok(Json(ApiResponse::success(hide_password_hash(user))))
+}
+
+async fn find_workshop(
+    pool: &sqlx::PgPool,
+    workshop_id: Uuid,
+) -> Result<Option<Workshop>, AppError> {
+    sqlx::query_as(
+        "SELECT id, name, address, city, created_at, updated_at FROM workshops WHERE id = $1",
+    )
+    .bind(workshop_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))
+}
+
+fn validate_workshop_field(value: &str, field: &str, max_length: usize) -> Result<(), AppError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() || trimmed.len() > max_length {
+        return Err(AppError::Validation(format!(
+            "{} must be between 1 and {} characters",
+            field, max_length
+        )));
+    }
+    Ok(())
 }
 
 fn extract_claims(headers: &HeaderMap, secret: &str) -> Result<Claims, AppError> {

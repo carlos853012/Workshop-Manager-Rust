@@ -52,7 +52,7 @@ pub fn Products() -> Element {
                         error_set.set(Some("Sesión expirada".to_string()));
                     }
                     Err(e) => {
-                        error_set.set(Some(e.to_string()));
+                        error_set.set(Some(e.user_message().to_string()));
                     }
                 },
                 None => {
@@ -193,7 +193,7 @@ fn ProductFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandl
                         on_saved_clone.call(());
                     }
                     Err(e) => {
-                        error_set.set(Some(e.to_string()));
+                        error_set.set(Some(e.user_message().to_string()));
                     }
                 },
                 None => {
@@ -211,6 +211,7 @@ fn ProductFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandl
             on_close: move |_| on_close.call(()),
             footer: rsx! {
                 Button {
+                    class: Some("cancel-button".to_string()),
                     variant: ButtonVariant::Ghost,
                     onclick: move |_| on_close.call(()),
                     "Cancelar"

@@ -1,6 +1,6 @@
 use inventory_common::dto::{
     ApiResponse, CreateProductRequest, CreateRepairRequest, CreateSaleRequest,
-    CreateSupplierRequest, LoginRequest, LoginResponse, PaginatedResponse,
+    CreateSupplierRequest, LoginRequest, LoginResponse, PaginatedResponse, RegisterRequest,
 };
 use inventory_common::{Product, Repair, Sale, Supplier, User};
 use serde::{Deserialize, Serialize};
@@ -22,13 +22,29 @@ pub enum ApiError {
 impl std::fmt::Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ApiError::Network(msg) => write!(f, "Network error: {}", msg),
-            ApiError::Unauthorized => write!(f, "Unauthorized"),
-            ApiError::Forbidden => write!(f, "Forbidden"),
-            ApiError::NotFound(msg) => write!(f, "Not found: {}", msg),
-            ApiError::Validation(msg) => write!(f, "Validation error: {}", msg),
-            ApiError::Server(msg) => write!(f, "Server error: {}", msg),
-            ApiError::Unknown(msg) => write!(f, "Unknown error: {}", msg),
+            ApiError::Network(_) => write!(f, "{}", self.user_message()),
+            ApiError::Unauthorized => write!(f, "La sesión ha expirado."),
+            ApiError::Forbidden => write!(f, "No tienes permisos para realizar esta acción."),
+            ApiError::NotFound(_) => write!(f, "El recurso solicitado no fue encontrado."),
+            ApiError::Validation(_) => write!(f, "Revisa los datos ingresados."),
+            ApiError::Server(_) => write!(f, "El servidor no pudo completar la operación."),
+            ApiError::Unknown(_) => write!(f, "Ocurrió un error inesperado."),
+        }
+    }
+}
+
+impl ApiError {
+    pub fn user_message(&self) -> &'static str {
+        match self {
+            ApiError::Network(_) => {
+                "No se pudo conectar con el servidor. Verifica que esté encendido."
+            }
+            ApiError::Unauthorized => "La sesión ha expirado.",
+            ApiError::Forbidden => "No tienes permisos para realizar esta acción.",
+            ApiError::NotFound(_) => "El recurso solicitado no fue encontrado.",
+            ApiError::Validation(_) => "Revisa los datos ingresados.",
+            ApiError::Server(_) => "El servidor no pudo completar la operación.",
+            ApiError::Unknown(_) => "Ocurrió un error inesperado.",
         }
     }
 }
@@ -95,8 +111,20 @@ impl ApiClient {
 
     /// POST /api/auth/register
     /// Solo funciona si no existe ningún usuario (primer admin).
-    pub async fn register(&self, email: &str, password: &str) -> Result<LoginResponse, ApiError> {
-        let request = LoginRequest {
+    pub async fn register(
+        &self,
+        workshop_name: &str,
+        workshop_address: &str,
+        workshop_city: &str,
+        admin_name: &str,
+        email: &str,
+        password: &str,
+    ) -> Result<LoginResponse, ApiError> {
+        let request = RegisterRequest {
+            workshop_name: workshop_name.to_string(),
+            workshop_address: workshop_address.to_string(),
+            workshop_city: workshop_city.to_string(),
+            admin_name: admin_name.to_string(),
             email: email.to_string(),
             password: password.to_string(),
         };

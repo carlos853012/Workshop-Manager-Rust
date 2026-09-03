@@ -51,7 +51,7 @@ async fn list_repairs(
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<Repair> = sqlx::query_as(
-        "SELECT id, customer_name, customer_email, customer_phone, motorcycle, license_plate, \
+        "SELECT id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
          status, estimated_cost, final_cost, created_at, updated_at \
          FROM repairs WHERE status != 'deleted' \
@@ -78,7 +78,7 @@ async fn get_repair(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<RepairDetail>>, AppError> {
     let repair: Option<Repair> = sqlx::query_as(
-        "SELECT id, customer_name, customer_email, customer_phone, motorcycle, license_plate, \
+        "SELECT id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
          status, estimated_cost, final_cost, created_at, updated_at \
          FROM repairs WHERE id = $1 AND status != 'deleted'",
@@ -121,7 +121,7 @@ async fn create_repair(
 
     sqlx::query(
         "INSERT INTO repairs \
-         (id, customer_name, customer_email, customer_phone, motorcycle, license_plate, description, \
+         (id, customer_name, customer_email, customer_phone, vehicle, license_plate, description, \
           priority, status, estimated_cost, estimated_delivery, created_at, updated_at) \
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $12)"
     )
@@ -129,7 +129,7 @@ async fn create_repair(
     .bind(&req.customer_name)
     .bind(&req.customer_email)
     .bind(&req.customer_phone)
-    .bind(&req.motorcycle)
+    .bind(&req.vehicle)
     .bind(&req.license_plate)
     .bind(&req.description)
     .bind(&req.priority)
@@ -170,7 +170,7 @@ async fn create_repair(
         customer_name: req.customer_name,
         customer_email: req.customer_email,
         customer_phone: req.customer_phone,
-        motorcycle: req.motorcycle,
+        vehicle: req.vehicle,
         license_plate: req.license_plate,
         description: req.description,
         diagnosis: None,
@@ -226,7 +226,7 @@ async fn update_repair(
     Json(req): Json<UpdateRepairRequest>,
 ) -> Result<Json<ApiResponse<RepairDetail>>, AppError> {
     let old_repair: Option<Repair> = sqlx::query_as(
-        "SELECT id, customer_name, customer_email, customer_phone, motorcycle, license_plate, \
+        "SELECT id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
          status, estimated_cost, final_cost, created_at, updated_at \
          FROM repairs WHERE id = $1 AND status != 'deleted'",
@@ -292,7 +292,7 @@ async fn update_repair(
         customer_name: old_repair.customer_name.clone(),
         customer_email: old_repair.customer_email.clone(),
         customer_phone: old_repair.customer_phone.clone(),
-        motorcycle: old_repair.motorcycle.clone(),
+        vehicle: old_repair.vehicle.clone(),
         license_plate: old_repair.license_plate.clone(),
         description: old_repair.description.clone(),
         diagnosis: new_diagnosis,
@@ -376,7 +376,7 @@ mod tests {
             customer_name: Some("John Doe".to_string()),
             customer_email: Some("john@example.com".to_string()),
             customer_phone: Some("1234567890".to_string()),
-            motorcycle: Some("Honda CB500".to_string()),
+            vehicle: Some("Honda CB500".to_string()),
             license_plate: Some("ABC123".to_string()),
             description: Some("Oil change".to_string()),
             priority: Priority::Medium,
@@ -393,7 +393,7 @@ mod tests {
             customer_name: None,
             customer_email: Some("invalid".to_string()),
             customer_phone: None,
-            motorcycle: None,
+            vehicle: None,
             license_plate: None,
             description: None,
             priority: Priority::Low,

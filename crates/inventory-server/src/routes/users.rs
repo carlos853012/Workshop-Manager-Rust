@@ -68,7 +68,7 @@ async fn list_users(
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<User> = sqlx::query_as(
-        "SELECT id, email, display_name, password_hash, role, status, created_at \
+        "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
          FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(params.per_page)
@@ -94,7 +94,7 @@ async fn get_user(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<User>>, AppError> {
     let user: Option<User> = sqlx::query_as(
-        "SELECT id, email, display_name, password_hash, role, status, created_at \
+        "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
          FROM users WHERE id = $1",
     )
     .bind(id)
@@ -147,6 +147,7 @@ async fn create_user(
 
     let user = User {
         id,
+        workshop_id: find_admin_workshop_id(&state, admin.id).await?,
         email: req.email,
         display_name: req.display_name,
         password_hash: String::new(),
@@ -182,7 +183,7 @@ async fn update_user(
     Json(req): Json<UpdateUserRequest>,
 ) -> Result<Json<ApiResponse<User>>, AppError> {
     let old_user: Option<User> = sqlx::query_as(
-        "SELECT id, email, display_name, password_hash, role, status, created_at \
+        "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
          FROM users WHERE id = $1",
     )
     .bind(id)
@@ -222,6 +223,7 @@ async fn update_user(
 
     let user = User {
         id,
+        workshop_id: old_user.workshop_id,
         email: old_user.email.clone(),
         display_name: new_display_name,
         password_hash: String::new(),
@@ -262,7 +264,7 @@ async fn delete_user(
     }
 
     let old_user: Option<User> = sqlx::query_as(
-        "SELECT id, email, display_name, password_hash, role, status, created_at \
+        "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
          FROM users WHERE id = $1",
     )
     .bind(id)
@@ -316,6 +318,14 @@ fn validate_create_user_request(req: &CreateUserRequest) -> Result<(), AppError>
 fn hide_password_hash(mut user: User) -> User {
     user.password_hash = String::new();
     user
+}
+
+async fn find_admin_workshop_id(state: &AppState, admin_id: Uuid) -> Result<Uuid, AppError> {
+    sqlx::query_scalar("SELECT workshop_id FROM users WHERE id = $1")
+        .bind(admin_id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))
 }
 
 #[cfg(test)]

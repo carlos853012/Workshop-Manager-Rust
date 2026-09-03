@@ -31,6 +31,7 @@ pub fn Button(
     #[props(default = false)] loading: bool,
     onclick: Option<EventHandler<MouseEvent>>,
     class: Option<String>,
+    title: Option<String>,
 ) -> Element {
     let mut classes = vec!["btn".to_string()];
 
@@ -57,6 +58,7 @@ pub fn Button(
     rsx! {
         button {
             class: "{class_str}",
+            title: title,
             disabled: disabled || loading,
             onclick: move |evt| {
                 if let Some(handler) = onclick.as_ref() {

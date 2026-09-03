@@ -62,7 +62,7 @@ pub struct Repair {
     pub customer_name: Option<String>,
     pub customer_email: Option<String>,
     pub customer_phone: Option<String>,
-    pub motorcycle: Option<String>,
+    pub vehicle: Option<String>,
     pub license_plate: Option<String>,
     pub description: Option<String>,
     pub diagnosis: Option<String>,
@@ -108,6 +108,7 @@ pub struct Supplier {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct User {
     pub id: uuid::Uuid,
+    pub workshop_id: uuid::Uuid,
     pub email: String,
     pub display_name: Option<String>,
     #[serde(skip_serializing, default)]
@@ -115,6 +116,16 @@ pub struct User {
     pub role: UserRole,
     pub status: String,
     pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
+pub struct Workshop {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub address: String,
+    pub city: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 // ==================== AUDITORÍA ====================

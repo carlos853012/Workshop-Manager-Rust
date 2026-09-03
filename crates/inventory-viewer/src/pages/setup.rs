@@ -10,6 +10,10 @@ use crate::routes::Route;
 #[component]
 pub fn Setup() -> Element {
     let auth = use_auth();
+    let mut workshop_name = use_signal(|| "".to_string());
+    let mut workshop_address = use_signal(|| "".to_string());
+    let mut workshop_city = use_signal(|| "".to_string());
+    let mut admin_name = use_signal(|| "".to_string());
     let mut email = use_signal(|| "".to_string());
     let mut password = use_signal(|| "".to_string());
     let mut confirm_password = use_signal(|| "".to_string());
@@ -19,6 +23,17 @@ pub fn Setup() -> Element {
 
     let on_submit = move |_| {
         error.set(None);
+
+        if workshop_name.read().trim().is_empty()
+            || workshop_address.read().trim().is_empty()
+            || workshop_city.read().trim().is_empty()
+            || admin_name.read().trim().is_empty()
+        {
+            error.set(Some(
+                "Completa todos los datos del taller y del administrador".to_string(),
+            ));
+            return;
+        }
 
         if *password.read() != *confirm_password.read() {
             error.set(Some("Las contraseñas no coinciden".to_string()));
@@ -34,6 +49,10 @@ pub fn Setup() -> Element {
 
         let email_value = email.read().clone();
         let password_value = password.read().clone();
+        let workshop_name_value = workshop_name.read().trim().to_string();
+        let workshop_address_value = workshop_address.read().trim().to_string();
+        let workshop_city_value = workshop_city.read().trim().to_string();
+        let admin_name_value = admin_name.read().trim().to_string();
         let mut error_set = error;
         let mut loading_set = loading;
         let mut auth_set = auth;
@@ -46,22 +65,38 @@ pub fn Setup() -> Element {
             let client = match ApiClient::new(None, cfg.server.api_key.clone(), true) {
                 Ok(c) => c,
                 Err(e) => {
-                    error_set.set(Some(e.to_string()));
+                    error_set.set(Some(e.user_message().to_string()));
                     loading_set.set(false);
                     return;
                 }
             };
 
-            match client.register(&email_value, &password_value).await {
+            match client
+                .register(
+                    &workshop_name_value,
+                    &workshop_address_value,
+                    &workshop_city_value,
+                    &admin_name_value,
+                    &email_value,
+                    &password_value,
+                )
+                .await
+            {
                 Ok(response) => {
-                    auth_set.login(response.token.clone(), response.user.email.clone());
+                    auth_set.login(
+                        response.token.clone(),
+                        response.user.email.clone(),
+                        response.user.display_name.clone(),
+                        response.user.role.clone(),
+                        response.workshop.clone(),
+                    );
                     navigator_set.push(Route::Dashboard {});
                 }
                 Err(ApiError::Forbidden) => {
                     navigator_set.push(Route::Login {});
                 }
                 Err(e) => {
-                    error_set.set(Some(e.to_string()));
+                    error_set.set(Some(e.user_message().to_string()));
                 }
             }
             loading_set.set(false);
@@ -77,6 +112,38 @@ pub fn Setup() -> Element {
 
                     if let Some(err) = error.read().as_ref() {
                         div { class: "alert alert-danger mb-md", "{err}" }
+                    }
+
+                    Input {
+                        label: Some("Nombre del taller".to_string()),
+                        value: workshop_name.read().clone(),
+                        oninput: move |evt: FormEvent| workshop_name.set(evt.value().clone()),
+                        placeholder: Some("Taller Moto Racing".to_string()),
+                        required: true,
+                    }
+                    div { class: "mt-md" }
+                    Input {
+                        label: Some("Dirección".to_string()),
+                        value: workshop_address.read().clone(),
+                        oninput: move |evt: FormEvent| workshop_address.set(evt.value().clone()),
+                        placeholder: Some("Av. Principal 123".to_string()),
+                        required: true,
+                    }
+                    div { class: "mt-md" }
+                    Input {
+                        label: Some("Ciudad".to_string()),
+                        value: workshop_city.read().clone(),
+                        oninput: move |evt: FormEvent| workshop_city.set(evt.value().clone()),
+                        placeholder: Some("Madrid".to_string()),
+                        required: true,
+                    }
+                    div { class: "mt-md" }
+                    Input {
+                        label: Some("Nombre del administrador".to_string()),
+                        value: admin_name.read().clone(),
+                        oninput: move |evt: FormEvent| admin_name.set(evt.value().clone()),
+                        placeholder: Some("Carlos García".to_string()),
+                        required: true,
                     }
 
                     Input {

@@ -10,6 +10,16 @@ pub struct LoginRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RegisterRequest {
+    pub workshop_name: String,
+    pub workshop_address: String,
+    pub workshop_city: String,
+    pub admin_name: String,
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateProductRequest {
     pub name: String,
     pub description: Option<String>,
@@ -46,7 +56,7 @@ pub struct CreateRepairRequest {
     pub customer_name: Option<String>,
     pub customer_email: Option<String>,
     pub customer_phone: Option<String>,
-    pub motorcycle: Option<String>,
+    pub vehicle: Option<String>,
     pub license_plate: Option<String>,
     pub description: Option<String>,
     pub priority: crate::Priority,
@@ -104,6 +114,7 @@ pub struct PaginatedResponse<T> {
 pub struct LoginResponse {
     pub token: String,
     pub user: crate::User,
+    pub workshop: Option<crate::Workshop>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

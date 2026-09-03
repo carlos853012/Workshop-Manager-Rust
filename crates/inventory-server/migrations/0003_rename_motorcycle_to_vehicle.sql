@@ -1,0 +1,1 @@
+ALTER TABLE repairs RENAME COLUMN motorcycle TO vehicle;
