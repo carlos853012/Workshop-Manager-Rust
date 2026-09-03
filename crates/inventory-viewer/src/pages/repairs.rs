@@ -83,13 +83,13 @@ pub fn Repairs() -> Element {
             header: "Estado".to_string(),
             render: |r| {
                 rsx! {
-                    Badge {
-                        variant: match r.status {
-                            RepairStatus::Completed => BadgeVariant::Success,
-                            RepairStatus::Cancelled => BadgeVariant::Danger,
-                            RepairStatus::InProgress => BadgeVariant::Warning,
-                            RepairStatus::Pending => BadgeVariant::Info,
-                        },
+                Badge {
+                    variant: match r.status {
+                        RepairStatus::Completed => BadgeVariant::Success,
+                        RepairStatus::Cancelled => BadgeVariant::Danger,
+                        RepairStatus::InProgress => BadgeVariant::Warning,
+                        RepairStatus::Pending | RepairStatus::Deleted => BadgeVariant::Info,
+                    },
                         "{r.status}"
                     }
                 }
