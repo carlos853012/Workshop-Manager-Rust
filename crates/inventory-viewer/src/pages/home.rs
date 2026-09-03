@@ -37,7 +37,7 @@ pub fn Root() -> Element {
     if auth.is_authenticated() {
         navigator.push(Route::Dashboard {});
     } else {
-        navigator.push(Route::Login {});
+        navigator.push(Route::Setup {});
     }
 
     rsx! {}

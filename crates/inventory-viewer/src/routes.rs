@@ -7,6 +7,7 @@ use crate::pages::products::Products;
 use crate::pages::repairs::Repairs;
 use crate::pages::reports::Reports;
 use crate::pages::sales::Sales;
+use crate::pages::setup::Setup;
 use crate::pages::suppliers::Suppliers;
 use crate::pages::users::Users;
 
@@ -14,6 +15,9 @@ use crate::pages::users::Users;
 pub enum Route {
     #[route("/")]
     Root {},
+
+    #[route("/setup")]
+    Setup {},
 
     #[route("/login")]
     Login {},

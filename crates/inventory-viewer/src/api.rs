@@ -83,6 +83,16 @@ impl ApiClient {
         self.post("/api/auth/login", &request).await
     }
 
+    /// POST /api/auth/register
+    /// Solo funciona si no existe ningún usuario (primer admin).
+    pub async fn register(&self, email: &str, password: &str) -> Result<LoginResponse, ApiError> {
+        let request = LoginRequest {
+            email: email.to_string(),
+            password: password.to_string(),
+        };
+        self.post("/api/auth/register", &request).await
+    }
+
     /// GET /api/auth/status
     pub async fn status(&self) -> Result<User, ApiError> {
         self.get("/api/auth/status").await
