@@ -160,6 +160,7 @@ pub enum RepairStatus {
     InProgress,
     Completed,
     Cancelled,
+    Deleted,
 }
 
 impl std::fmt::Display for RepairStatus {
@@ -169,6 +170,7 @@ impl std::fmt::Display for RepairStatus {
             RepairStatus::InProgress => write!(f, "in_progress"),
             RepairStatus::Completed => write!(f, "completed"),
             RepairStatus::Cancelled => write!(f, "cancelled"),
+            RepairStatus::Deleted => write!(f, "deleted"),
         }
     }
 }

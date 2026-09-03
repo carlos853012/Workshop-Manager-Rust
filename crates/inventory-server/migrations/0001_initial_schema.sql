@@ -2,7 +2,7 @@
 
 -- Custom enums (must match inventory-common sqlx::Type definitions)
 CREATE TYPE payment_method AS ENUM ('cash', 'card', 'transfer');
-CREATE TYPE repair_status AS ENUM ('pending', 'in_progress', 'completed', 'cancelled');
+CREATE TYPE repair_status AS ENUM ('pending', 'in_progress', 'completed', 'cancelled', 'deleted');
 CREATE TYPE priority AS ENUM ('high', 'medium', 'low');
 CREATE TYPE user_role AS ENUM ('admin', 'mechanic', 'seller');
 
