@@ -32,6 +32,7 @@ struct PaginationParams {
 
 async fn list_suppliers(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Query(params): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<PaginatedResponse<Supplier>>>, AppError> {
     if params.page < 1 {
@@ -45,16 +46,18 @@ async fn list_suppliers(
 
     let offset = (params.page - 1) * params.per_page;
 
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM suppliers WHERE status = 'active'")
+    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM suppliers WHERE status = 'active' AND workshop_id = $1")
+        .bind(user.workshop_id)
         .fetch_one(&state.pool)
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<Supplier> = sqlx::query_as(
-        "SELECT id, name, contact_person, email, phone, address, tax_id, payment_terms, status, created_at, updated_at \
-         FROM suppliers WHERE status = 'active' \
-         ORDER BY name ASC LIMIT $1 OFFSET $2"
+        "SELECT id, workshop_id, name, contact_person, email, phone, address, tax_id, payment_terms, status, created_at, updated_at \
+         FROM suppliers WHERE status = 'active' AND workshop_id = $1 \
+         ORDER BY name ASC LIMIT $2 OFFSET $3"
     )
+    .bind(user.workshop_id)
     .bind(params.per_page)
     .bind(offset)
     .fetch_all(&state.pool)
@@ -73,13 +76,15 @@ async fn list_suppliers(
 
 async fn get_supplier(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Supplier>>, AppError> {
     let supplier: Option<Supplier> = sqlx::query_as(
-        "SELECT id, name, contact_person, email, phone, address, tax_id, payment_terms, status, created_at, updated_at \
-         FROM suppliers WHERE id = $1 AND status = 'active'"
+        "SELECT id, workshop_id, name, contact_person, email, phone, address, tax_id, payment_terms, status, created_at, updated_at \
+         FROM suppliers WHERE id = $1 AND status = 'active' AND workshop_id = $2"
     )
     .bind(id)
+    .bind(user.workshop_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -102,10 +107,11 @@ async fn create_supplier(
 
     sqlx::query(
         "INSERT INTO suppliers \
-         (id, name, contact_person, email, phone, address, tax_id, payment_terms, status, created_at, updated_at) \
+         (id, workshop_id, name, contact_person, email, phone, address, tax_id, payment_terms, status, created_at, updated_at) \
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9, $10)"
     )
     .bind(id)
+    .bind(user.workshop_id)
     .bind(&req.name)
     .bind(&req.contact_person)
     .bind(&req.email)
@@ -121,6 +127,7 @@ async fn create_supplier(
 
     let supplier = Supplier {
         id,
+        workshop_id: user.workshop_id,
         name: req.name,
         contact_person: req.contact_person,
         email: req.email,
@@ -162,10 +169,11 @@ async fn update_supplier(
     validate_create_supplier_request(&req)?;
 
     let old_supplier: Option<Supplier> = sqlx::query_as(
-        "SELECT id, name, contact_person, email, phone, address, tax_id, payment_terms, status, created_at, updated_at \
-         FROM suppliers WHERE id = $1 AND status = 'active'"
+        "SELECT id, workshop_id, name, contact_person, email, phone, address, tax_id, payment_terms, status, created_at, updated_at \
+         FROM suppliers WHERE id = $1 AND status = 'active' AND workshop_id = $2"
     )
     .bind(id)
+    .bind(user.workshop_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -177,7 +185,7 @@ async fn update_supplier(
         "UPDATE suppliers SET \
          name = $2, contact_person = $3, email = $4, phone = $5, address = $6, tax_id = $7, \
          payment_terms = $8, updated_at = $9 \
-         WHERE id = $1 AND status = 'active'",
+         WHERE id = $1 AND status = 'active' AND workshop_id = $10",
     )
     .bind(id)
     .bind(&req.name)
@@ -188,12 +196,14 @@ async fn update_supplier(
     .bind(&req.tax_id)
     .bind(&req.payment_terms)
     .bind(now)
+    .bind(user.workshop_id)
     .execute(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let supplier = Supplier {
         id,
+        workshop_id: old_supplier.workshop_id,
         name: req.name,
         contact_person: req.contact_person,
         email: req.email,

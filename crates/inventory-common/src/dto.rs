@@ -27,6 +27,7 @@ pub struct CreateProductRequest {
     pub brand: Option<String>,
     pub model: Option<String>,
     pub sku: Option<String>,
+    pub barcode: Option<String>,
     pub price: Decimal,
     pub cost: Decimal,
     pub stock: i32,
@@ -41,6 +42,7 @@ pub struct CreateSaleRequest {
     pub customer_email: Option<String>,
     pub customer_phone: Option<String>,
     pub payment_method: crate::PaymentMethod,
+    pub discount_amount: Option<Decimal>,
     pub items: Vec<SaleItemRequest>,
 }
 
@@ -49,6 +51,44 @@ pub struct SaleItemRequest {
     pub product_id: uuid::Uuid,
     pub quantity: i32,
     pub unit_price: Decimal,
+    pub discount: Option<Decimal>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PosLookupRequest {
+    pub barcode: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PosProductResponse {
+    pub product_id: uuid::Uuid,
+    pub name: String,
+    pub price: Decimal,
+    pub stock: i32,
+    pub barcode: Option<String>,
+    pub sku: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PosSaleDetail {
+    pub product_id: uuid::Uuid,
+    pub name: String,
+    pub quantity: i32,
+    pub unit_price: Decimal,
+    pub discount: Decimal,
+    pub subtotal: Decimal,
+    pub tax_amount: Decimal,
+    pub total: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PosSaleResponse {
+    pub items: Vec<PosSaleDetail>,
+    pub subtotal: Decimal,
+    pub discount_amount: Decimal,
+    pub taxable_amount: Decimal,
+    pub tax_amount: Decimal,
+    pub total: Decimal,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -7,6 +7,7 @@ use chrono::Utc;
 use inventory_common::dto::{ApiResponse, CreateSaleRequest, PaginatedResponse};
 use inventory_common::{PaymentMethod, Sale, SaleItem};
 use rust_decimal::Decimal;
+use std::str::FromStr;
 use serde::Deserialize;
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
@@ -33,6 +34,7 @@ struct PaginationParams {
 
 async fn list_sales(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Query(params): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<PaginatedResponse<Sale>>>, AppError> {
     if params.page < 1 {
@@ -46,16 +48,18 @@ async fn list_sales(
 
     let offset = (params.page - 1) * params.per_page;
 
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sales WHERE status = 'completed'")
+    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sales WHERE status = 'completed' AND workshop_id = $1")
+        .bind(user.workshop_id)
         .fetch_one(&state.pool)
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<Sale> = sqlx::query_as(
-        "SELECT id, customer_name, customer_email, customer_phone, total, payment_method, status, created_at \
-         FROM sales WHERE status = 'completed' \
+        "SELECT id, workshop_id, customer_name, customer_email, customer_phone, subtotal, discount_amount, taxable_amount, tax_amount, total, payment_method, status, created_at \
+         FROM sales WHERE status = 'completed' AND workshop_id = $1 \
          ORDER BY created_at DESC LIMIT $1 OFFSET $2"
     )
+    .bind(user.workshop_id)
     .bind(params.per_page)
     .bind(offset)
     .fetch_all(&state.pool)
@@ -74,13 +78,15 @@ async fn list_sales(
 
 async fn get_sale(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<SaleDetail>>, AppError> {
     let sale: Option<Sale> = sqlx::query_as(
-        "SELECT id, customer_name, customer_email, customer_phone, total, payment_method, status, created_at \
-         FROM sales WHERE id = $1 AND status = 'completed'"
+        "SELECT id, workshop_id, customer_name, customer_email, customer_phone, subtotal, discount_amount, taxable_amount, tax_amount, total, payment_method, status, created_at \
+         FROM sales WHERE id = $1 AND status = 'completed' AND workshop_id = $2"
     )
     .bind(id)
+    .bind(user.workshop_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -121,7 +127,7 @@ async fn create_sale(
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
-    let result = create_sale_in_transaction(&mut tx, &req, payment_method, user.id).await;
+    let result = create_sale_in_transaction(&mut tx, &req, payment_method, user.id, user.workshop_id).await;
 
     match result {
         Ok(sale_detail) => {
@@ -165,6 +171,7 @@ async fn create_sale_in_transaction(
     req: &CreateSaleRequest,
     payment_method: PaymentMethod,
     _user_id: Uuid,
+    workshop_id: Uuid,
 ) -> Result<SaleDetail, AppError> {
     if req.items.is_empty() {
         return Err(AppError::Validation(
@@ -174,8 +181,11 @@ async fn create_sale_in_transaction(
 
     let sale_id = Uuid::new_v4();
     let now = Utc::now();
-    let mut sale_total = Decimal::ZERO;
+    let mut sale_subtotal = Decimal::ZERO;
     let mut sale_items = Vec::with_capacity(req.items.len());
+
+    let discount_amount = req.discount_amount.unwrap_or(Decimal::ZERO);
+    let iva_rate = Decimal::from_str("0.19").unwrap_or(Decimal::new(19, 2));
 
     for item_req in &req.items {
         if item_req.quantity <= 0 {
@@ -203,8 +213,14 @@ async fn create_sale_in_transaction(
             )));
         }
 
-        let item_total = unit_price * Decimal::from(item_req.quantity);
-        sale_total += item_total;
+        let item_discount = item_req.discount.unwrap_or(Decimal::ZERO);
+        let item_subtotal = unit_price * Decimal::from(item_req.quantity);
+        let item_discount_amount = item_subtotal * item_discount / Decimal::from(100);
+        let item_taxable = item_subtotal - item_discount_amount;
+        let item_tax = item_taxable * iva_rate;
+        let item_total = item_taxable + item_tax;
+
+        sale_subtotal += item_subtotal;
 
         sqlx::query("UPDATE products SET stock = stock - $2, updated_at = $3 WHERE id = $1")
             .bind(item_req.product_id)
@@ -227,16 +243,26 @@ async fn create_sale_in_transaction(
         sale_items.push(sale_item);
     }
 
+    let discount_amount_total = (sale_subtotal * discount_amount) / Decimal::from(100);
+    let taxable_amount = sale_subtotal - discount_amount_total;
+    let tax_amount = taxable_amount * iva_rate;
+    let total = taxable_amount + tax_amount;
+
     sqlx::query(
         "INSERT INTO sales \
-         (id, customer_name, customer_email, customer_phone, total, payment_method, status, created_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, 'completed', $7)"
+         (id, workshop_id, customer_name, customer_email, customer_phone, subtotal, discount_amount, taxable_amount, tax_amount, total, payment_method, status, created_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'completed', $11)"
     )
     .bind(sale_id)
+    .bind(workshop_id)
     .bind(&req.customer_name)
     .bind(&req.customer_email)
     .bind(&req.customer_phone)
-    .bind(sale_total)
+    .bind(sale_subtotal)
+    .bind(discount_amount_total)
+    .bind(taxable_amount)
+    .bind(tax_amount)
+    .bind(total)
     .bind(&payment_method)
     .bind(now)
     .execute(&mut **tx)
@@ -247,7 +273,7 @@ async fn create_sale_in_transaction(
         sqlx::query(
             "INSERT INTO sale_items \
              (id, sale_id, product_id, product_name, quantity, unit_price, total) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+             VALUES ($1, $2, $3, $4, $5, $6, $7)"
         )
         .bind(item.id)
         .bind(item.sale_id)
@@ -263,10 +289,15 @@ async fn create_sale_in_transaction(
 
     let sale = Sale {
         id: sale_id,
+        workshop_id,
         customer_name: req.customer_name.clone(),
         customer_email: req.customer_email.clone(),
         customer_phone: req.customer_phone.clone(),
-        total: sale_total,
+        subtotal: sale_subtotal,
+        discount_amount: discount_amount_total,
+        taxable_amount,
+        tax_amount,
+        total,
         payment_method,
         status: "completed".to_string(),
         created_at: now,
@@ -314,10 +345,12 @@ mod tests {
             customer_email: Some("john@example.com".to_string()),
             customer_phone: Some("1234567890".to_string()),
             payment_method: PaymentMethod::Cash,
+            discount_amount: None,
             items: vec![SaleItemRequest {
                 product_id: Uuid::new_v4(),
                 quantity: 2,
-                unit_price: Decimal::ZERO, // ignorado en validación
+                unit_price: Decimal::ZERO,
+                discount: None,
             }],
         };
 
@@ -331,10 +364,12 @@ mod tests {
             customer_email: Some("invalid".to_string()),
             customer_phone: None,
             payment_method: PaymentMethod::Cash,
+            discount_amount: None,
             items: vec![SaleItemRequest {
                 product_id: Uuid::new_v4(),
                 quantity: 1,
                 unit_price: Decimal::ZERO,
+                discount: None,
             }],
         };
 
@@ -348,6 +383,7 @@ mod tests {
             customer_email: None,
             customer_phone: None,
             payment_method: PaymentMethod::Cash,
+            discount_amount: None,
             items: vec![],
         };
 

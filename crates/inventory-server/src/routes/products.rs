@@ -4,7 +4,7 @@ use axum::{
     Extension, Json, Router,
 };
 use chrono::Utc;
-use inventory_common::dto::{ApiResponse, CreateProductRequest, PaginatedResponse};
+use inventory_common::dto::{ApiResponse, CreateProductRequest, PaginatedResponse, PosLookupRequest, PosProductResponse};
 use inventory_common::Product;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -12,6 +12,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::audit::{self, redact_sensitive};
+use crate::barcode::{generate_ean13, get_workshop_prefix};
 use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
 
@@ -24,6 +25,7 @@ pub fn routes() -> Router<AppState> {
         .route("/:id", get(get_product))
         .route("/:id", put(update_product))
         .route("/:id", delete(delete_product))
+        .route("/lookup", get(lookup_product_by_barcode))
 }
 
 #[derive(Debug, Deserialize)]
@@ -44,6 +46,7 @@ pub(crate) fn default_per_page() -> i32 {
 
 async fn list_products(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Query(params): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<PaginatedResponse<Product>>>, AppError> {
     if params.page < 1 {
@@ -57,17 +60,19 @@ async fn list_products(
 
     let offset = (params.page - 1) * params.per_page;
 
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM products WHERE status = 'active'")
+    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM products WHERE status = 'active' AND workshop_id = $1")
+        .bind(user.workshop_id)
         .fetch_one(&state.pool)
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<Product> = sqlx::query_as(
-        "SELECT id, name, description, category, brand, model, sku, price, cost, stock, min_stock, \
+        "SELECT id, workshop_id, name, description, category, brand, model, sku, barcode, price, cost, stock, min_stock, \
          location, supplier_id, status, created_at, updated_at \
-         FROM products WHERE status = 'active' \
-         ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+         FROM products WHERE status = 'active' AND workshop_id = $1 \
+         ORDER BY created_at DESC LIMIT $2 OFFSET $3"
     )
+    .bind(user.workshop_id)
     .bind(params.per_page)
     .bind(offset)
     .fetch_all(&state.pool)
@@ -86,14 +91,16 @@ async fn list_products(
 
 async fn get_product(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Product>>, AppError> {
     let product: Option<Product> = sqlx::query_as(
-        "SELECT id, name, description, category, brand, model, sku, price, cost, stock, min_stock, \
+        "SELECT id, workshop_id, name, description, category, brand, model, sku, barcode, price, cost, stock, min_stock, \
          location, supplier_id, status, created_at, updated_at \
-         FROM products WHERE id = $1 AND status = 'active'"
+         FROM products WHERE id = $1 AND status = 'active' AND workshop_id = $2"
     )
     .bind(id)
+    .bind(user.workshop_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -113,19 +120,36 @@ async fn create_product(
 
     let id = Uuid::new_v4();
     let now = Utc::now();
+    let workshop_id = user.workshop_id;
+
+    // Generate barcode if not provided
+    let barcode = if let Some(bc) = req.barcode {
+        if bc.trim().is_empty() {
+            None
+        } else {
+            Some(bc.trim().to_string())
+        }
+    } else {
+        // Generate EAN-13 with workshop prefix
+        let prefix = get_workshop_prefix(&state.pool, workshop_id).await.map_err(|e| AppError::Internal(format!("Barcode error: {}", e)))?;
+        let barcode = generate_ean13(&prefix);
+        Some(barcode)
+    };
 
     sqlx::query(
         "INSERT INTO products \
-         (id, name, description, category, brand, model, sku, price, cost, stock, min_stock, location, supplier_id, status, created_at, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'active', $14, $15)"
+         (id, workshop_id, name, description, category, brand, model, sku, barcode, price, cost, stock, min_stock, location, supplier_id, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'active', $16, $17)"
     )
     .bind(id)
+    .bind(workshop_id)
     .bind(&req.name)
     .bind(&req.description)
     .bind(&req.category)
     .bind(&req.brand)
     .bind(&req.model)
     .bind(&req.sku)
+    .bind(&barcode)
     .bind(req.price)
     .bind(req.cost)
     .bind(req.stock)
@@ -140,12 +164,14 @@ async fn create_product(
 
     let product = Product {
         id,
+        workshop_id,
         name: req.name,
         description: req.description,
         category: req.category,
         brand: req.brand,
         model: req.model,
         sku: req.sku,
+        barcode,
         price: req.price,
         cost: req.cost,
         stock: req.stock,
@@ -225,12 +251,14 @@ async fn update_product(
 
     let product = Product {
         id,
+        workshop_id: old_product.workshop_id,
         name: req.name,
         description: req.description,
         category: req.category,
         brand: req.brand,
         model: req.model,
         sku: req.sku,
+        barcode: old_product.barcode.clone(),
         price: req.price,
         cost: req.cost,
         stock: req.stock,
@@ -270,20 +298,22 @@ async fn delete_product(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<()>>, AppError> {
     let old_product: Option<Product> = sqlx::query_as(
-        "SELECT id, name, description, category, brand, model, sku, price, cost, stock, min_stock, \
+        "SELECT id, workshop_id, name, description, category, brand, model, sku, barcode, price, cost, stock, min_stock, \
          location, supplier_id, status, created_at, updated_at \
-         FROM products WHERE id = $1 AND status = 'active'"
+         FROM products WHERE id = $1 AND status = 'active' AND workshop_id = $2"
     )
     .bind(id)
+    .bind(user.workshop_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let old_product = old_product.ok_or(AppError::NotFound("Product not found".to_string()))?;
 
-    sqlx::query("UPDATE products SET status = 'deleted', updated_at = $2 WHERE id = $1 AND status = 'active'")
+    sqlx::query("UPDATE products SET status = 'deleted', updated_at = $2 WHERE id = $1 AND status = 'active' AND workshop_id = $3")
         .bind(id)
         .bind(Utc::now())
+        .bind(user.workshop_id)
         .execute(&state.pool)
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -306,6 +336,44 @@ async fn delete_product(
     .map_err(|e| AppError::Internal(format!("Audit error: {}", e)))?;
 
     Ok(Json(ApiResponse::success(())))
+}
+
+async fn lookup_product_by_barcode(
+    State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
+    Query(params): Query<PosLookupRequest>,
+) -> Result<Json<ApiResponse<PosProductResponse>>, AppError> {
+    let barcode = params.barcode.trim();
+    if barcode.is_empty() {
+        return Err(AppError::Validation("Barcode is required".to_string()));
+    }
+
+    type ProductRow = (uuid::Uuid, String, Decimal, i32, Option<String>, Option<String>);
+
+    let product: Option<ProductRow> = sqlx::query_as(
+        "SELECT id, name, price, stock, barcode, sku \
+         FROM products WHERE barcode = $1 AND status = 'active' AND workshop_id = $2"
+    )
+    .bind(barcode)
+    .bind(user.workshop_id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    match product {
+        Some((id, name, price, stock, barcode, sku)) => {
+            let response = PosProductResponse {
+                product_id: id,
+                name,
+                price,
+                stock,
+                barcode,
+                sku,
+            };
+            Ok(Json(ApiResponse::success(response)))
+        }
+        None => Err(AppError::NotFound("Product not found".to_string())),
+    }
 }
 
 fn validate_create_product_request(req: &CreateProductRequest) -> Result<(), AppError> {
@@ -355,6 +423,7 @@ mod tests {
             brand: None,
             model: None,
             sku: Some("OIL-123".to_string()),
+            barcode: None,
             price: Decimal::new(1500, 2), // 15.00
             cost: Decimal::new(1000, 2),  // 10.00
             stock: 10,
@@ -375,6 +444,7 @@ mod tests {
             brand: None,
             model: None,
             sku: None,
+            barcode: None,
             price: Decimal::ZERO,
             cost: Decimal::ZERO,
             stock: 0,
@@ -395,6 +465,7 @@ mod tests {
             brand: None,
             model: None,
             sku: None,
+            barcode: None,
             price: Decimal::new(-1, 0),
             cost: Decimal::ZERO,
             stock: 0,

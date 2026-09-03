@@ -18,6 +18,8 @@ pub struct Claims {
     pub email: String,
     /// Rol como string serializado.
     pub role: String,
+    /// Workshop ID
+    pub workshop_id: String,
     /// Tiempo de expiración (timestamp UTC).
     pub exp: usize,
 }
@@ -49,6 +51,7 @@ pub fn create_token(
     user_id: Uuid,
     email: &str,
     role: UserRole,
+    workshop_id: Uuid,
     secret: &str,
 ) -> anyhow::Result<String> {
     let exp = Utc::now()
@@ -60,6 +63,7 @@ pub fn create_token(
         sub: user_id.to_string(),
         email: email.to_string(),
         role: role.to_string(),
+        workshop_id: workshop_id.to_string(),
         exp,
     };
 
@@ -100,23 +104,26 @@ mod tests {
     #[test]
     fn test_create_and_validate_token() -> anyhow::Result<()> {
         let user_id = Uuid::new_v4();
+        let workshop_id = Uuid::new_v4();
         let email = "test@example.com";
         let role = UserRole::Admin;
         let secret = "test_secret_32_bytes_long_value";
 
-        let token = create_token(user_id, email, role.clone(), secret)?;
+        let token = create_token(user_id, email, role.clone(), workshop_id, secret)?;
         let claims = validate_token(&token, secret)?;
 
         assert_eq!(claims.sub, user_id.to_string());
         assert_eq!(claims.email, email);
         assert_eq!(claims.role, role.to_string());
+        assert_eq!(claims.workshop_id, workshop_id.to_string());
         Ok(())
     }
 
     #[test]
     fn test_validate_token_fails_with_wrong_secret() -> anyhow::Result<()> {
         let user_id = Uuid::new_v4();
-        let token = create_token(user_id, "test@example.com", UserRole::Seller, "secret_a")?;
+        let workshop_id = Uuid::new_v4();
+        let token = create_token(user_id, "test@example.com", UserRole::Seller, workshop_id, "secret_a")?;
         assert!(validate_token(&token, "secret_b").is_err());
         Ok(())
     }

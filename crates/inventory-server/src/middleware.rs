@@ -16,6 +16,7 @@ pub struct AuthenticatedUser {
     pub id: uuid::Uuid,
     pub email: String,
     pub role: UserRole,
+    pub workshop_id: uuid::Uuid,
 }
 
 impl AuthenticatedUser {
@@ -27,11 +28,14 @@ impl AuthenticatedUser {
             "seller" => UserRole::Seller,
             _ => return Err(StatusCode::UNAUTHORIZED),
         };
+        let workshop_id = uuid::Uuid::parse_str(&claims.workshop_id)
+            .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
         Ok(Self {
             id,
             email: claims.email,
             role,
+            workshop_id,
         })
     }
 
@@ -131,6 +135,7 @@ mod tests {
             sub: uuid::Uuid::new_v4().to_string(),
             email: "admin@example.com".to_string(),
             role: "admin".to_string(),
+            workshop_id: uuid::Uuid::new_v4().to_string(),
             exp: 1234567890,
         };
 
@@ -145,6 +150,7 @@ mod tests {
             sub: uuid::Uuid::new_v4().to_string(),
             email: "seller@example.com".to_string(),
             role: "seller".to_string(),
+            workshop_id: uuid::Uuid::new_v4().to_string(),
             exp: 1234567890,
         };
 
@@ -159,6 +165,7 @@ mod tests {
             sub: uuid::Uuid::new_v4().to_string(),
             email: "x@example.com".to_string(),
             role: "superuser".to_string(),
+            workshop_id: uuid::Uuid::new_v4().to_string(),
             exp: 1234567890,
         };
 
@@ -171,6 +178,7 @@ mod tests {
             sub: "not-a-uuid".to_string(),
             email: "x@example.com".to_string(),
             role: "admin".to_string(),
+            workshop_id: uuid::Uuid::new_v4().to_string(),
             exp: 1234567890,
         };
 

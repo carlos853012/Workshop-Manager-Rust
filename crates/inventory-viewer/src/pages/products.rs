@@ -170,6 +170,7 @@ fn ProductFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandl
             brand: None,
             model: None,
             sku: Some(sku.read().clone()).filter(|s| !s.is_empty()),
+            barcode: None,
             price: price_dec,
             cost: cost_dec,
             stock: stock_i,

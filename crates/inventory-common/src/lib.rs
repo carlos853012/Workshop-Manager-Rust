@@ -12,12 +12,14 @@ use sqlx::FromRow;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct Product {
     pub id: uuid::Uuid,
+    pub workshop_id: uuid::Uuid,
     pub name: String,
     pub description: Option<String>,
     pub category: Option<String>,
     pub brand: Option<String>,
     pub model: Option<String>,
     pub sku: Option<String>,
+    pub barcode: Option<String>,
     pub price: Decimal,
     pub cost: Decimal,
     pub stock: i32,
@@ -34,9 +36,14 @@ pub struct Product {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct Sale {
     pub id: uuid::Uuid,
+    pub workshop_id: uuid::Uuid,
     pub customer_name: Option<String>,
     pub customer_email: Option<String>,
     pub customer_phone: Option<String>,
+    pub subtotal: Decimal,
+    pub discount_amount: Decimal,
+    pub taxable_amount: Decimal,
+    pub tax_amount: Decimal,
     pub total: Decimal,
     pub payment_method: PaymentMethod,
     pub status: String,
@@ -59,6 +66,7 @@ pub struct SaleItem {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct Repair {
     pub id: uuid::Uuid,
+    pub workshop_id: uuid::Uuid,
     pub customer_name: Option<String>,
     pub customer_email: Option<String>,
     pub customer_phone: Option<String>,
@@ -91,6 +99,7 @@ pub struct RepairUpdate {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct Supplier {
     pub id: uuid::Uuid,
+    pub workshop_id: uuid::Uuid,
     pub name: String,
     pub contact_person: Option<String>,
     pub email: Option<String>,
@@ -124,6 +133,7 @@ pub struct Workshop {
     pub name: String,
     pub address: String,
     pub city: String,
+    pub barcode_prefix: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

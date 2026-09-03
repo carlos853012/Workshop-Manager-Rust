@@ -206,6 +206,7 @@ fn SaleFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandler<
                 product_id,
                 quantity,
                 unit_price,
+                discount: None,
             });
         }
 
@@ -220,6 +221,7 @@ fn SaleFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandler<
             customer_email: Some(customer_email.read().clone()).filter(|s| !s.is_empty()),
             customer_phone: None,
             payment_method: payment,
+            discount_amount: None,
             items: parsed_items,
         };
 

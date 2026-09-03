@@ -75,15 +75,17 @@ async fn list_repairs(
 
 async fn get_repair(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<RepairDetail>>, AppError> {
     let repair: Option<Repair> = sqlx::query_as(
-        "SELECT id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
+        "SELECT id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
          status, estimated_cost, final_cost, created_at, updated_at \
-         FROM repairs WHERE id = $1 AND status != 'deleted'",
+         FROM repairs WHERE id = $1 AND status != 'deleted' AND workshop_id = $2"
     )
     .bind(id)
+    .bind(user.workshop_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -119,13 +121,14 @@ async fn create_repair(
     let id = Uuid::new_v4();
     let now = Utc::now();
 
-    sqlx::query(
+sqlx::query(
         "INSERT INTO repairs \
-         (id, customer_name, customer_email, customer_phone, vehicle, license_plate, description, \
-          priority, status, estimated_cost, estimated_delivery, created_at, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $12)",
+         (id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, description, \
+           priority, status, estimated_cost, estimated_delivery, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $12)"
     )
     .bind(id)
+    .bind(user.workshop_id)
     .bind(&req.customer_name)
     .bind(&req.customer_email)
     .bind(&req.customer_phone)
@@ -167,6 +170,7 @@ async fn create_repair(
 
     let repair = Repair {
         id,
+        workshop_id: user.workshop_id,
         customer_name: req.customer_name,
         customer_email: req.customer_email,
         customer_phone: req.customer_phone,
@@ -226,12 +230,13 @@ async fn update_repair(
     Json(req): Json<UpdateRepairRequest>,
 ) -> Result<Json<ApiResponse<RepairDetail>>, AppError> {
     let old_repair: Option<Repair> = sqlx::query_as(
-        "SELECT id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
+        "SELECT id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
          status, estimated_cost, final_cost, created_at, updated_at \
-         FROM repairs WHERE id = $1 AND status != 'deleted'",
+         FROM repairs WHERE id = $1 AND status != 'deleted' AND workshop_id = $2"
     )
     .bind(id)
+    .bind(user.workshop_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -252,7 +257,7 @@ async fn update_repair(
         "UPDATE repairs SET \
          status = $2, diagnosis = $3, technician_id = $4, estimated_cost = $5, final_cost = $6, \
          estimated_delivery = $7, updated_at = $8 \
-         WHERE id = $1 AND status != 'deleted'",
+         WHERE id = $1 AND status != 'deleted' AND workshop_id = $9",
     )
     .bind(id)
     .bind(&new_status)
@@ -262,6 +267,7 @@ async fn update_repair(
     .bind(new_final_cost)
     .bind(new_estimated_delivery)
     .bind(now)
+    .bind(user.workshop_id)
     .execute(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -289,6 +295,7 @@ async fn update_repair(
 
     let repair = Repair {
         id,
+        workshop_id: old_repair.workshop_id,
         customer_name: old_repair.customer_name.clone(),
         customer_email: old_repair.customer_email.clone(),
         customer_phone: old_repair.customer_phone.clone(),

@@ -7,6 +7,7 @@ use tower_http::trace::TraceLayer;
 mod audit;
 mod auth;
 mod backup;
+mod barcode;
 mod config;
 mod crypto;
 mod db_manager;

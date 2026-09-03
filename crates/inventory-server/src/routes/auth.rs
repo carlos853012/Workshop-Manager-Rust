@@ -53,6 +53,7 @@ async fn login(
         user.id,
         &user.email,
         user.role.clone(),
+        user.workshop_id,
         &state.secrets.jwt_secret,
     )
     .map_err(|e| AppError::Internal(format!("Token creation error: {}", e)))?;
@@ -138,7 +139,7 @@ async fn register(
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
-    let token = auth::create_token(user_id, &req.email, role.clone(), &state.secrets.jwt_secret)
+    let token = auth::create_token(user_id, &req.email, role.clone(), workshop_id, &state.secrets.jwt_secret)
         .map_err(|e| AppError::Internal(format!("Token creation error: {}", e)))?;
 
     transaction
@@ -162,6 +163,7 @@ async fn register(
         name: req.workshop_name,
         address: req.workshop_address,
         city: req.workshop_city,
+        barcode_prefix: None,
         created_at: now,
         updated_at: now,
     };
