@@ -9,44 +9,44 @@ use crate::routes::Route;
 
 /// Layout con sidebar y header para páginas autenticadas.
 #[component]
-pub fn AppShell(children: Element, title: String, active_route: String) -> Element {
+pub fn AppShell(children: Element, title: String, active_route: Route) -> Element {
     let mut auth = use_auth();
     let navigator = use_navigator();
 
     let nav_items = vec![
         NavItem {
             label: "Dashboard".to_string(),
-            route: "/dashboard".to_string(),
+            route: Route::Dashboard {},
             icon: IconName::Home,
         },
         NavItem {
             label: "Productos".to_string(),
-            route: "/products".to_string(),
+            route: Route::Products {},
             icon: IconName::Package,
         },
         NavItem {
             label: "Ventas".to_string(),
-            route: "/sales".to_string(),
+            route: Route::Sales {},
             icon: IconName::ShoppingCart,
         },
         NavItem {
             label: "Reparaciones".to_string(),
-            route: "/repairs".to_string(),
+            route: Route::Repairs {},
             icon: IconName::Wrench,
         },
         NavItem {
             label: "Proveedores".to_string(),
-            route: "/suppliers".to_string(),
+            route: Route::Suppliers {},
             icon: IconName::Truck,
         },
         NavItem {
             label: "Reportes".to_string(),
-            route: "/reports".to_string(),
+            route: Route::Reports {},
             icon: IconName::DocumentText,
         },
         NavItem {
             label: "Usuarios".to_string(),
-            route: "/users".to_string(),
+            route: Route::Users {},
             icon: IconName::Users,
         },
     ];

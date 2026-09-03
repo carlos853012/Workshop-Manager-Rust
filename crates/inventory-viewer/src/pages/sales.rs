@@ -13,6 +13,7 @@ use crate::components::molecules::card::Card;
 use crate::components::molecules::modal::Modal;
 use crate::components::organisms::data_table::{Column, DataTable};
 use crate::pages::layout::{require_auth, AppShell};
+use crate::routes::Route;
 
 #[component]
 pub fn Sales() -> Element {
@@ -93,7 +94,7 @@ pub fn Sales() -> Element {
     let rows = sales.read().clone();
 
     rsx! {
-        AppShell { title: "Ventas".to_string(), active_route: "/sales".to_string(),
+        AppShell { title: "Ventas".to_string(), active_route: Route::Sales {},
             if let Some(err) = error.read().as_ref() {
                 div { class: "alert alert-danger mb-md", "{err}" }
             }

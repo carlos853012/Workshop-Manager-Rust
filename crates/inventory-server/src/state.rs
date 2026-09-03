@@ -19,6 +19,7 @@ pub struct Secrets {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+    pub api_key: String,
 }
 
 impl FromRef<AppState> for Secrets {

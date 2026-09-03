@@ -5,7 +5,6 @@ use inventory_common::dto::{
 use inventory_common::{Product, Repair, Sale, Supplier, User};
 use serde::{Deserialize, Serialize};
 
-const DEFAULT_BASE_URL: &str = "https://127.0.0.1:8443";
 const DEFAULT_TIMEOUT_SECONDS: u64 = 10;
 
 /// Error posible al llamar a la API.
@@ -39,14 +38,24 @@ impl std::fmt::Display for ApiError {
 pub struct ApiClient {
     client: reqwest::Client,
     base_url: String,
+    api_key: String,
     token: Option<String>,
 }
 
 #[allow(dead_code)]
 impl ApiClient {
-    /// Crea un cliente nuevo. Si `accept_invalid_certs` es true, se permite conectar
-    /// al certificado autofirmado del servidor en desarrollo local.
-    pub fn new(base_url: Option<String>, accept_invalid_certs: bool) -> Result<Self, ApiError> {
+    /// Crea un cliente nuevo.
+    ///
+    /// - `base_url`: URL base del servidor. Si es `None`, se usa el valor por defecto
+    ///   de la configuración (`https://127.0.0.1:8443`).
+    /// - `api_key`: clave compartida con el servidor para autenticar al viewer desktop.
+    /// - `accept_invalid_certs`: si es `true`, permite conectar al certificado autofirmado
+    ///   en desarrollo local.
+    pub fn new(
+        base_url: Option<String>,
+        api_key: String,
+        accept_invalid_certs: bool,
+    ) -> Result<Self, ApiError> {
         let client = reqwest::Client::builder()
             .danger_accept_invalid_certs(accept_invalid_certs)
             .timeout(std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECONDS))
@@ -55,7 +64,8 @@ impl ApiClient {
 
         Ok(Self {
             client,
-            base_url: base_url.unwrap_or_else(|| DEFAULT_BASE_URL.to_string()),
+            base_url: base_url.unwrap_or_else(|| crate::config::config().server.base_url.clone()),
+            api_key,
             token: None,
         })
     }
@@ -189,7 +199,10 @@ impl ApiClient {
     }
 
     async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, ApiError> {
-        let mut request = self.client.get(self.url(path));
+        let mut request = self
+            .client
+            .get(self.url(path))
+            .header("X-WorkshopManager-Key", &self.api_key);
         if let Some(header) = self.auth_header() {
             request = request.header("Authorization", header);
         }
@@ -201,7 +214,11 @@ impl ApiClient {
         path: &str,
         query: &[(&str, String)],
     ) -> Result<T, ApiError> {
-        let mut request = self.client.get(self.url(path)).query(query);
+        let mut request = self
+            .client
+            .get(self.url(path))
+            .query(query)
+            .header("X-WorkshopManager-Key", &self.api_key);
         if let Some(header) = self.auth_header() {
             request = request.header("Authorization", header);
         }
@@ -213,7 +230,11 @@ impl ApiClient {
         path: &str,
         body: &B,
     ) -> Result<T, ApiError> {
-        let mut request = self.client.post(self.url(path)).json(body);
+        let mut request = self
+            .client
+            .post(self.url(path))
+            .json(body)
+            .header("X-WorkshopManager-Key", &self.api_key);
         if let Some(header) = self.auth_header() {
             request = request.header("Authorization", header);
         }
@@ -256,14 +277,14 @@ mod tests {
 
     #[test]
     fn test_api_client_new() {
-        let client = ApiClient::new(None, true);
+        let client = ApiClient::new(None, "test-key".to_string(), true);
         assert!(client.is_ok());
     }
 
     #[test]
     fn test_api_client_default_url() {
-        let client = ApiClient::new(None, true).unwrap();
-        assert_eq!(client.base_url, DEFAULT_BASE_URL);
+        let client = ApiClient::new(None, "test-key".to_string(), true).unwrap();
+        assert_eq!(client.base_url, crate::config::config().server.base_url);
     }
 
     #[test]

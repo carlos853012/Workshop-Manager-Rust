@@ -11,14 +11,20 @@ pub struct ServerSection {
     pub host: String,
     #[serde(default = "default_port")]
     pub port: u16,
+    #[serde(default = "default_api_key")]
+    pub api_key: String,
 }
 
 fn default_host() -> String {
-    "0.0.0.0".to_string()
+    "127.0.0.1".to_string()
 }
 
 fn default_port() -> u16 {
     8443
+}
+
+fn default_api_key() -> String {
+    "dev-key-change-in-production".to_string()
 }
 
 impl Default for Config {
@@ -27,6 +33,7 @@ impl Default for Config {
             server: ServerSection {
                 host: default_host(),
                 port: default_port(),
+                api_key: default_api_key(),
             },
         }
     }
@@ -41,6 +48,7 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
         Ok(super::state::ServerConfig {
             host: config.server.host,
             port: config.server.port,
+            api_key: config.server.api_key,
         })
     } else {
         // Crear config por defecto
@@ -52,6 +60,7 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
         Ok(super::state::ServerConfig {
             host: default_config.server.host,
             port: default_config.server.port,
+            api_key: default_config.server.api_key,
         })
     }
 }

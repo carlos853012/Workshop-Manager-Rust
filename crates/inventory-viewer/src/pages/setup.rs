@@ -42,7 +42,8 @@ pub fn Setup() -> Element {
         loading_set.set(true);
 
         spawn(async move {
-            let client = match ApiClient::new(None, true) {
+            let cfg = crate::config::config();
+            let client = match ApiClient::new(None, cfg.server.api_key.clone(), true) {
                 Ok(c) => c,
                 Err(e) => {
                     error_set.set(Some(e.to_string()));
@@ -113,8 +114,8 @@ pub fn Setup() -> Element {
                         "Crear cuenta admin"
                     }
                     div { class: "mt-md text-center",
-                        a {
-                            href: "/login",
+                        Link {
+                            to: Route::Login {},
                             class: "text-muted",
                             "Ya tengo una cuenta"
                         }

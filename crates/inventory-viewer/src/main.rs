@@ -1,6 +1,7 @@
 mod api;
 mod app_state;
 mod components;
+mod config;
 mod icons;
 mod pages;
 mod routes;

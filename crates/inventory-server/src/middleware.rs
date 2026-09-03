@@ -40,6 +40,23 @@ impl AuthenticatedUser {
     }
 }
 
+/// Middleware que exige la API key compartida con el viewer desktop.
+pub async fn api_key_middleware(
+    State(state): State<AppState>,
+    request: Request,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    let key = request
+        .headers()
+        .get("X-WorkshopManager-Key")
+        .and_then(|v| v.to_str().ok());
+
+    match key {
+        Some(k) if k == state.config.api_key => Ok(next.run(request).await),
+        _ => Err(StatusCode::UNAUTHORIZED),
+    }
+}
+
 /// Middleware que exige un JWT válido en el header `Authorization: Bearer <token>`.
 pub async fn authenticate_middleware(
     State(state): State<AppState>,

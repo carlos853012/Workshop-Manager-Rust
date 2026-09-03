@@ -13,7 +13,7 @@ pub fn Dashboard() -> Element {
     }
 
     rsx! {
-        AppShell { title: "Dashboard".to_string(), active_route: "/dashboard".to_string(),
+        AppShell { title: "Dashboard".to_string(), active_route: Route::Dashboard {},
             div { class: "grid grid-4",
                 DashboardCard { title: "Productos".to_string(), value: "--".to_string(), icon: "📦" }
                 DashboardCard { title: "Ventas".to_string(), value: "--".to_string(), icon: "🛒" }

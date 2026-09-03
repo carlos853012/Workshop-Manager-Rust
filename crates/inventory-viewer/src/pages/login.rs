@@ -24,7 +24,8 @@ pub fn Login() -> Element {
         let password_value = password.read().clone();
 
         spawn(async move {
-            let client = match crate::api::ApiClient::new(None, true) {
+            let cfg = crate::config::config();
+            let client = match crate::api::ApiClient::new(None, cfg.server.api_key.clone(), true) {
                 Ok(c) => c,
                 Err(e) => {
                     error.set(Some(e.to_string()));
@@ -86,8 +87,8 @@ pub fn Login() -> Element {
                         "Ingresar"
                     }
                     div { class: "mt-md text-center",
-                        a {
-                            href: "/setup",
+                        Link {
+                            to: Route::Setup {},
                             class: "text-muted",
                             "Configuración inicial"
                         }

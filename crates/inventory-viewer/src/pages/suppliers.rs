@@ -11,6 +11,7 @@ use crate::components::molecules::card::Card;
 use crate::components::molecules::modal::Modal;
 use crate::components::organisms::data_table::{Column, DataTable};
 use crate::pages::layout::{require_auth, AppShell};
+use crate::routes::Route;
 
 #[component]
 pub fn Suppliers() -> Element {
@@ -91,7 +92,7 @@ pub fn Suppliers() -> Element {
     let rows = suppliers.read().clone();
 
     rsx! {
-        AppShell { title: "Proveedores".to_string(), active_route: "/suppliers".to_string(),
+        AppShell { title: "Proveedores".to_string(), active_route: Route::Suppliers {},
             if let Some(err) = error.read().as_ref() {
                 div { class: "alert alert-danger mb-md", "{err}" }
             }

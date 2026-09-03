@@ -83,17 +83,22 @@ async fn main() -> anyhow::Result<()> {
     let api = Router::new()
         .merge(routes::public_routes())
         .merge(protected_api)
-        .merge(admin_api);
+        .merge(admin_api)
+        .route_layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            middleware::api_key_middleware,
+        ));
 
     let app = Router::new()
         .route("/health", get(health))
         .nest("/api", api)
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
-        .with_state(state);
+        .with_state(state.clone());
 
     // 10. Start HTTPS server
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8443));
+    let host: std::net::IpAddr = state.config.host.parse()?;
+    let addr = SocketAddr::from((host, state.config.port));
     let (certs, key) = tls::load_or_generate_tls_config(&data_dir)?;
     let rustls_config = tls::create_axum_rustls_config(certs, key)?;
 

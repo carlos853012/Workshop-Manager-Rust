@@ -1,7 +1,9 @@
 use dioxus::prelude::*;
+use dioxus_router::prelude::*;
 
 use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::icons::IconName;
+use crate::routes::Route;
 use crate::theme::use_theme;
 
 #[component]
@@ -44,12 +46,12 @@ pub fn Header(
 #[derive(Clone, PartialEq)]
 pub struct NavItem {
     pub label: String,
-    pub route: String,
+    pub route: Route,
     pub icon: IconName,
 }
 
 #[component]
-pub fn Sidebar(items: Vec<NavItem>, active_route: String) -> Element {
+pub fn Sidebar(items: Vec<NavItem>, active_route: Route) -> Element {
     rsx! {
         aside { class: "sidebar",
             div { class: "sidebar-logo",
@@ -75,9 +77,9 @@ fn SidebarLink(item: NavItem, active: bool) -> Element {
         "sidebar-link"
     };
     rsx! {
-        a {
+        Link {
             class: "{class}",
-            href: "{item.route}",
+            to: item.route.clone(),
             span { "{item.icon.as_emoji()}" }
             span { "{item.label}" }
         }

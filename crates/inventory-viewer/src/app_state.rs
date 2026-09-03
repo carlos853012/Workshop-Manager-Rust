@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::api::ApiClient;
+use crate::config::config;
 
 /// Estado global de autenticación de la aplicación.
 #[derive(Clone, Copy)]
@@ -26,8 +27,9 @@ impl AuthState {
 
     #[allow(dead_code)]
     pub fn api_client(&self) -> Option<ApiClient> {
+        let cfg = config();
         self.token.read().as_ref().and_then(|t| {
-            ApiClient::new(None, true)
+            ApiClient::new(None, cfg.server.api_key.clone(), true)
                 .ok()
                 .map(|client| client.with_token(t.clone()))
         })
