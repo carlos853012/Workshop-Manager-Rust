@@ -26,7 +26,9 @@ pub fn Setup() -> Element {
         }
 
         if password.read().len() < 8 {
-            error.set(Some("La contraseña debe tener al menos 8 caracteres".to_string()));
+            error.set(Some(
+                "La contraseña debe tener al menos 8 caracteres".to_string(),
+            ));
             return;
         }
 
