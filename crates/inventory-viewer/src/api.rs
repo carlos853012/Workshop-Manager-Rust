@@ -1,4 +1,7 @@
-use inventory_common::dto::{ApiResponse, LoginRequest, LoginResponse, PaginatedResponse};
+use inventory_common::dto::{
+    ApiResponse, CreateProductRequest, CreateRepairRequest, CreateSaleRequest, CreateSupplierRequest,
+    LoginRequest, LoginResponse, PaginatedResponse,
+};
 use inventory_common::{Product, Repair, Sale, Supplier, User};
 use serde::{Deserialize, Serialize};
 
@@ -147,6 +150,29 @@ impl ApiClient {
             ],
         )
         .await
+    }
+
+    /// POST /api/products
+    pub async fn create_product(&self, request: &CreateProductRequest) -> Result<Product, ApiError> {
+        self.post("/api/products", request).await
+    }
+
+    /// POST /api/sales
+    pub async fn create_sale(&self, request: &CreateSaleRequest) -> Result<Sale, ApiError> {
+        self.post("/api/sales", request).await
+    }
+
+    /// POST /api/repairs
+    pub async fn create_repair(&self, request: &CreateRepairRequest) -> Result<Repair, ApiError> {
+        self.post("/api/repairs", request).await
+    }
+
+    /// POST /api/suppliers
+    pub async fn create_supplier(
+        &self,
+        request: &CreateSupplierRequest,
+    ) -> Result<Supplier, ApiError> {
+        self.post("/api/suppliers", request).await
     }
 
     async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, ApiError> {

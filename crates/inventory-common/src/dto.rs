@@ -54,6 +54,17 @@ pub struct CreateRepairRequest {
     pub estimated_delivery: Option<chrono::NaiveDate>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateSupplierRequest {
+    pub name: String,
+    pub contact_person: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub address: Option<String>,
+    pub tax_id: Option<String>,
+    pub payment_terms: Option<String>,
+}
+
 // ==================== RESPONSES ====================
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

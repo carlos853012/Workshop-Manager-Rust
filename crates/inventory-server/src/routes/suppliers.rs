@@ -4,7 +4,7 @@ use axum::{
     Extension, Json, Router,
 };
 use chrono::Utc;
-use inventory_common::dto::{ApiResponse, PaginatedResponse};
+use inventory_common::dto::{ApiResponse, CreateSupplierRequest, PaginatedResponse};
 use inventory_common::Supplier;
 use serde::Deserialize;
 use uuid::Uuid;
@@ -28,17 +28,6 @@ struct PaginationParams {
     page: i32,
     #[serde(default = "super::products::default_per_page")]
     per_page: i32,
-}
-
-#[derive(Debug, Deserialize)]
-struct CreateSupplierRequest {
-    name: String,
-    contact_person: Option<String>,
-    email: Option<String>,
-    phone: Option<String>,
-    address: Option<String>,
-    tax_id: Option<String>,
-    payment_terms: Option<String>,
 }
 
 async fn list_suppliers(
