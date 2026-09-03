@@ -19,7 +19,7 @@ pub fn public_routes() -> Router<AppState> {
 /// Rutas protegidas de /api (requieren JWT).
 pub fn protected_routes() -> Router<AppState> {
     Router::new()
-        .nest("/auth/status", auth::protected_routes())
+        .nest("/auth", auth::protected_routes())
         .nest("/products", products::routes())
         .nest("/sales", sales::routes())
         .nest("/repairs", repairs::routes())

@@ -52,8 +52,8 @@ async fn list_repairs(
 
     let items: Vec<Repair> = sqlx::query_as(
         "SELECT id, customer_name, customer_email, customer_phone, motorcycle, license_plate, \
-         description, diagnosis, technician_id, estimated_delivery, priority as \"priority!: Priority\", \
-         status as \"status!: RepairStatus\", estimated_cost, final_cost, created_at, updated_at \
+         description, diagnosis, technician_id, estimated_delivery, priority, \
+         status, estimated_cost, final_cost, created_at, updated_at \
          FROM repairs WHERE status != 'deleted' \
          ORDER BY created_at DESC LIMIT $1 OFFSET $2"
     )
@@ -79,8 +79,8 @@ async fn get_repair(
 ) -> Result<Json<ApiResponse<RepairDetail>>, AppError> {
     let repair: Option<Repair> = sqlx::query_as(
         "SELECT id, customer_name, customer_email, customer_phone, motorcycle, license_plate, \
-         description, diagnosis, technician_id, estimated_delivery, priority as \"priority!: Priority\", \
-         status as \"status!: RepairStatus\", estimated_cost, final_cost, created_at, updated_at \
+         description, diagnosis, technician_id, estimated_delivery, priority, \
+         status, estimated_cost, final_cost, created_at, updated_at \
          FROM repairs WHERE id = $1 AND status != 'deleted'"
     )
     .bind(id)
@@ -91,7 +91,7 @@ async fn get_repair(
     let repair = repair.ok_or(AppError::NotFound("Repair not found".to_string()))?;
 
     let updates: Vec<RepairUpdate> = sqlx::query_as(
-        "SELECT id, repair_id, status as \"status!: RepairStatus\", description, created_by, created_at \
+        "SELECT id, repair_id, status, description, created_by, created_at \
          FROM repair_updates WHERE repair_id = $1 ORDER BY created_at ASC"
     )
     .bind(id)
@@ -144,7 +144,7 @@ async fn create_repair(
     let initial_update = RepairUpdate {
         id: Uuid::new_v4(),
         repair_id: id,
-        status: Some(RepairStatus::Pending.to_string()),
+        status: Some(RepairStatus::Pending),
         description: Some("Repair created".to_string()),
         created_by: Some(user.id),
         created_at: now,
@@ -227,8 +227,8 @@ async fn update_repair(
 ) -> Result<Json<ApiResponse<RepairDetail>>, AppError> {
     let old_repair: Option<Repair> = sqlx::query_as(
         "SELECT id, customer_name, customer_email, customer_phone, motorcycle, license_plate, \
-         description, diagnosis, technician_id, estimated_delivery, priority as \"priority!: Priority\", \
-         status as \"status!: RepairStatus\", estimated_cost, final_cost, created_at, updated_at \
+         description, diagnosis, technician_id, estimated_delivery, priority, \
+         status, estimated_cost, final_cost, created_at, updated_at \
          FROM repairs WHERE id = $1 AND status != 'deleted'"
     )
     .bind(id)
@@ -307,7 +307,7 @@ async fn update_repair(
     };
 
     let updates: Vec<RepairUpdate> = sqlx::query_as(
-        "SELECT id, repair_id, status as \"status!: RepairStatus\", description, created_by, created_at \
+        "SELECT id, repair_id, status, description, created_by, created_at \
          FROM repair_updates WHERE repair_id = $1 ORDER BY created_at ASC"
     )
     .bind(id)

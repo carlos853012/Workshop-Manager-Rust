@@ -32,7 +32,7 @@ async fn login(
     validate_email(&req.email)?;
 
     let user: Option<User> = sqlx::query_as(
-        "SELECT id, email, display_name, password_hash, role as \"role!: UserRole\", status, created_at \
+        "SELECT id, email, display_name, password_hash, role, status, created_at \
          FROM users WHERE email = $1 AND status = 'active'"
     )
     .bind(&req.email)
@@ -136,7 +136,7 @@ async fn status(
     let user_id = Uuid::parse_str(&claims.sub).map_err(|_| AppError::Unauthorized)?;
 
     let user: Option<User> = sqlx::query_as(
-        "SELECT id, email, display_name, password_hash, role as \"role!: UserRole\", status, created_at \
+        "SELECT id, email, display_name, password_hash, role, status, created_at \
          FROM users WHERE id = $1 AND status = 'active'"
     )
     .bind(user_id)

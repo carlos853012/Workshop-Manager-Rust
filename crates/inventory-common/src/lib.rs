@@ -80,7 +80,7 @@ pub struct Repair {
 pub struct RepairUpdate {
     pub id: uuid::Uuid,
     pub repair_id: uuid::Uuid,
-    pub status: Option<String>,
+    pub status: Option<RepairStatus>,
     pub description: Option<String>,
     pub created_by: Option<uuid::Uuid>,
     pub created_at: DateTime<Utc>,

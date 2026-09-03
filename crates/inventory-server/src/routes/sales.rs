@@ -52,7 +52,7 @@ async fn list_sales(
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<Sale> = sqlx::query_as(
-        "SELECT id, customer_name, customer_email, customer_phone, total, payment_method as \"payment_method!: PaymentMethod\", status, created_at \
+        "SELECT id, customer_name, customer_email, customer_phone, total, payment_method, status, created_at \
          FROM sales WHERE status = 'completed' \
          ORDER BY created_at DESC LIMIT $1 OFFSET $2"
     )
@@ -77,7 +77,7 @@ async fn get_sale(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<SaleDetail>>, AppError> {
     let sale: Option<Sale> = sqlx::query_as(
-        "SELECT id, customer_name, customer_email, customer_phone, total, payment_method as \"payment_method!: PaymentMethod\", status, created_at \
+        "SELECT id, customer_name, customer_email, customer_phone, total, payment_method, status, created_at \
          FROM sales WHERE id = $1 AND status = 'completed'"
     )
     .bind(id)

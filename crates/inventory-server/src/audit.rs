@@ -19,7 +19,7 @@ pub async fn log_change(
     sqlx::query(
         "INSERT INTO audit_log \
          (user_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent, created_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())"
+         VALUES ($1, $2, $3, $4, $5, $6, $7::inet, $8, NOW())"
     )
     .bind(user_id)
     .bind(action)
