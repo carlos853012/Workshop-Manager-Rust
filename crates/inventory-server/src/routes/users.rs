@@ -69,7 +69,7 @@ async fn list_users(
 
     let items: Vec<User> = sqlx::query_as(
         "SELECT id, email, display_name, password_hash, role, status, created_at \
-         FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+         FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(params.per_page)
     .bind(offset)
@@ -95,7 +95,7 @@ async fn get_user(
 ) -> Result<Json<ApiResponse<User>>, AppError> {
     let user: Option<User> = sqlx::query_as(
         "SELECT id, email, display_name, password_hash, role, status, created_at \
-         FROM users WHERE id = $1"
+         FROM users WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&state.pool)
@@ -183,7 +183,7 @@ async fn update_user(
 ) -> Result<Json<ApiResponse<User>>, AppError> {
     let old_user: Option<User> = sqlx::query_as(
         "SELECT id, email, display_name, password_hash, role, status, created_at \
-         FROM users WHERE id = $1"
+         FROM users WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&state.pool)
@@ -263,7 +263,7 @@ async fn delete_user(
 
     let old_user: Option<User> = sqlx::query_as(
         "SELECT id, email, display_name, password_hash, role, status, created_at \
-         FROM users WHERE id = $1"
+         FROM users WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&state.pool)

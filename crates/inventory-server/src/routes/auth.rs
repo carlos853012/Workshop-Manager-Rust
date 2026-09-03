@@ -33,7 +33,7 @@ async fn login(
 
     let user: Option<User> = sqlx::query_as(
         "SELECT id, email, display_name, password_hash, role, status, created_at \
-         FROM users WHERE email = $1 AND status = 'active'"
+         FROM users WHERE email = $1 AND status = 'active'",
     )
     .bind(&req.email)
     .fetch_optional(&state.pool)
@@ -137,7 +137,7 @@ async fn status(
 
     let user: Option<User> = sqlx::query_as(
         "SELECT id, email, display_name, password_hash, role, status, created_at \
-         FROM users WHERE id = $1 AND status = 'active'"
+         FROM users WHERE id = $1 AND status = 'active'",
     )
     .bind(user_id)
     .fetch_optional(&state.pool)

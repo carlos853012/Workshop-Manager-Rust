@@ -55,7 +55,7 @@ async fn list_repairs(
          description, diagnosis, technician_id, estimated_delivery, priority, \
          status, estimated_cost, final_cost, created_at, updated_at \
          FROM repairs WHERE status != 'deleted' \
-         ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+         ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(params.per_page)
     .bind(offset)
@@ -81,7 +81,7 @@ async fn get_repair(
         "SELECT id, customer_name, customer_email, customer_phone, motorcycle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
          status, estimated_cost, final_cost, created_at, updated_at \
-         FROM repairs WHERE id = $1 AND status != 'deleted'"
+         FROM repairs WHERE id = $1 AND status != 'deleted'",
     )
     .bind(id)
     .fetch_optional(&state.pool)
@@ -92,7 +92,7 @@ async fn get_repair(
 
     let updates: Vec<RepairUpdate> = sqlx::query_as(
         "SELECT id, repair_id, status, description, created_by, created_at \
-         FROM repair_updates WHERE repair_id = $1 ORDER BY created_at ASC"
+         FROM repair_updates WHERE repair_id = $1 ORDER BY created_at ASC",
     )
     .bind(id)
     .fetch_all(&state.pool)
@@ -229,7 +229,7 @@ async fn update_repair(
         "SELECT id, customer_name, customer_email, customer_phone, motorcycle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
          status, estimated_cost, final_cost, created_at, updated_at \
-         FROM repairs WHERE id = $1 AND status != 'deleted'"
+         FROM repairs WHERE id = $1 AND status != 'deleted'",
     )
     .bind(id)
     .fetch_optional(&state.pool)
@@ -308,7 +308,7 @@ async fn update_repair(
 
     let updates: Vec<RepairUpdate> = sqlx::query_as(
         "SELECT id, repair_id, status, description, created_by, created_at \
-         FROM repair_updates WHERE repair_id = $1 ORDER BY created_at ASC"
+         FROM repair_updates WHERE repair_id = $1 ORDER BY created_at ASC",
     )
     .bind(id)
     .fetch_all(&state.pool)
