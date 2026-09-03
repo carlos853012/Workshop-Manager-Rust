@@ -13,6 +13,8 @@ pub struct ServerSection {
     pub port: u16,
     #[serde(default = "default_api_key")]
     pub api_key: String,
+    #[serde(default)]
+    pub require_device_key: bool,
 }
 
 fn default_host() -> String {
@@ -34,6 +36,7 @@ impl Default for Config {
                 host: default_host(),
                 port: default_port(),
                 api_key: default_api_key(),
+                require_device_key: false,
             },
         }
     }
@@ -49,6 +52,7 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
             host: config.server.host,
             port: config.server.port,
             api_key: config.server.api_key,
+            require_device_key: config.server.require_device_key,
         })
     } else {
         // Crear config por defecto
@@ -61,6 +65,7 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
             host: default_config.server.host,
             port: default_config.server.port,
             api_key: default_config.server.api_key,
+            require_device_key: default_config.server.require_device_key,
         })
     }
 }

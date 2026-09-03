@@ -239,6 +239,13 @@ body {
 }
 
 /* Organisms: Header */
+.dashboard-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+}
+
 .header {
   height: 72px;
   display: flex;

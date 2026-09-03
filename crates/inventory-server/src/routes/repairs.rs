@@ -123,7 +123,7 @@ async fn create_repair(
         "INSERT INTO repairs \
          (id, customer_name, customer_email, customer_phone, vehicle, license_plate, description, \
           priority, status, estimated_cost, estimated_delivery, created_at, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $12)"
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $12)",
     )
     .bind(id)
     .bind(&req.customer_name)

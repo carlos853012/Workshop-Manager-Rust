@@ -55,6 +55,7 @@ pub struct ApiClient {
     client: reqwest::Client,
     base_url: String,
     api_key: String,
+    device_key: String,
     token: Option<String>,
 }
 
@@ -78,10 +79,12 @@ impl ApiClient {
             .build()
             .map_err(|e| ApiError::Network(format!("Failed to build HTTP client: {}", e)))?;
 
+        let config = crate::config::config();
         Ok(Self {
             client,
-            base_url: base_url.unwrap_or_else(|| crate::config::config().server.base_url.clone()),
+            base_url: base_url.unwrap_or(config.server.base_url),
             api_key,
+            device_key: config.server.device_key,
             token: None,
         })
     }
@@ -231,6 +234,9 @@ impl ApiClient {
             .client
             .get(self.url(path))
             .header("X-WorkshopManager-Key", &self.api_key);
+        if !self.device_key.is_empty() {
+            request = request.header("X-WorkshopManager-Device-Key", &self.device_key);
+        }
         if let Some(header) = self.auth_header() {
             request = request.header("Authorization", header);
         }
@@ -247,6 +253,9 @@ impl ApiClient {
             .get(self.url(path))
             .query(query)
             .header("X-WorkshopManager-Key", &self.api_key);
+        if !self.device_key.is_empty() {
+            request = request.header("X-WorkshopManager-Device-Key", &self.device_key);
+        }
         if let Some(header) = self.auth_header() {
             request = request.header("Authorization", header);
         }
@@ -263,6 +272,9 @@ impl ApiClient {
             .post(self.url(path))
             .json(body)
             .header("X-WorkshopManager-Key", &self.api_key);
+        if !self.device_key.is_empty() {
+            request = request.header("X-WorkshopManager-Device-Key", &self.device_key);
+        }
         if let Some(header) = self.auth_header() {
             request = request.header("Authorization", header);
         }
@@ -318,6 +330,6 @@ mod tests {
     #[test]
     fn test_api_error_display() {
         let err = ApiError::Unauthorized;
-        assert_eq!(err.to_string(), "Unauthorized");
+        assert_eq!(err.to_string(), "La sesión ha expirado.");
     }
 }

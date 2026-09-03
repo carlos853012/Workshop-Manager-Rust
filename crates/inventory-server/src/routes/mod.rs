@@ -4,6 +4,7 @@ use crate::state::AppState;
 
 mod analytics;
 mod auth;
+mod device_keys;
 mod products;
 mod repairs;
 mod reports;
@@ -30,5 +31,7 @@ pub fn protected_routes() -> Router<AppState> {
 
 /// Rutas de administración de /api (requieren JWT + rol admin).
 pub fn admin_routes() -> Router<AppState> {
-    Router::new().nest("/users", users::routes())
+    Router::new()
+        .nest("/users", users::routes())
+        .nest("/device-keys", device_keys::routes())
 }

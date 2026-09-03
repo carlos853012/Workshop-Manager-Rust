@@ -33,7 +33,14 @@ dirs = "5.0"
 uuid = { version = "1.0", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 rand = "0.8"
+sha2 = "0.10"
 base64 = "0.22"
 obfstr = "0.4"
 anyhow = "1.0"
 thiserror = "1.0"
+
+[target.'cfg(windows)'.dependencies]
+tao = "0.30"
+tray-icon = "0.19"
+winreg = "0.52"
+clipboard-win = "5.4"

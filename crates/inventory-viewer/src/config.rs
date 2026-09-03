@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::sync::OnceLock;
+use std::sync::{OnceLock, RwLock};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ViewerConfig {
@@ -12,6 +12,8 @@ pub struct ServerSection {
     pub base_url: String,
     #[serde(default = "default_api_key")]
     pub api_key: String,
+    #[serde(default)]
+    pub device_key: String,
 }
 
 fn default_base_url() -> String {
@@ -28,12 +30,13 @@ impl Default for ViewerConfig {
             server: ServerSection {
                 base_url: default_base_url(),
                 api_key: default_api_key(),
+                device_key: String::new(),
             },
         }
     }
 }
 
-static CONFIG: OnceLock<ViewerConfig> = OnceLock::new();
+static CONFIG: OnceLock<RwLock<ViewerConfig>> = OnceLock::new();
 
 fn load_config() -> ViewerConfig {
     let config_path = std::env::current_dir()
@@ -51,5 +54,34 @@ fn load_config() -> ViewerConfig {
 
 /// Acceso global a la configuración del viewer.
 pub fn config() -> ViewerConfig {
-    CONFIG.get_or_init(load_config).clone()
+    CONFIG
+        .get_or_init(|| RwLock::new(load_config()))
+        .read()
+        .map(|config| config.clone())
+        .unwrap_or_default()
+}
+
+pub fn save_config(new_config: ViewerConfig) -> Result<(), String> {
+    let config_path = std::env::current_dir()
+        .map_err(|error| format!("No se pudo localizar la configuración: {error}"))?
+        .join("config")
+        .join("viewer.toml");
+    let content = toml::to_string_pretty(&new_config)
+        .map_err(|error| format!("No se pudo serializar la configuración: {error}"))?;
+
+    std::fs::create_dir_all(
+        config_path
+            .parent()
+            .ok_or_else(|| "Ruta de configuración inválida".to_string())?,
+    )
+    .map_err(|error| format!("No se pudo crear la carpeta de configuración: {error}"))?;
+    std::fs::write(&config_path, content)
+        .map_err(|error| format!("No se pudo guardar la configuración: {error}"))?;
+
+    let config = CONFIG.get_or_init(|| RwLock::new(load_config()));
+    let mut current = config
+        .write()
+        .map_err(|_| "No se pudo actualizar la configuración en memoria".to_string())?;
+    *current = new_config;
+    Ok(())
 }

@@ -1,0 +1,168 @@
+use crate::device_key;
+use sqlx::PgPool;
+use std::cell::Cell;
+use tokio::sync::oneshot::Sender;
+
+use tao::event::Event;
+use tao::event_loop::{ControlFlow, EventLoopBuilder};
+use tao::platform::windows::EventLoopBuilderExtWindows;
+use tray_icon::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem};
+use tray_icon::{Icon, TrayIconBuilder};
+use winreg::enums::{HKEY_CURRENT_USER, KEY_READ, KEY_SET_VALUE};
+use winreg::RegKey;
+
+const AUTOSTART_VALUE: &str = "WorkshopManagerServer";
+const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
+
+enum TrayEvent {
+    Menu(MenuEvent),
+}
+
+fn generate_key_action(pool: &PgPool) {
+    let runtime = match tokio::runtime::Runtime::new() {
+        Ok(runtime) => runtime,
+        Err(error) => {
+            tracing::error!(%error, "No se pudo iniciar runtime para generar Device Key");
+            return;
+        }
+    };
+
+    match runtime.block_on(device_key::create(pool)) {
+        Ok(key) => match clipboard_win::set_clipboard_string(&key) {
+            Ok(()) => tracing::info!("Device Key generada y copiada al portapapeles"),
+            Err(error) => tracing::error!(%error, "Device Key generada, pero no se pudo copiar"),
+        },
+        Err(error) => tracing::error!(%error, "No se pudo generar Device Key"),
+    }
+}
+
+fn is_autostart_enabled() -> bool {
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    hkcu.open_subkey_with_flags(RUN_KEY, KEY_READ)
+        .and_then(|key| key.get_value::<String, _>(AUTOSTART_VALUE))
+        .is_ok()
+}
+
+fn set_autostart(enabled: bool) -> Result<(), String> {
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let run = hkcu
+        .open_subkey_with_flags(RUN_KEY, KEY_SET_VALUE)
+        .map_err(|error| format!("No se pudo abrir autostart: {error}"))?;
+
+    if enabled {
+        let executable = std::env::current_exe()
+            .map_err(|error| format!("No se pudo localizar el servidor: {error}"))?;
+        run.set_value(AUTOSTART_VALUE, &executable.to_string_lossy().to_string())
+            .map_err(|error| format!("No se pudo activar autostart: {error}"))?;
+    } else {
+        run.delete_value(AUTOSTART_VALUE)
+            .map_err(|error| format!("No se pudo desactivar autostart: {error}"))?;
+    }
+
+    Ok(())
+}
+
+fn tray_icon() -> Result<Icon, String> {
+    let size = 32u32;
+    let mut pixels = Vec::with_capacity((size * size * 4) as usize);
+
+    for y in 0..size {
+        for x in 0..size {
+            let border = x < 3 || y < 3 || x >= size - 3 || y >= size - 3;
+            let active = x > 7 && x < 25 && y > 7 && y < 25;
+            let color = if border {
+                [31, 41, 55, 255]
+            } else if active {
+                [37, 99, 235, 255]
+            } else {
+                [219, 234, 254, 255]
+            };
+            pixels.extend_from_slice(&color);
+        }
+    }
+
+    Icon::from_rgba(pixels, size, size)
+        .map_err(|error| format!("No se pudo crear el icono: {error}"))
+}
+
+pub fn run(shutdown_tx: Sender<()>, pool: PgPool) {
+    let mut event_loop_builder = EventLoopBuilder::<TrayEvent>::with_user_event();
+    event_loop_builder.with_any_thread(true);
+    let event_loop = event_loop_builder.build();
+
+    let proxy = event_loop.create_proxy();
+    MenuEvent::set_event_handler(Some(move |event| {
+        let _ = proxy.send_event(TrayEvent::Menu(event));
+    }));
+
+    let menu = Menu::new();
+    let status_item = MenuItem::new("Servidor activo", false, None);
+    let generate_key_item = MenuItem::new("Generar clave de viewer", true, None);
+    let autostart_item =
+        CheckMenuItem::new("Ejecutar al inicio", true, is_autostart_enabled(), None);
+    let exit_item = MenuItem::new("Salir del servidor", true, None);
+
+    if let Err(error) = menu.append_items(&[
+        &status_item,
+        &PredefinedMenuItem::separator(),
+        &generate_key_item,
+        &autostart_item,
+        &PredefinedMenuItem::separator(),
+        &exit_item,
+    ]) {
+        tracing::error!(error = %error, "No se pudo crear el menú del tray");
+        let _ = shutdown_tx.send(());
+        return;
+    }
+
+    let icon = match tray_icon() {
+        Ok(icon) => icon,
+        Err(error) => {
+            tracing::error!(%error, "No se pudo crear el icono del tray");
+            let _ = shutdown_tx.send(());
+            return;
+        }
+    };
+
+    let tray = match TrayIconBuilder::new()
+        .with_menu(Box::new(menu))
+        .with_tooltip("WorkshopManager Server")
+        .with_icon(icon)
+        .build()
+    {
+        Ok(tray) => tray,
+        Err(error) => {
+            tracing::error!(error = %error, "No se pudo crear el tray icon");
+            let _ = shutdown_tx.send(());
+            return;
+        }
+    };
+
+    let autostart_enabled = Cell::new(is_autostart_enabled());
+    let mut shutdown_tx = Some(shutdown_tx);
+
+    event_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Wait;
+
+        if let Event::UserEvent(TrayEvent::Menu(event)) = event {
+            if event.id == generate_key_item.id() {
+                generate_key_action(&pool);
+            } else if event.id == autostart_item.id() {
+                let enabled = !autostart_enabled.get();
+                if let Err(error) = set_autostart(enabled) {
+                    tracing::error!(%error, "No se pudo cambiar autostart");
+                } else {
+                    autostart_enabled.set(enabled);
+                    autostart_item.set_checked(enabled);
+                }
+            } else if event.id == exit_item.id() {
+                if let Some(sender) = shutdown_tx.take() {
+                    let _ = sender.send(());
+                }
+                *control_flow = ControlFlow::Exit;
+            }
+        }
+
+        _ = &tray;
+    });
+}

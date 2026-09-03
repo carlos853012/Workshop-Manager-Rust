@@ -1,5 +1,6 @@
 use axum::{middleware as axum_middleware, routing::get, Router};
 use std::net::SocketAddr;
+use tokio::sync::oneshot;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
@@ -9,6 +10,7 @@ mod backup;
 mod config;
 mod crypto;
 mod db_manager;
+mod device_key;
 mod error;
 mod middleware;
 mod rate_limiter;
@@ -17,6 +19,8 @@ mod schema;
 mod secrets;
 mod state;
 mod tls;
+#[cfg(target_os = "windows")]
+mod tray;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -67,14 +71,24 @@ async fn main() -> anyhow::Result<()> {
     let state = state::AppState::new(secrets, config, pool);
 
     // 9. Build router
-    let protected_api = routes::protected_routes().route_layer(
-        axum_middleware::from_fn_with_state(state.clone(), middleware::authenticate_middleware),
-    );
+    let protected_api = routes::protected_routes()
+        .route_layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            middleware::authenticate_middleware,
+        ))
+        .route_layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            device_key::require_device_key,
+        ));
 
     let admin_api = routes::admin_routes()
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::authenticate_middleware,
+        ))
+        .route_layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            device_key::require_device_key,
         ))
         .route_layer(axum_middleware::from_fn(
             middleware::require_admin_middleware,
@@ -104,9 +118,29 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("Server listening on https://{}", addr);
 
-    axum_server::bind_rustls(addr, rustls_config)
-        .serve(app.into_make_service())
-        .await?;
+    let handle = axum_server::Handle::new();
+    let server_task = tokio::spawn(
+        axum_server::bind_rustls(addr, rustls_config)
+            .handle(handle.clone())
+            .serve(app.into_make_service()),
+    );
+
+    #[cfg(target_os = "windows")]
+    {
+        let (shutdown_tx, shutdown_rx) = oneshot::channel();
+        let tray_pool = state.pool.clone();
+        std::thread::spawn(move || tray::run(shutdown_tx, tray_pool));
+        shutdown_rx
+            .await
+            .map_err(|_| anyhow::anyhow!("Tray shutdown signal lost"))?;
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    tokio::signal::ctrl_c().await?;
+
+    tracing::info!("Shutdown requested");
+    handle.graceful_shutdown(Some(std::time::Duration::from_secs(10)));
+    server_task.await??;
 
     Ok(())
 }

@@ -50,9 +50,8 @@ fn Tabs(active_route: Route) -> Element {
                             title: "Cerrar {tab.title}",
                             onclick: {
                                 let route_to_close = tab.route.clone();
-                                    let active_route = active_route.clone();
+                                let active_route = active_route.clone();
                                 let mut tabs = tabs_state.tabs;
-                                let navigator = navigator;
                                 move |_| {
                                     let current_tabs = tabs.read().clone();
                                     let Some(closed_index) = current_tabs
