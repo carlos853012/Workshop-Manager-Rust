@@ -110,7 +110,7 @@ pub struct User {
     pub id: uuid::Uuid,
     pub email: String,
     pub display_name: Option<String>,
-    #[serde(skip_serializing)]
+    #[serde(skip_serializing, default)]
     pub password_hash: String,
     pub role: UserRole,
     pub status: String,
