@@ -18,15 +18,16 @@ impl<T: Clone + 'static> PartialEq for Column<T> {
 pub fn DataTable<T: Clone + PartialEq + 'static>(
     columns: Vec<Column<T>>,
     rows: Vec<T>,
-    #[props(default = 1)] page: usize,
-    #[props(default = 10)] per_page: usize,
-    #[props(default = 0)] total: usize,
-    on_page_change: Option<EventHandler<usize>>,
+    #[props(default = 1)] page: i32,
+    #[props(default = 10)] per_page: i32,
+    #[props(default = 0)] total: i64,
+    #[props(default = EventHandler::new(|_| {}))] on_page_change: EventHandler<i32>,
 ) -> Element {
-    let total_pages = if total == 0 {
+    let total_pages: i64 = if total == 0 {
         1
     } else {
-        total.div_ceil(per_page)
+        let per_page_i64 = i64::from(per_page);
+        (total + per_page_i64 - 1) / per_page_i64
     };
 
     rsx! {
@@ -62,23 +63,15 @@ pub fn DataTable<T: Clone + PartialEq + 'static>(
                 div { class: "pagination",
                     button {
                         class: "btn btn-ghost",
-                        disabled: page <= 1,
-                        onclick: move |_evt| {
-                            if let Some(handler) = on_page_change.as_ref() {
-                                handler.call(page.saturating_sub(1));
-                            }
-                        },
+                        disabled: i64::from(page) <= 1,
+                        onclick: move |_evt| on_page_change.call(page.saturating_sub(1)),
                         "Anterior"
                     }
                     span { class: "text-muted", "Página {page} de {total_pages}" }
                     button {
                         class: "btn btn-ghost",
-                        disabled: page >= total_pages,
-                        onclick: move |_evt| {
-                            if let Some(handler) = on_page_change.as_ref() {
-                                handler.call(page + 1);
-                            }
-                        },
+                        disabled: i64::from(page) >= total_pages,
+                        onclick: move |_evt| on_page_change.call(page + 1),
                         "Siguiente"
                     }
                 }
