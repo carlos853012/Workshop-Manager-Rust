@@ -604,6 +604,22 @@ body {
   padding: var(--space-xl);
 }
 
+.login-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+}
+
+.login-header h1 {
+  margin: 0;
+}
+
+.login-settings-button {
+  padding: var(--space-xs);
+  font-size: var(--font-size-lg);
+}
+
 /* Empty state */
 .empty-state {
   display: flex;

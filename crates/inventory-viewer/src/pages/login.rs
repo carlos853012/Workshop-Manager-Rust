@@ -5,6 +5,7 @@ use crate::api::ApiError;
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::components::atoms::input::Input;
+use crate::components::organisms::connection_settings::ConnectionSettingsButton;
 use crate::routes::Route;
 
 #[component]
@@ -60,7 +61,10 @@ pub fn Login() -> Element {
         div { class: "login-page",
             div { class: "card login-card",
                 div { class: "card-body",
-                    h1 { class: "text-2xl font-semibold text-center mb-lg", "WorkshopManager" }
+                    div { class: "login-header",
+                        h1 { class: "text-2xl font-semibold", "WorkshopManager" }
+                        ConnectionSettingsButton { class: Some("login-settings-button".to_string()) }
+                    }
                     p { class: "text-muted text-center mb-lg", "Iniciá sesión para continuar" }
 
                     if let Some(err) = error.read().as_ref() {
