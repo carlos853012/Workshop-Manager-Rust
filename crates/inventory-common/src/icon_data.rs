@@ -1,29 +1,78 @@
 //! Generador de icono RGBA para la aplicación WorkshopManager.
-//! Dibuja una llave inglesa (wrench) sobre fondo azul, renderizada a píxeles.
+//! Rasteriza el SVG del wrench (Heroicons) usando resvg sobre fondo azul redondeado.
+
+use resvg::tiny_skia::Pixmap;
+use resvg::usvg;
+
+/// SVG del wrench (Heroicons outline, 24×24) con fill blanco.
+const WRENCH_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFFFFF">
+  <path d="M14.7 6.3a4.5 4.5 0 0 0-5.9 5.9l-5.2 5.2a2.1 2.1 0 1 0 3 3l5.2-5.2a4.5 4.5 0 0 0 5.9-5.9l-2.8 2.8-2.1-.7-.7-2.1 2.6-3z"/>
+</svg>"##;
 
 /// Genera un icono RGBA de tamaño `size`×`size` píxeles.
-/// Fondo azul (#2563EB) con bordes redondeados y wrench blanco.
+/// Fondo azul (#2563EB) con bordes redondeados y wrench blanco rasterizado desde el SVG.
 pub fn generate_wrench_icon(size: u32) -> Vec<u8> {
-    let mut pixels = Vec::with_capacity((size * size * 4) as usize);
     let s = size as f64;
-    let center = s / 2.0;
+
+    // 1. Renderizar el SVG del wrench a un pixmap del tamaño deseado
+    let wrench_pixels = render_svg_to_rgba(WRENCH_SVG, size, size);
+
+    // 2. Construir el icono final: fondo azul + wrench encima
+    let mut pixels = Vec::with_capacity((size * size * 4) as usize);
 
     for y in 0..size {
         for x in 0..size {
             let px = x as f64 + 0.5;
             let py = y as f64 + 0.5;
 
-            let color = if is_wrench(px, py, s, center) {
-                [255u8, 255, 255, 255] // wrench blanco
-            } else if is_background(px, py, s) {
-                [37u8, 99, 235, 255] // fondo azul
+            let bg = is_background(px, py, s);
+
+            // Obtener el píxel del wrench en esta posición
+            let wrench_idx = ((y * size + x) * 4) as usize;
+            let w_r = wrench_pixels[wrench_idx];
+            let w_g = wrench_pixels[wrench_idx + 1];
+            let w_b = wrench_pixels[wrench_idx + 2];
+            let w_a = wrench_pixels[wrench_idx + 3];
+
+            if bg {
+                if w_a > 0 {
+                    // Wrench encima del fondo: mezclar
+                    let alpha = w_a as f64 / 255.0;
+                    let r = (37.0 * (1.0 - alpha) + w_r as f64 * alpha) as u8;
+                    let g = (99.0 * (1.0 - alpha) + w_g as f64 * alpha) as u8;
+                    let b = (235.0 * (1.0 - alpha) + w_b as f64 * alpha) as u8;
+                    pixels.extend_from_slice(&[r, g, b, 255]);
+                } else {
+                    // Solo fondo azul
+                    pixels.extend_from_slice(&[37, 99, 235, 255]);
+                }
+            } else if w_a > 0 {
+                // Wrench fuera del fondo (no debería pasar, pero por si acaso)
+                pixels.extend_from_slice(&[w_r, w_g, w_b, w_a]);
             } else {
-                [0u8, 0, 0, 0] // transparente
-            };
-            pixels.extend_from_slice(&color);
+                // Transparente
+                pixels.extend_from_slice(&[0, 0, 0, 0]);
+            }
         }
     }
     pixels
+}
+
+/// Rasteriza un SVG string a RGBA pixels en el tamaño dado.
+fn render_svg_to_rgba(svg_str: &str, width: u32, height: u32) -> Vec<u8> {
+    let opt = usvg::Options::default();
+    let tree = usvg::Tree::from_str(svg_str, &opt).expect("Failed to parse SVG");
+
+    let svg_size = tree.size();
+    let scale_x = width as f32 / svg_size.width();
+    let scale_y = height as f32 / svg_size.height();
+
+    let mut pixmap =
+        Pixmap::new(width, height).expect("Failed to create pixmap for icon rendering");
+    let transform = resvg::tiny_skia::Transform::from_scale(scale_x, scale_y);
+    resvg::render(&tree, transform, &mut pixmap.as_mut());
+
+    pixmap.take_demultiplied()
 }
 
 /// Fondo azul con bordes redondeados.
@@ -39,85 +88,12 @@ fn is_background(px: f64, py: f64, s: f64) -> bool {
     dx * dx + dy * dy <= r * r
 }
 
-/// Determina si un píxel pertenece al wrench.
-/// El wrench se dibuja en el espacio [4, 28]×[4, 28] de un icono 32×32.
-fn is_wrench(px: f64, py: f64, s: f64, _center: f64) -> bool {
-    let scale = s / 32.0;
-
-    // Coordenadas normalizadas al espacio 32×32
-    let x = px / scale;
-    let y = py / scale;
-
-    // === MANGO (handle) ===
-    // Línea diagonal desde (16, 22) hasta (26, 12)
-    if is_thick_line(x, y, 16.0, 22.0, 26.0, 12.0, 2.2) {
-        return true;
-    }
-
-    // === CABEZA (jaw circular) ===
-    // Círculo en la parte superior-izquierda, radio ~5.5, centro (9.5, 9.5)
-    let jaw_cx = 9.5;
-    let jaw_cy = 9.5;
-    let jaw_r = 5.5;
-    let dx_j = x - jaw_cx;
-    let dy_j = y - jaw_cy;
-    let dist_j = (dx_j * dx_j + dy_j * dy_j).sqrt();
-
-    // Anillo exterior del jaw
-    if dist_j <= jaw_r && dist_j >= jaw_r - 2.0 {
-        // Abrir la mordaza: recortar un sector
-        let angle = dy_j.atan2(dx_j);
-        let angle_deg = angle.to_degrees();
-        // Abrir entre 200° y 340° (la parte inferior del círculo)
-        if !(-20.0..=200.0).contains(&angle_deg) {
-            // Dentro del rango de apertura — no dibujar
-        } else {
-            return true;
-        }
-    }
-
-    // === CONEXIÓN mango-cabeza ===
-    // Pequeño rectángulo que conecta el jaw con el mango
-    if is_thick_line(x, y, 13.0, 14.0, 17.0, 19.0, 1.8) {
-        return true;
-    }
-
-    // === PUNTA DEL MANGO ===
-    // Pequeño círculo al final del mango (como empuñadura)
-    let grip_cx = 26.5;
-    let grip_cy = 11.5;
-    let grip_r = 2.0;
-    let dx_g = x - grip_cx;
-    let dy_g = y - grip_cy;
-    if dx_g * dx_g + dy_g * dy_g <= grip_r * grip_r {
-        return true;
-    }
-
-    false
-}
-
-/// Dibuja una línea gruesa entre dos puntos.
-fn is_thick_line(x: f64, y: f64, x1: f64, y1: f64, x2: f64, y2: f64, thickness: f64) -> bool {
-    let dx = x2 - x1;
-    let dy = y2 - y1;
-    let len_sq = dx * dx + dy * dy;
-    if len_sq == 0.0 {
-        return false;
-    }
-    let t = ((x - x1) * dx + (y - y1) * dy) / len_sq;
-    let t = t.clamp(0.0, 1.0);
-    let proj_x = x1 + t * dx;
-    let proj_y = y1 + t * dy;
-    let dist_sq = (x - proj_x) * (x - proj_x) + (y - proj_y) * (y - proj_y);
-    dist_sq <= thickness * thickness
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_generate_icon尺寸正确() {
+    fn test_generate_icon_32() {
         let pixels = generate_wrench_icon(32);
         assert_eq!(pixels.len(), 32 * 32 * 4);
     }
@@ -137,7 +113,6 @@ mod tests {
     #[test]
     fn test_background_corners_are_transparent() {
         let pixels = generate_wrench_icon(32);
-        // Pixel (1,1) should be transparent (outside rounded corner)
         let idx = ((1 * 32 + 1) * 4) as usize;
         assert_eq!(
             pixels[idx + 3],
@@ -147,9 +122,9 @@ mod tests {
     }
 
     #[test]
-    fn test_center_is_blue() {
+    fn test_background_is_blue() {
         let pixels = generate_wrench_icon(32);
-        // Pixel (2,28) should be blue background (far from wrench)
+        // Pixel (2,28) should be blue background (far from wrench, inside rounded rect)
         let idx = ((28 * 32 + 2) * 4) as usize;
         assert_eq!(pixels[idx], 37, "background R should be 37");
         assert_eq!(pixels[idx + 1], 99, "background G should be 99");
@@ -158,10 +133,26 @@ mod tests {
     }
 
     #[test]
-    fn test_is_thick_line_basic() {
-        // Point on the line
-        assert!(is_thick_line(5.0, 5.0, 0.0, 0.0, 10.0, 10.0, 1.0));
-        // Point far from the line
-        assert!(!is_thick_line(0.0, 10.0, 0.0, 0.0, 10.0, 0.0, 1.0));
+    fn test_wrench_pixels_are_not_all_transparent() {
+        let pixels = generate_wrench_icon(64);
+        // At least some pixels should have alpha > 0 (wrench or background)
+        let has_content = pixels.chunks(4).any(|p| p[3] > 0);
+        assert!(has_content, "Icon should have some visible pixels");
+    }
+
+    #[test]
+    fn test_wrench_has_white_pixels() {
+        let pixels = generate_wrench_icon(64);
+        // Some pixels should be white (the wrench itself)
+        let has_white = pixels
+            .chunks(4)
+            .any(|p| p[0] == 255 && p[1] == 255 && p[2] == 255 && p[3] == 255);
+        assert!(has_white, "Icon should contain white wrench pixels");
+    }
+
+    #[test]
+    fn test_render_svg_to_rgba_dimensions() {
+        let pixels = render_svg_to_rgba(WRENCH_SVG, 48, 48);
+        assert_eq!(pixels.len(), 48 * 48 * 4);
     }
 }

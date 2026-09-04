@@ -13,3 +13,4 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 thiserror = "1.0"
 ed25519-dalek = "2.1"
 sha2 = "0.10"
+resvg = { version = "0.48", default-features = false }
