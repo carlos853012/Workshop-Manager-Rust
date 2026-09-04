@@ -1,11 +1,12 @@
 use dioxus::prelude::*;
+use std::rc::Rc;
 
 /// Columna genérica de la tabla.
 #[derive(Clone)]
 pub struct Column<T: Clone + 'static> {
     pub key: String,
     pub header: String,
-    pub render: fn(&T) -> Element,
+    pub render: Rc<dyn Fn(&T) -> Element>,
 }
 
 impl<T: Clone + 'static> PartialEq for Column<T> {

@@ -218,11 +218,12 @@ async fn update_product(
     validate_create_product_request(&req)?;
 
     let old_product: Option<Product> = sqlx::query_as(
-        "SELECT id, name, description, category, brand, model, sku, price, cost, stock, min_stock, \
-         location, supplier_id, status, created_at, updated_at \
-         FROM products WHERE id = $1 AND status = 'active'"
+        "SELECT id, workshop_id, name, description, category, brand, model, sku, barcode, price, cost, \
+         stock, min_stock, location, supplier_id, status, created_at, updated_at \
+         FROM products WHERE id = $1 AND workshop_id = $2 AND status = 'active'"
     )
     .bind(id)
+    .bind(user.workshop_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -235,7 +236,7 @@ async fn update_product(
         "UPDATE products SET \
          name = $2, description = $3, category = $4, brand = $5, model = $6, sku = $7, \
          price = $8, cost = $9, stock = $10, min_stock = $11, location = $12, supplier_id = $13, updated_at = $14 \
-         WHERE id = $1 AND status = 'active'"
+         WHERE id = $1 AND workshop_id = $15 AND status = 'active'"
     )
     .bind(id)
     .bind(&req.name)
@@ -251,6 +252,7 @@ async fn update_product(
     .bind(&req.location)
     .bind(req.supplier_id)
     .bind(now)
+    .bind(user.workshop_id)
     .execute(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;

@@ -12,6 +12,7 @@ use crate::components::molecules::modal::Modal;
 use crate::components::organisms::data_table::{Column, DataTable};
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
+use std::rc::Rc;
 
 #[component]
 pub fn Suppliers() -> Element {
@@ -70,22 +71,28 @@ pub fn Suppliers() -> Element {
         Column {
             key: "name".to_string(),
             header: "Nombre".to_string(),
-            render: |s| rsx! { span { "{s.name}" } },
+            render: Rc::new(|s: &Supplier| rsx! { span { "{s.name}" } }),
         },
         Column {
             key: "contact".to_string(),
             header: "Contacto".to_string(),
-            render: |s| rsx! { span { "{s.contact_person.as_deref().unwrap_or(\"-\")}" } },
+            render: Rc::new(
+                |s: &Supplier| rsx! { span { "{s.contact_person.as_deref().unwrap_or(\"-\")}" } },
+            ),
         },
         Column {
             key: "email".to_string(),
             header: "Email".to_string(),
-            render: |s| rsx! { span { "{s.email.as_deref().unwrap_or(\"-\")}" } },
+            render: Rc::new(
+                |s: &Supplier| rsx! { span { "{s.email.as_deref().unwrap_or(\"-\")}" } },
+            ),
         },
         Column {
             key: "phone".to_string(),
             header: "Teléfono".to_string(),
-            render: |s| rsx! { span { "{s.phone.as_deref().unwrap_or(\"-\")}" } },
+            render: Rc::new(
+                |s: &Supplier| rsx! { span { "{s.phone.as_deref().unwrap_or(\"-\")}" } },
+            ),
         },
     ];
 

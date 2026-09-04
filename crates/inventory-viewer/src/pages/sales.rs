@@ -10,6 +10,7 @@ use crate::components::molecules::card::Card;
 use crate::components::organisms::data_table::{Column, DataTable};
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
+use std::rc::Rc;
 
 #[component]
 pub fn Sales() -> Element {
@@ -67,22 +68,26 @@ pub fn Sales() -> Element {
         Column {
             key: "customer".to_string(),
             header: "Cliente".to_string(),
-            render: |s| rsx! { span { "{s.customer_name.as_deref().unwrap_or(\"-\")}" } },
+            render: Rc::new(
+                |s: &Sale| rsx! { span { "{s.customer_name.as_deref().unwrap_or(\"-\")}" } },
+            ),
         },
         Column {
             key: "payment".to_string(),
             header: "Pago".to_string(),
-            render: |s| rsx! { span { "{s.payment_method}" } },
+            render: Rc::new(|s: &Sale| rsx! { span { "{s.payment_method}" } }),
         },
         Column {
             key: "total".to_string(),
             header: "Total".to_string(),
-            render: |s| rsx! { span { class: "text-right", "{format_clp(s.total)}" } },
+            render: Rc::new(
+                |s: &Sale| rsx! { span { class: "text-right", "{format_clp(s.total)}" } },
+            ),
         },
         Column {
             key: "status".to_string(),
             header: "Estado".to_string(),
-            render: |s| rsx! { span { class: "badge", "{s.status}" } },
+            render: Rc::new(|s: &Sale| rsx! { span { class: "badge", "{s.status}" } }),
         },
     ];
 

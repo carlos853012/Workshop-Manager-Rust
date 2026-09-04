@@ -14,6 +14,7 @@ use crate::components::molecules::modal::Modal;
 use crate::components::organisms::data_table::{Column, DataTable};
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
+use std::rc::Rc;
 
 #[component]
 pub fn Repairs() -> Element {
@@ -72,17 +73,21 @@ pub fn Repairs() -> Element {
         Column {
             key: "customer".to_string(),
             header: "Cliente".to_string(),
-            render: |r| rsx! { span { "{r.customer_name.as_deref().unwrap_or(\"-\")}" } },
+            render: Rc::new(
+                |r: &Repair| rsx! { span { "{r.customer_name.as_deref().unwrap_or(\"-\")}" } },
+            ),
         },
         Column {
             key: "vehicle".to_string(),
             header: "Vehículo".to_string(),
-            render: |r| rsx! { span { "{r.vehicle.as_deref().unwrap_or(\"-\")}" } },
+            render: Rc::new(
+                |r: &Repair| rsx! { span { "{r.vehicle.as_deref().unwrap_or(\"-\")}" } },
+            ),
         },
         Column {
             key: "status".to_string(),
             header: "Estado".to_string(),
-            render: |r| {
+            render: Rc::new(|r: &Repair| {
                 rsx! {
                 Badge {
                     variant: match r.status {
@@ -94,12 +99,12 @@ pub fn Repairs() -> Element {
                         "{r.status}"
                     }
                 }
-            },
+            }),
         },
         Column {
             key: "priority".to_string(),
             header: "Prioridad".to_string(),
-            render: |r| rsx! { span { "{r.priority}" } },
+            render: Rc::new(|r: &Repair| rsx! { span { "{r.priority}" } }),
         },
     ];
 

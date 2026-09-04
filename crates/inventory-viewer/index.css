@@ -850,6 +850,65 @@ body {
   gap: var(--space-md);
 }
 
+/* Productos — Scanner */
+.products-scan-wrapper {
+  padding: var(--space-lg) var(--space-xl) 0;
+}
+.products-scan-input {
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  font-size: 1.1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text);
+}
+.products-scan-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.products-table {
+  overflow-x: auto;
+}
+.col-actions {
+  width: 80px;
+}
+.table-actions {
+  display: flex;
+  gap: var(--space-xs);
+  justify-content: center;
+}
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-icon:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+.btn-icon.btn-danger:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+.btn-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Stock entry modal */
+.stock-entry-info p {
+  margin: var(--space-xs) 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .app-shell {

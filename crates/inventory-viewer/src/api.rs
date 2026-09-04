@@ -212,6 +212,20 @@ impl ApiClient {
         self.post("/api/products", request).await
     }
 
+    /// PUT /api/products/:id
+    pub async fn update_product(
+        &self,
+        id: uuid::Uuid,
+        request: &CreateProductRequest,
+    ) -> Result<Product, ApiError> {
+        self.put(&format!("/api/products/{}", id), request).await
+    }
+
+    /// DELETE /api/products/:id
+    pub async fn delete_product(&self, id: uuid::Uuid) -> Result<(), ApiError> {
+        self.delete(&format!("/api/products/{}", id)).await
+    }
+
     /// POST /api/sales
     pub async fn create_sale(&self, request: &CreateSaleRequest) -> Result<Sale, ApiError> {
         self.post("/api/sales", request).await
@@ -281,6 +295,39 @@ impl ApiClient {
             .client
             .post(self.url(path))
             .json(body)
+            .header("X-WorkshopManager-Key", &self.api_key);
+        if !self.device_key.is_empty() {
+            request = request.header("X-WorkshopManager-Device-Key", &self.device_key);
+        }
+        if let Some(header) = self.auth_header() {
+            request = request.header("Authorization", header);
+        }
+        self.handle_response(request.send().await).await
+    }
+
+    async fn put<B: serde::Serialize, T: serde::de::DeserializeOwned>(
+        &self,
+        path: &str,
+        body: &B,
+    ) -> Result<T, ApiError> {
+        let mut request = self
+            .client
+            .put(self.url(path))
+            .json(body)
+            .header("X-WorkshopManager-Key", &self.api_key);
+        if !self.device_key.is_empty() {
+            request = request.header("X-WorkshopManager-Device-Key", &self.device_key);
+        }
+        if let Some(header) = self.auth_header() {
+            request = request.header("Authorization", header);
+        }
+        self.handle_response(request.send().await).await
+    }
+
+    async fn delete<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, ApiError> {
+        let mut request = self
+            .client
+            .delete(self.url(path))
             .header("X-WorkshopManager-Key", &self.api_key);
         if !self.device_key.is_empty() {
             request = request.header("X-WorkshopManager-Device-Key", &self.device_key);
