@@ -94,7 +94,9 @@ pub fn Setup() -> Element {
                     navigator_set.push(Route::Dashboard {});
                 }
                 Err(ApiError::Forbidden) => {
-                    navigator_set.push(Route::Login {});
+                    error_set.set(Some(
+                        "Ya existe un usuario administrador. Usá Login para ingresar.".to_string(),
+                    ));
                 }
                 Err(e) => {
                     error_set.set(Some(e.user_message().to_string()));
