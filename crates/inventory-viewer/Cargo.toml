@@ -10,6 +10,7 @@ path = "src/main.rs"
 [dependencies]
 inventory-common = { path = "../inventory-common" }
 dioxus = { version = "0.6", features = ["desktop"] }
+dioxus-desktop = "0.6"
 dioxus-router = "0.6"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
 serde = { version = "1.0", features = ["derive"] }

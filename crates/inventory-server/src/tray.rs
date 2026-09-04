@@ -70,26 +70,8 @@ fn set_autostart(enabled: bool) -> Result<(), String> {
 
 #[allow(dead_code)]
 fn tray_icon() -> Result<Icon, String> {
-    let size = 32u32;
-    let mut pixels = Vec::with_capacity((size * size * 4) as usize);
-
-    for y in 0..size {
-        for x in 0..size {
-            let border = x < 3 || y < 3 || x >= size - 3 || y >= size - 3;
-            let active = x > 7 && x < 25 && y > 7 && y < 25;
-            let color = if border {
-                [31, 41, 55, 255]
-            } else if active {
-                [37, 99, 235, 255]
-            } else {
-                [219, 234, 254, 255]
-            };
-            pixels.extend_from_slice(&color);
-        }
-    }
-
-    Icon::from_rgba(pixels, size, size)
-        .map_err(|error| format!("No se pudo crear el icono: {error}"))
+    let pixels = inventory_common::icon_data::generate_wrench_icon(32);
+    Icon::from_rgba(pixels, 32, 32).map_err(|error| format!("No se pudo crear el icono: {error}"))
 }
 
 #[allow(dead_code)]
