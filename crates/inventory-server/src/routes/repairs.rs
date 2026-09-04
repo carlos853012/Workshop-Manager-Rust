@@ -5,6 +5,7 @@ use axum::{
 };
 use chrono::Utc;
 use inventory_common::dto::{ApiResponse, CreateRepairRequest, PaginatedResponse};
+use inventory_common::patente;
 use inventory_common::{Repair, RepairStatus, RepairUpdate};
 use serde::Deserialize;
 use uuid::Uuid;
@@ -367,6 +368,11 @@ fn validate_create_repair_request(req: &CreateRepairRequest) -> Result<(), AppEr
                 "license_plate must be <= 50 characters".to_string(),
             ));
         }
+        if !license_plate.is_empty() {
+            if let Err(e) = patente::validar_patente_con_error(license_plate) {
+                return Err(AppError::Validation(e.to_string()));
+            }
+        }
     }
 
     Ok(())
@@ -384,13 +390,91 @@ mod tests {
             customer_email: Some("john@example.com".to_string()),
             customer_phone: Some("1234567890".to_string()),
             vehicle: Some("Honda CB500".to_string()),
-            license_plate: Some("ABC123".to_string()),
+            license_plate: Some("BCDF12".to_string()),
             description: Some("Oil change".to_string()),
             priority: Priority::Medium,
             estimated_cost: None,
             estimated_delivery: None,
         };
 
+        assert!(validate_create_repair_request(&req).is_ok());
+    }
+
+    #[test]
+    fn test_validate_create_repair_request_invalid_plate() {
+        let req = CreateRepairRequest {
+            customer_name: Some("Jane Doe".to_string()),
+            customer_email: None,
+            customer_phone: None,
+            vehicle: None,
+            license_plate: Some("INVALID".to_string()),
+            description: None,
+            priority: Priority::Low,
+            estimated_cost: None,
+            estimated_delivery: None,
+        };
+
+        assert!(validate_create_repair_request(&req).is_err());
+    }
+
+    #[test]
+    fn test_validate_create_repair_request_valid_plate_formats() {
+        // Formato nuevo: 4 letras + 2 dígitos
+        let req = CreateRepairRequest {
+            customer_name: Some("Test".to_string()),
+            customer_email: None,
+            customer_phone: None,
+            vehicle: None,
+            license_plate: Some("BCDF12".to_string()),
+            description: None,
+            priority: Priority::Low,
+            estimated_cost: None,
+            estimated_delivery: None,
+        };
+        assert!(validate_create_repair_request(&req).is_ok());
+
+        // Formato antiguo: 2 letras + 4 dígitos
+        let req = CreateRepairRequest {
+            customer_name: Some("Test".to_string()),
+            customer_email: None,
+            customer_phone: None,
+            vehicle: None,
+            license_plate: Some("AR1240".to_string()),
+            description: None,
+            priority: Priority::Low,
+            estimated_cost: None,
+            estimated_delivery: None,
+        };
+        assert!(validate_create_repair_request(&req).is_ok());
+
+        // Motos: 3 letras + 2 dígitos
+        let req = CreateRepairRequest {
+            customer_name: Some("Test".to_string()),
+            customer_email: None,
+            customer_phone: None,
+            vehicle: None,
+            license_plate: Some("BJH61".to_string()),
+            description: None,
+            priority: Priority::Low,
+            estimated_cost: None,
+            estimated_delivery: None,
+        };
+        assert!(validate_create_repair_request(&req).is_ok());
+    }
+
+    #[test]
+    fn test_validate_create_repair_request_empty_plate_ok() {
+        let req = CreateRepairRequest {
+            customer_name: Some("Test".to_string()),
+            customer_email: None,
+            customer_phone: None,
+            vehicle: None,
+            license_plate: None,
+            description: None,
+            priority: Priority::Low,
+            estimated_cost: None,
+            estimated_delivery: None,
+        };
         assert!(validate_create_repair_request(&req).is_ok());
     }
 

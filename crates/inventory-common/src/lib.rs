@@ -2,6 +2,7 @@ pub mod dto;
 pub mod features;
 pub mod license;
 pub mod money;
+pub mod patente;
 
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
