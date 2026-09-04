@@ -59,7 +59,7 @@ pub struct PosLookupRequest {
     pub barcode: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PosProductResponse {
     pub product_id: uuid::Uuid,
     pub name: String,

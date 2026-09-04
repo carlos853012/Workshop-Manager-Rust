@@ -44,9 +44,14 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
             icon: IconName::Package,
         },
         NavItem {
+            label: "POS".to_string(),
+            route: Route::Pos {},
+            icon: IconName::ShoppingCart,
+        },
+        NavItem {
             label: "Ventas".to_string(),
             route: Route::Sales {},
-            icon: IconName::ShoppingCart,
+            icon: IconName::DocumentText,
         },
         NavItem {
             label: "Reparaciones".to_string(),
@@ -61,7 +66,7 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
         NavItem {
             label: "Reportes".to_string(),
             route: Route::Reports {},
-            icon: IconName::DocumentText,
+            icon: IconName::ChartBar,
         },
         NavItem {
             label: "Usuarios".to_string(),

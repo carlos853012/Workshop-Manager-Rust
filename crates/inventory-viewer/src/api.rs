@@ -1,6 +1,7 @@
 use inventory_common::dto::{
     ApiResponse, CreateProductRequest, CreateRepairRequest, CreateSaleRequest,
-    CreateSupplierRequest, LoginRequest, LoginResponse, PaginatedResponse, RegisterRequest,
+    CreateSupplierRequest, LoginRequest, LoginResponse, PaginatedResponse, PosProductResponse,
+    RegisterRequest,
 };
 use inventory_common::{Product, Repair, Sale, Supplier, User};
 use serde::{Deserialize, Serialize};
@@ -227,6 +228,15 @@ impl ApiClient {
         request: &CreateSupplierRequest,
     ) -> Result<Supplier, ApiError> {
         self.post("/api/suppliers", request).await
+    }
+
+    /// GET /api/products/lookup?barcode=XXX
+    pub async fn lookup_product_by_barcode(
+        &self,
+        barcode: &str,
+    ) -> Result<PosProductResponse, ApiError> {
+        self.get_with_query("/api/products/lookup", &[("barcode", barcode.to_string())])
+            .await
     }
 
     async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, ApiError> {

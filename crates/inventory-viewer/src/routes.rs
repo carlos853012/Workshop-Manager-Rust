@@ -3,6 +3,7 @@ use dioxus_router::prelude::*;
 
 use crate::pages::home::{Dashboard, Root};
 use crate::pages::login::Login;
+use crate::pages::pos::Pos;
 use crate::pages::products::Products;
 use crate::pages::repairs::Repairs;
 use crate::pages::reports::Reports;
@@ -27,6 +28,9 @@ pub enum Route {
 
     #[route("/products")]
     Products {},
+
+    #[route("/pos")]
+    Pos {},
 
     #[route("/sales")]
     Sales {},

@@ -1,6 +1,7 @@
 pub mod home;
 pub mod layout;
 pub mod login;
+pub mod pos;
 pub mod products;
 pub mod repairs;
 pub mod reports;

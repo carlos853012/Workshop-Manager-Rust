@@ -145,6 +145,7 @@ fn ProductFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandl
     let auth = use_auth();
     let mut name = use_signal(|| "".to_string());
     let mut sku = use_signal(|| "".to_string());
+    let mut barcode = use_signal(|| "".to_string());
     let mut price = use_signal(|| "".to_string());
     let mut cost = use_signal(|| "".to_string());
     let mut stock = use_signal(|| "".to_string());
@@ -170,7 +171,7 @@ fn ProductFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandl
             brand: None,
             model: None,
             sku: Some(sku.read().clone()).filter(|s| !s.is_empty()),
-            barcode: None,
+            barcode: Some(barcode.read().clone()).filter(|s| !s.is_empty()),
             price: price_dec,
             cost: cost_dec,
             stock: stock_i,
@@ -237,6 +238,14 @@ fn ProductFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandl
                     label: Some("SKU".to_string()),
                     value: sku.read().clone(),
                     oninput: move |evt: FormEvent| sku.set(evt.value().clone()),
+                }
+            }
+            div { class: "form-row mt-md",
+                Input {
+                    label: Some("Código de barras".to_string()),
+                    value: barcode.read().clone(),
+                    oninput: move |evt: FormEvent| barcode.set(evt.value().clone()),
+                    placeholder: Some("Vacío = auto-generar".to_string()),
                 }
             }
             div { class: "form-row mt-md",
