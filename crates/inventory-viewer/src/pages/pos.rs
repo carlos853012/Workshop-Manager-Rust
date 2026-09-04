@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 use inventory_common::dto::{CreateSaleRequest, PosProductResponse, SaleItemRequest};
+use inventory_common::money::format_clp;
 use inventory_common::PaymentMethod;
 use rust_decimal::Decimal;
 
@@ -152,8 +153,8 @@ pub fn Pos() -> Element {
                                                 "+"
                                             }
                                         }
-                                        td { "${item.product.price}" }
-                                        td { "$" { format!("{}", item.product.price * Decimal::from(item.quantity)) } }
+                                        td { class: "pos-cart-price", "{format_clp(item.product.price)}" }
+                                        td { class: "pos-cart-subtotal", "{format_clp(item.product.price * Decimal::from(item.quantity))}" }
                                         td {
                                             button {
                                                 class: "pos-remove-btn",
@@ -172,15 +173,15 @@ pub fn Pos() -> Element {
                         div { class: "pos-totals",
                             div { class: "pos-total-row",
                                 span { "Subtotal" }
-                                span { "${subtotal}" }
+                                span { "{format_clp(subtotal)}" }
                             }
                             div { class: "pos-total-row",
                                 span { "IVA (19%)" }
-                                span { "${tax}" }
+                                span { "{format_clp(tax)}" }
                             }
                             div { class: "pos-total-row pos-total-final",
                                 span { "TOTAL" }
-                                span { "${total}" }
+                                span { "{format_clp(total)}" }
                             }
                         }
                     }

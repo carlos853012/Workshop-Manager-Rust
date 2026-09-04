@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 use inventory_common::dto::CreateProductRequest;
+use inventory_common::money::format_clp;
 use inventory_common::Product;
 use rust_decimal::Decimal;
 
@@ -82,7 +83,7 @@ pub fn Products() -> Element {
         Column {
             key: "price".to_string(),
             header: "Precio".to_string(),
-            render: |p| rsx! { span { "${p.price}" } },
+            render: |p| rsx! { span { class: "text-right", "{format_clp(p.price)}" } },
         },
         Column {
             key: "stock".to_string(),

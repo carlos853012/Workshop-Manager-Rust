@@ -566,6 +566,14 @@ body {
   border-bottom: none;
 }
 
+.text-right {
+  text-align: right;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Utilities */
 .grid { display: grid; gap: var(--space-md);}
 .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -758,6 +766,12 @@ body {
   font-weight: 500;
 }
 
+.pos-cart-price,
+.pos-cart-subtotal {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .pos-qty-btn {
   width: 28px;
   height: 28px;
@@ -807,6 +821,7 @@ body {
   justify-content: space-between;
   padding: var(--space-xs) 0;
   font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .pos-total-final {

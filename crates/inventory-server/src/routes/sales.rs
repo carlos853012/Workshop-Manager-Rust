@@ -5,6 +5,7 @@ use axum::{
 };
 use chrono::Utc;
 use inventory_common::dto::{ApiResponse, CreateSaleRequest, PaginatedResponse};
+use inventory_common::money::round_to_ten;
 use inventory_common::{PaymentMethod, Sale, SaleItem};
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -220,7 +221,7 @@ async fn create_sale_in_transaction(
         let item_subtotal = unit_price * Decimal::from(item_req.quantity);
         let item_discount_amount = item_subtotal * item_discount / Decimal::from(100);
         let item_taxable = item_subtotal - item_discount_amount;
-        let item_tax = item_taxable * iva_rate;
+        let item_tax = round_to_ten(item_taxable * iva_rate);
         let item_total = item_taxable + item_tax;
 
         sale_subtotal += item_subtotal;
@@ -248,7 +249,7 @@ async fn create_sale_in_transaction(
 
     let discount_amount_total = (sale_subtotal * discount_amount) / Decimal::from(100);
     let taxable_amount = sale_subtotal - discount_amount_total;
-    let tax_amount = taxable_amount * iva_rate;
+    let tax_amount = round_to_ten(taxable_amount * iva_rate);
     let total = taxable_amount + tax_amount;
 
     sqlx::query(

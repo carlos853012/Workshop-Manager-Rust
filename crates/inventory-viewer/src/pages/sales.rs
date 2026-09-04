@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
+use inventory_common::money::format_clp;
 use inventory_common::Sale;
 
 use crate::api::ApiError;
@@ -76,7 +77,7 @@ pub fn Sales() -> Element {
         Column {
             key: "total".to_string(),
             header: "Total".to_string(),
-            render: |s| rsx! { span { "${s.total}" } },
+            render: |s| rsx! { span { class: "text-right", "{format_clp(s.total)}" } },
         },
         Column {
             key: "status".to_string(),
