@@ -28,8 +28,8 @@ impl AuthenticatedUser {
             "seller" => UserRole::Seller,
             _ => return Err(StatusCode::UNAUTHORIZED),
         };
-        let workshop_id = uuid::Uuid::parse_str(&claims.workshop_id)
-            .map_err(|_| StatusCode::UNAUTHORIZED)?;
+        let workshop_id =
+            uuid::Uuid::parse_str(&claims.workshop_id).map_err(|_| StatusCode::UNAUTHORIZED)?;
 
         Ok(Self {
             id,

@@ -123,7 +123,13 @@ mod tests {
     fn test_validate_token_fails_with_wrong_secret() -> anyhow::Result<()> {
         let user_id = Uuid::new_v4();
         let workshop_id = Uuid::new_v4();
-        let token = create_token(user_id, "test@example.com", UserRole::Seller, workshop_id, "secret_a")?;
+        let token = create_token(
+            user_id,
+            "test@example.com",
+            UserRole::Seller,
+            workshop_id,
+            "secret_a",
+        )?;
         assert!(validate_token(&token, "secret_b").is_err());
         Ok(())
     }

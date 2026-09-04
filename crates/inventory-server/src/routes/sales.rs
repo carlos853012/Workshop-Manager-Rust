@@ -7,9 +7,9 @@ use chrono::Utc;
 use inventory_common::dto::{ApiResponse, CreateSaleRequest, PaginatedResponse};
 use inventory_common::{PaymentMethod, Sale, SaleItem};
 use rust_decimal::Decimal;
-use std::str::FromStr;
 use serde::Deserialize;
 use sqlx::{Postgres, Transaction};
+use std::str::FromStr;
 use uuid::Uuid;
 
 use crate::audit::{self, redact_sensitive};
@@ -48,16 +48,18 @@ async fn list_sales(
 
     let offset = (params.page - 1) * params.per_page;
 
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sales WHERE status = 'completed' AND workshop_id = $1")
-        .bind(user.workshop_id)
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+    let total: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM sales WHERE status = 'completed' AND workshop_id = $1",
+    )
+    .bind(user.workshop_id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<Sale> = sqlx::query_as(
         "SELECT id, workshop_id, customer_name, customer_email, customer_phone, subtotal, discount_amount, taxable_amount, tax_amount, total, payment_method, status, created_at \
          FROM sales WHERE status = 'completed' AND workshop_id = $1 \
-         ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+         ORDER BY created_at DESC LIMIT $2 OFFSET $3"
     )
     .bind(user.workshop_id)
     .bind(params.per_page)
@@ -127,7 +129,8 @@ async fn create_sale(
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
-    let result = create_sale_in_transaction(&mut tx, &req, payment_method, user.id, user.workshop_id).await;
+    let result =
+        create_sale_in_transaction(&mut tx, &req, payment_method, user.id, user.workshop_id).await;
 
     match result {
         Ok(sale_detail) => {
@@ -251,7 +254,7 @@ async fn create_sale_in_transaction(
     sqlx::query(
         "INSERT INTO sales \
          (id, workshop_id, customer_name, customer_email, customer_phone, subtotal, discount_amount, taxable_amount, tax_amount, total, payment_method, status, created_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'completed', $11)"
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'completed', $12)"
     )
     .bind(sale_id)
     .bind(workshop_id)
@@ -273,7 +276,7 @@ async fn create_sale_in_transaction(
         sqlx::query(
             "INSERT INTO sale_items \
              (id, sale_id, product_id, product_name, quantity, unit_price, total) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7)"
+             VALUES ($1, $2, $3, $4, $5, $6, $7)",
         )
         .bind(item.id)
         .bind(item.sale_id)

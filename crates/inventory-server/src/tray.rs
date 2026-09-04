@@ -11,13 +11,17 @@ use tray_icon::{Icon, TrayIconBuilder};
 use winreg::enums::{HKEY_CURRENT_USER, KEY_READ, KEY_SET_VALUE};
 use winreg::RegKey;
 
+#[allow(dead_code)]
 const AUTOSTART_VALUE: &str = "WorkshopManagerServer";
+#[allow(dead_code)]
 const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 
+#[allow(dead_code)]
 enum TrayEvent {
     Menu(MenuEvent),
 }
 
+#[allow(dead_code)]
 fn generate_key_action(pool: &PgPool) {
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(runtime) => runtime,
@@ -36,6 +40,7 @@ fn generate_key_action(pool: &PgPool) {
     }
 }
 
+#[allow(dead_code)]
 fn is_autostart_enabled() -> bool {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     hkcu.open_subkey_with_flags(RUN_KEY, KEY_READ)
@@ -43,6 +48,7 @@ fn is_autostart_enabled() -> bool {
         .is_ok()
 }
 
+#[allow(dead_code)]
 fn set_autostart(enabled: bool) -> Result<(), String> {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let run = hkcu
@@ -62,6 +68,7 @@ fn set_autostart(enabled: bool) -> Result<(), String> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn tray_icon() -> Result<Icon, String> {
     let size = 32u32;
     let mut pixels = Vec::with_capacity((size * size * 4) as usize);
@@ -85,6 +92,7 @@ fn tray_icon() -> Result<Icon, String> {
         .map_err(|error| format!("No se pudo crear el icono: {error}"))
 }
 
+#[allow(dead_code)]
 pub fn run(shutdown_tx: Sender<()>, pool: PgPool) {
     let mut event_loop_builder = EventLoopBuilder::<TrayEvent>::with_user_event();
     event_loop_builder.with_any_thread(true);

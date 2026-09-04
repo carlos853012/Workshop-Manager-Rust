@@ -139,8 +139,14 @@ async fn register(
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
-    let token = auth::create_token(user_id, &req.email, role.clone(), workshop_id, &state.secrets.jwt_secret)
-        .map_err(|e| AppError::Internal(format!("Token creation error: {}", e)))?;
+    let token = auth::create_token(
+        user_id,
+        &req.email,
+        role.clone(),
+        workshop_id,
+        &state.secrets.jwt_secret,
+    )
+    .map_err(|e| AppError::Internal(format!("Token creation error: {}", e)))?;
 
     transaction
         .commit()
@@ -201,7 +207,7 @@ async fn find_workshop(
     workshop_id: Uuid,
 ) -> Result<Option<Workshop>, AppError> {
     sqlx::query_as(
-        "SELECT id, name, address, city, created_at, updated_at FROM workshops WHERE id = $1",
+        "SELECT id, name, address, city, barcode_prefix, created_at, updated_at FROM workshops WHERE id = $1",
     )
     .bind(workshop_id)
     .fetch_optional(pool)

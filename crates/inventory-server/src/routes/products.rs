@@ -4,7 +4,9 @@ use axum::{
     Extension, Json, Router,
 };
 use chrono::Utc;
-use inventory_common::dto::{ApiResponse, CreateProductRequest, PaginatedResponse, PosLookupRequest, PosProductResponse};
+use inventory_common::dto::{
+    ApiResponse, CreateProductRequest, PaginatedResponse, PosLookupRequest, PosProductResponse,
+};
 use inventory_common::Product;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -60,11 +62,13 @@ async fn list_products(
 
     let offset = (params.page - 1) * params.per_page;
 
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM products WHERE status = 'active' AND workshop_id = $1")
-        .bind(user.workshop_id)
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+    let total: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM products WHERE status = 'active' AND workshop_id = $1",
+    )
+    .bind(user.workshop_id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<Product> = sqlx::query_as(
         "SELECT id, workshop_id, name, description, category, brand, model, sku, barcode, price, cost, stock, min_stock, \
@@ -131,7 +135,9 @@ async fn create_product(
         }
     } else {
         // Generate EAN-13 with workshop prefix
-        let prefix = get_workshop_prefix(&state.pool, workshop_id).await.map_err(|e| AppError::Internal(format!("Barcode error: {}", e)))?;
+        let prefix = get_workshop_prefix(&state.pool, workshop_id)
+            .await
+            .map_err(|e| AppError::Internal(format!("Barcode error: {}", e)))?;
         let barcode = generate_ean13(&prefix);
         Some(barcode)
     };
@@ -348,11 +354,18 @@ async fn lookup_product_by_barcode(
         return Err(AppError::Validation("Barcode is required".to_string()));
     }
 
-    type ProductRow = (uuid::Uuid, String, Decimal, i32, Option<String>, Option<String>);
+    type ProductRow = (
+        uuid::Uuid,
+        String,
+        Decimal,
+        i32,
+        Option<String>,
+        Option<String>,
+    );
 
     let product: Option<ProductRow> = sqlx::query_as(
         "SELECT id, name, price, stock, barcode, sku \
-         FROM products WHERE barcode = $1 AND status = 'active' AND workshop_id = $2"
+         FROM products WHERE barcode = $1 AND status = 'active' AND workshop_id = $2",
     )
     .bind(barcode)
     .bind(user.workshop_id)

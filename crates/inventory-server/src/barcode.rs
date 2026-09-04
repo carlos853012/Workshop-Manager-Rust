@@ -6,7 +6,10 @@ pub fn generate_ean13(prefix: &str) -> String {
     // For simplicity, we use a 6-char prefix + 6-digit counter + check digit
 
     // Extract numeric prefix (6 digits)
-    let prefix = prefix.chars().filter(|c| c.is_ascii_digit()).collect::<String>();
+    let prefix = prefix
+        .chars()
+        .filter(|c| c.is_ascii_digit())
+        .collect::<String>();
     let prefix = format!("{:0>6}", prefix); // Pad to 6 digits
 
     // For now, use a simple counter approach - in production use a DB sequence
@@ -60,18 +63,29 @@ fn calculate_ean13_check_digit(base: &str) -> u32 {
 }
 
 /// Get the workshop's barcode prefix
-pub async fn get_workshop_prefix(pool: &sqlx::PgPool, workshop_id: uuid::Uuid) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    let prefix: Option<String> = sqlx::query_scalar("SELECT barcode_prefix FROM workshops WHERE id = $1")
-        .bind(workshop_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+pub async fn get_workshop_prefix(
+    pool: &sqlx::PgPool,
+    workshop_id: uuid::Uuid,
+) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    // Use COALESCE to handle NULL values
+    let prefix: Option<String> =
+        sqlx::query_scalar("SELECT COALESCE(barcode_prefix, '') FROM workshops WHERE id = $1")
+            .bind(workshop_id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
 
     match prefix {
         Some(p) if !p.is_empty() => Ok(p),
         _ => {
             // Generate a prefix from workshop ID - use first 6 hex chars
-            let prefix = format!("{:06}", workshop_id.simple().to_string()[..6].parse::<u32>().unwrap_or(0) % 1000000);
+            let prefix = format!(
+                "{:06}",
+                workshop_id.simple().to_string()[..6]
+                    .parse::<u32>()
+                    .unwrap_or(0)
+                    % 1000000
+            );
             // Update the workshop with this prefix
             sqlx::query("UPDATE workshops SET barcode_prefix = $1 WHERE id = $2")
                 .bind(&prefix)

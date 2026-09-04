@@ -1,6 +1,5 @@
 use axum::{middleware as axum_middleware, routing::get, Router};
 use std::net::SocketAddr;
-use tokio::sync::oneshot;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
@@ -80,6 +79,10 @@ async fn main() -> anyhow::Result<()> {
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             device_key::require_device_key,
+        ))
+        .route_layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            middleware::api_key_middleware,
         ));
 
     let admin_api = routes::admin_routes()
@@ -93,16 +96,16 @@ async fn main() -> anyhow::Result<()> {
         ))
         .route_layer(axum_middleware::from_fn(
             middleware::require_admin_middleware,
+        ))
+        .route_layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            middleware::api_key_middleware,
         ));
 
     let api = Router::new()
         .merge(routes::public_routes())
         .merge(protected_api)
-        .merge(admin_api)
-        .route_layer(axum_middleware::from_fn_with_state(
-            state.clone(),
-            middleware::api_key_middleware,
-        ));
+        .merge(admin_api);
 
     let app = Router::new()
         .route("/health", get(health))
@@ -126,17 +129,22 @@ async fn main() -> anyhow::Result<()> {
             .serve(app.into_make_service()),
     );
 
-    #[cfg(target_os = "windows")]
-    {
-        let (shutdown_tx, shutdown_rx) = oneshot::channel();
-        let tray_pool = state.pool.clone();
-        std::thread::spawn(move || tray::run(shutdown_tx, tray_pool));
-        shutdown_rx
-            .await
-            .map_err(|_| anyhow::anyhow!("Tray shutdown signal lost"))?;
-    }
+    // Deshabilitado temporalmente para pruebas
+    // #[cfg(target_os = "windows")]
+    // {
+    //     let (shutdown_tx, shutdown_rx) = oneshot::channel();
+    //     let tray_pool = state.pool.clone();
+    //     std::thread::spawn(move || tray::run(shutdown_tx, tray_pool));
+    //     shutdown_rx
+    //         .await
+    //         .map_err(|_| anyhow::anyhow!("Tray shutdown signal lost"))?;
+    // }
 
     #[cfg(not(target_os = "windows"))]
+    tokio::signal::ctrl_c().await?;
+
+    // En Windows sin tray, esperar Ctrl+C
+    #[cfg(target_os = "windows")]
     tokio::signal::ctrl_c().await?;
 
     tracing::info!("Shutdown requested");

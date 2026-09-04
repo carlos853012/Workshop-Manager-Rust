@@ -20,7 +20,6 @@ ALTER TABLE suppliers ADD COLUMN workshop_id UUID NOT NULL REFERENCES workshops(
 -- Agregar workshop_id a repairs
 ALTER TABLE repairs ADD COLUMN workshop_id UUID NOT NULL REFERENCES workshops(id);
 
--- Agregar workshop_id a sale_items (opcional, para consultas)
 -- Agregar campos de impuestos a sales
 ALTER TABLE sales ADD COLUMN subtotal NUMERIC(19,4) NOT NULL DEFAULT 0;
 ALTER TABLE sales ADD COLUMN discount_amount NUMERIC(19,4) NOT NULL DEFAULT 0;

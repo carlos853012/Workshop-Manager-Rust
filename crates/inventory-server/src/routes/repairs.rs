@@ -121,7 +121,7 @@ async fn create_repair(
     let id = Uuid::new_v4();
     let now = Utc::now();
 
-sqlx::query(
+    sqlx::query(
         "INSERT INTO repairs \
          (id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, description, \
            priority, status, estimated_cost, estimated_delivery, created_at, updated_at) \

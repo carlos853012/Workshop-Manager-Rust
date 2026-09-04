@@ -46,11 +46,13 @@ async fn list_suppliers(
 
     let offset = (params.page - 1) * params.per_page;
 
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM suppliers WHERE status = 'active' AND workshop_id = $1")
-        .bind(user.workshop_id)
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+    let total: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM suppliers WHERE status = 'active' AND workshop_id = $1",
+    )
+    .bind(user.workshop_id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<Supplier> = sqlx::query_as(
         "SELECT id, workshop_id, name, contact_person, email, phone, address, tax_id, payment_terms, status, created_at, updated_at \
