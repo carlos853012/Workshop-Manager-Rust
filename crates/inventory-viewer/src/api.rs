@@ -1,7 +1,8 @@
 use inventory_common::dto::{
-    ApiResponse, CreateProductRequest, CreateRepairRequest, CreateSaleRequest,
-    CreateSupplierRequest, LoginRequest, LoginResponse, PaginatedResponse, PosProductResponse,
-    RegisterRequest,
+    ApiResponse, ClientHistoryResponse, ClientReport, CreateProductRequest, CreateRepairRequest,
+    CreateSaleRequest, CreateSupplierRequest, CreateUserRequest, DashboardResponse, KpisResponse,
+    LoginRequest, LoginResponse, PaginatedResponse, PosProductResponse, RegisterRequest,
+    UpdateUserRequest,
 };
 use inventory_common::{Product, Repair, Sale, Supplier, User};
 use serde::{Deserialize, Serialize};
@@ -251,6 +252,71 @@ impl ApiClient {
     ) -> Result<PosProductResponse, ApiError> {
         self.get_with_query("/api/products/lookup", &[("barcode", barcode.to_string())])
             .await
+    }
+
+    // ==================== ANALYTICS ====================
+
+    /// GET /api/analytics/dashboard
+    pub async fn get_dashboard(&self) -> Result<DashboardResponse, ApiError> {
+        self.get("/api/analytics/dashboard").await
+    }
+
+    /// GET /api/analytics/kpis
+    pub async fn get_kpis(&self) -> Result<KpisResponse, ApiError> {
+        self.get("/api/analytics/kpis").await
+    }
+
+    // ==================== REPORTS ====================
+
+    /// GET /api/reports/clients
+    pub async fn list_clients(&self) -> Result<Vec<ClientReport>, ApiError> {
+        self.get("/api/reports/clients").await
+    }
+
+    /// GET /api/reports/client-history?email=XXX
+    pub async fn get_client_history(&self, email: &str) -> Result<ClientHistoryResponse, ApiError> {
+        self.get_with_query(
+            "/api/reports/client-history",
+            &[("email", email.to_string())],
+        )
+        .await
+    }
+
+    // ==================== USERS ====================
+
+    /// GET /api/users
+    pub async fn list_users(
+        &self,
+        page: i32,
+        per_page: i32,
+    ) -> Result<PaginatedResponse<User>, ApiError> {
+        self.get_with_query(
+            "/api/users",
+            &[
+                ("page", page.to_string()),
+                ("per_page", per_page.to_string()),
+            ],
+        )
+        .await
+    }
+
+    /// POST /api/users
+    pub async fn create_user(&self, request: &CreateUserRequest) -> Result<User, ApiError> {
+        self.post("/api/users", request).await
+    }
+
+    /// PUT /api/users/:id
+    pub async fn update_user(
+        &self,
+        id: uuid::Uuid,
+        request: &UpdateUserRequest,
+    ) -> Result<User, ApiError> {
+        self.put(&format!("/api/users/{}", id), request).await
+    }
+
+    /// DELETE /api/users/:id
+    pub async fn delete_user(&self, id: uuid::Uuid) -> Result<(), ApiError> {
+        self.delete(&format!("/api/users/{}", id)).await
     }
 
     async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, ApiError> {

@@ -167,3 +167,68 @@ pub struct DashboardResponse {
     pub completed_repairs: i64,
     pub average_sale: Decimal,
 }
+
+// ==================== ANALYTICS / KPIs ====================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KpisResponse {
+    pub total_suppliers: i64,
+    pub total_customers: i64,
+    pub in_progress_repairs: i64,
+    pub cancelled_repairs: i64,
+}
+
+// ==================== REPORTS ====================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClientReport {
+    pub customer_email: String,
+    pub customer_name: Option<String>,
+    pub total_purchases: i64,
+    pub total_spent: Decimal,
+    pub last_purchase: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClientSaleRecord {
+    pub id: uuid::Uuid,
+    pub total: Decimal,
+    pub payment_method: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClientRepairRecord {
+    pub id: uuid::Uuid,
+    pub description: Option<String>,
+    pub status: String,
+    pub total: Option<Decimal>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClientHistoryResponse {
+    pub email: String,
+    pub name: Option<String>,
+    pub sales: Vec<ClientSaleRecord>,
+    pub repairs: Vec<ClientRepairRecord>,
+    pub total_spent: Decimal,
+    pub total_repairs: i64,
+}
+
+// ==================== USER MANAGEMENT ====================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateUserRequest {
+    pub email: String,
+    pub display_name: Option<String>,
+    pub password: String,
+    pub role: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateUserRequest {
+    pub display_name: Option<String>,
+    pub role: Option<String>,
+    pub status: Option<String>,
+}

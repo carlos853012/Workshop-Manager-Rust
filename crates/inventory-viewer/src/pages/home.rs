@@ -1,7 +1,11 @@
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
+use inventory_common::money::format_clp;
+use rust_decimal::Decimal;
 
+use crate::api::ApiError;
 use crate::app_state::use_auth;
+use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::icons::IconName;
 use crate::pages::layout::{require_auth, AppShell};
@@ -13,17 +17,126 @@ pub fn Dashboard() -> Element {
         return rsx! {};
     }
 
+    let auth = use_auth();
+    let loading = use_signal(|| true);
+    let error = use_signal(|| None::<String>);
+
+    let total_products = use_signal(|| 0i64);
+    let total_sales = use_signal(|| 0i64);
+    let pending_repairs = use_signal(|| 0i64);
+    let total_suppliers = use_signal(|| 0i64);
+    let total_revenue = use_signal(|| Decimal::ZERO);
+    let average_sale = use_signal(|| Decimal::ZERO);
+    let total_customers = use_signal(|| 0i64);
+    let in_progress_repairs = use_signal(|| 0i64);
+
+    let load_data = move || {
+        let client = auth.api_client();
+        let mut loading_set = loading;
+        let mut error_set = error;
+        let mut total_products_set = total_products;
+        let mut total_sales_set = total_sales;
+        let mut pending_repairs_set = pending_repairs;
+        let mut total_suppliers_set = total_suppliers;
+        let mut total_revenue_set = total_revenue;
+        let mut average_sale_set = average_sale;
+        let mut total_customers_set = total_customers;
+        let mut in_progress_repairs_set = in_progress_repairs;
+
+        loading_set.set(true);
+        error_set.set(None);
+
+        spawn(async move {
+            if let Some(client) = client {
+                match client.get_dashboard().await {
+                    Ok(d) => {
+                        total_products_set.set(d.total_products);
+                        total_sales_set.set(d.total_sales);
+                        pending_repairs_set.set(d.pending_repairs);
+                        total_revenue_set.set(d.total_revenue);
+                        average_sale_set.set(d.average_sale);
+                    }
+                    Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
+                        error_set.set(Some("Sesión expirada".to_string()));
+                    }
+                    Err(e) => {
+                        error_set.set(Some(e.user_message().to_string()));
+                    }
+                }
+                if let Ok(k) = client.get_kpis().await {
+                    total_suppliers_set.set(k.total_suppliers);
+                    total_customers_set.set(k.total_customers);
+                    in_progress_repairs_set.set(k.in_progress_repairs);
+                }
+            } else {
+                error_set.set(Some("No hay cliente API".to_string()));
+            }
+            loading_set.set(false);
+        });
+    };
+
+    use_effect(move || {
+        load_data();
+    });
+
     rsx! {
         AppShell { title: "Dashboard".to_string(), active_route: Route::Dashboard {},
-            div { class: "grid grid-4",
-                DashboardCard { title: "Productos".to_string(), value: "--".to_string(), icon: IconName::Package }
-                DashboardCard { title: "Ventas".to_string(), value: "--".to_string(), icon: IconName::ShoppingCart }
-                DashboardCard { title: "Reparaciones".to_string(), value: "--".to_string(), icon: IconName::Wrench }
-                DashboardCard { title: "Proveedores".to_string(), value: "--".to_string(), icon: IconName::Truck }
+            if let Some(err) = error.read().as_ref() {
+                div { class: "alert alert-danger mb-md", "{err}" }
             }
-            div { class: "mt-lg",
-                Card { title: "Próximamente".to_string(),
-                    p { class: "text-muted", "El dashboard con datos reales se conectará a /api/analytics/dashboard en la siguiente iteración." }
+            if *loading.read() {
+                div { class: "empty-state", Spinner {} }
+            } else {
+                div { class: "grid grid-4",
+                    DashboardCard {
+                        title: "Productos".to_string(),
+                        value: total_products.read().to_string(),
+                        icon: IconName::Package,
+                    }
+                    DashboardCard {
+                        title: "Ventas".to_string(),
+                        value: total_sales.read().to_string(),
+                        icon: IconName::ShoppingCart,
+                    }
+                    DashboardCard {
+                        title: "Reparaciones".to_string(),
+                        value: pending_repairs.read().to_string(),
+                        icon: IconName::Wrench,
+                    }
+                    DashboardCard {
+                        title: "Proveedores".to_string(),
+                        value: total_suppliers.read().to_string(),
+                        icon: IconName::Truck,
+                    }
+                }
+                div { class: "grid grid-3 mt-lg",
+                    Card {
+                        div { class: "flex items-center gap-md",
+                            span { class: "text-2xl text-primary", {IconName::ChartBar.render()} }
+                            div {
+                                p { class: "text-muted text-sm", "Ticket promedio" }
+                                p { class: "text-xl font-semibold", "{format_clp(*average_sale.read())}" }
+                            }
+                        }
+                    }
+                    Card {
+                        div { class: "flex items-center gap-md",
+                            span { class: "text-2xl text-success", {IconName::User.render()} }
+                            div {
+                                p { class: "text-muted text-sm", "Clientes" }
+                                p { class: "text-xl font-semibold", "{total_customers.read()}" }
+                            }
+                        }
+                    }
+                    Card {
+                        div { class: "flex items-center gap-md",
+                            span { class: "text-2xl text-warning", {IconName::Wrench.render()} }
+                            div {
+                                p { class: "text-muted text-sm", "En reparación" }
+                                p { class: "text-xl font-semibold", "{in_progress_repairs.read()}" }
+                            }
+                        }
+                    }
                 }
             }
         }

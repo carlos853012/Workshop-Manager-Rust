@@ -852,20 +852,22 @@ body {
 
 /* Productos — Scanner */
 .products-scan-wrapper {
-  padding: var(--space-lg) var(--space-xl) 0;
+  margin-bottom: var(--space-sm);
 }
 .products-scan-input {
   width: 100%;
-  padding: var(--space-md) var(--space-lg);
-  font-size: 1.1rem;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-card);
+  padding: var(--space-md);
+  font-size: 1.25rem;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-md);
+  background: var(--bg);
   color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
 }
 .products-scan-input:focus {
-  outline: none;
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 .products-table {
   overflow-x: auto;
@@ -887,21 +889,25 @@ body {
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 .btn-icon:hover {
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
 }
 .btn-icon.btn-danger:hover {
   background: var(--danger-light);
   color: var(--danger);
 }
+.btn-icon.btn-edit:hover {
+  background: transparent;
+  color: var(--primary);
+}
 .btn-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 /* Stock entry modal */

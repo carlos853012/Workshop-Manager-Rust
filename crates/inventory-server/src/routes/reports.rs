@@ -1,16 +1,21 @@
-use axum::{extract::State, routing::get, Json, Router};
+use axum::{
+    extract::{Query, State},
+    routing::get,
+    Extension, Json, Router,
+};
 use inventory_common::dto::ApiResponse;
 use rust_decimal::Decimal;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::Row;
 
 use crate::error::AppError;
+use crate::middleware::AuthenticatedUser;
 use crate::state::AppState;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/clients", get(report_clients))
-        .route("/history", get(report_history))
+        .route("/client-history", get(client_history))
 }
 
 #[derive(Debug, Serialize)]
@@ -24,7 +29,10 @@ struct ClientReport {
 
 async fn report_clients(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
 ) -> Result<Json<ApiResponse<Vec<ClientReport>>>, AppError> {
+    let wid = user.workshop_id;
+
     let rows = sqlx::query(
         "SELECT \
             customer_email, \
@@ -33,10 +41,11 @@ async fn report_clients(
             COALESCE(SUM(total), 0) as total_spent, \
             MAX(created_at) as last_purchase \
          FROM sales \
-         WHERE customer_email IS NOT NULL AND status = 'completed' \
+         WHERE customer_email IS NOT NULL AND status = 'completed' AND workshop_id = $1 \
          GROUP BY customer_email \
          ORDER BY total_spent DESC",
     )
+    .bind(wid)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -55,59 +64,109 @@ async fn report_clients(
     Ok(Json(ApiResponse::success(reports)))
 }
 
+#[derive(Debug, Deserialize)]
+struct ClientHistoryQuery {
+    email: String,
+}
+
 #[derive(Debug, Serialize)]
-struct HistoryReport {
+struct ClientSaleRecord {
     id: uuid::Uuid,
-    entity_type: String,
-    entity_id: uuid::Uuid,
-    action: String,
-    old_values: Option<serde_json::Value>,
-    new_values: Option<serde_json::Value>,
-    reason: Option<String>,
-    performed_by: Option<uuid::Uuid>,
+    total: Decimal,
+    payment_method: String,
     created_at: chrono::DateTime<chrono::Utc>,
 }
 
-async fn report_history(
+#[derive(Debug, Serialize)]
+struct ClientRepairRecord {
+    id: uuid::Uuid,
+    description: Option<String>,
+    status: String,
+    total: Option<Decimal>,
+    created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Serialize)]
+struct ClientHistoryResponse {
+    email: String,
+    name: Option<String>,
+    sales: Vec<ClientSaleRecord>,
+    repairs: Vec<ClientRepairRecord>,
+    total_spent: Decimal,
+    total_repairs: i64,
+}
+
+async fn client_history(
     State(state): State<AppState>,
-) -> Result<Json<ApiResponse<Vec<HistoryReport>>>, AppError> {
-    let rows = sqlx::query(
-        "SELECT \
-            id, entity_type, entity_id, action, old_values, new_values, reason, performed_by, created_at \
-         FROM audit_log \
-         ORDER BY created_at DESC \
-         LIMIT 500"
+    Extension(user): Extension<AuthenticatedUser>,
+    Query(params): Query<ClientHistoryQuery>,
+) -> Result<Json<ApiResponse<ClientHistoryResponse>>, AppError> {
+    let wid = user.workshop_id;
+
+    let sales_rows = sqlx::query(
+        "SELECT id, total, payment_method, created_at \
+         FROM sales \
+         WHERE customer_email = $1 AND status = 'completed' AND workshop_id = $2 \
+         ORDER BY created_at DESC",
     )
+    .bind(&params.email)
+    .bind(wid)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
-    let reports: Result<Vec<HistoryReport>, AppError> = rows
+    let sales: Vec<ClientSaleRecord> = sales_rows
         .into_iter()
-        .map(|row| {
-            Ok(HistoryReport {
-                id: row
-                    .try_get("id")
-                    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
-                entity_type: row
-                    .try_get("entity_type")
-                    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
-                entity_id: row
-                    .try_get("entity_id")
-                    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
-                action: row
-                    .try_get("action")
-                    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
-                old_values: row.try_get("old_values").ok(),
-                new_values: row.try_get("new_values").ok(),
-                reason: row.try_get("reason").ok(),
-                performed_by: row.try_get("performed_by").ok(),
-                created_at: row
-                    .try_get("created_at")
-                    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?,
-            })
+        .map(|row| ClientSaleRecord {
+            id: row.try_get("id").unwrap_or_default(),
+            total: row.try_get("total").unwrap_or(Decimal::ZERO),
+            payment_method: row.try_get("payment_method").unwrap_or_default(),
+            created_at: row.try_get("created_at").unwrap_or_default(),
         })
         .collect();
 
-    Ok(Json(ApiResponse::success(reports?)))
+    let repairs_rows = sqlx::query(
+        "SELECT id, description, status, total, created_at \
+         FROM repairs \
+         WHERE customer_email = $1 AND workshop_id = $2 \
+         ORDER BY created_at DESC",
+    )
+    .bind(&params.email)
+    .bind(wid)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    let repairs: Vec<ClientRepairRecord> = repairs_rows
+        .into_iter()
+        .map(|row| ClientRepairRecord {
+            id: row.try_get("id").unwrap_or_default(),
+            description: row.try_get("description").ok(),
+            status: row.try_get("status").unwrap_or_default(),
+            total: row.try_get("total").ok(),
+            created_at: row.try_get("created_at").unwrap_or_default(),
+        })
+        .collect();
+
+    let total_spent: Decimal = sales.iter().map(|s| s.total).sum();
+    let total_repairs = repairs.len() as i64;
+
+    let name: Option<String> = sqlx::query_scalar(
+        "SELECT MAX(customer_name) FROM sales WHERE customer_email = $1 AND workshop_id = $2",
+    )
+    .bind(&params.email)
+    .bind(wid)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+    .flatten();
+
+    Ok(Json(ApiResponse::success(ClientHistoryResponse {
+        email: params.email,
+        name,
+        sales,
+        repairs,
+        total_spent,
+        total_repairs,
+    })))
 }

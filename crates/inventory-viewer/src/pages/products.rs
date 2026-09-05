@@ -86,7 +86,6 @@ pub fn Products() -> Element {
                 div { class: "alert alert-danger mb-md", "{err}" }
             }
             div { class: "products-scan-wrapper",
-                label { class: "form-label", "Escanear código de barras" }
                 input {
                     class: "products-scan-input",
                     id: "products-barcode-input",
@@ -182,7 +181,7 @@ pub fn Products() -> Element {
                                             td { class: "col-actions",
                                                 div { class: "table-actions",
                                                     button {
-                                                        class: "btn-icon",
+                                                        class: "btn-icon btn-edit",
                                                         title: "Editar",
                                                         onclick: {
                                                             let p = p.clone();

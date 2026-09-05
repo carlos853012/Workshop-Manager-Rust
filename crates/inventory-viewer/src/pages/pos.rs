@@ -91,7 +91,6 @@ pub fn Pos() -> Element {
             div { class: "pos-container",
                 div { class: "pos-scan-section",
                     div { class: "pos-scan-wrapper",
-                        label { class: "form-label", "Escaneá el código de barras" }
                         input {
                             class: "pos-scan-input",
                             id: "barcode-input",

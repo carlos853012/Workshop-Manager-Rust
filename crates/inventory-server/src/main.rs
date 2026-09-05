@@ -87,6 +87,9 @@ async fn main() -> anyhow::Result<()> {
         ));
 
     let admin_api = routes::admin_routes()
+        .route_layer(axum_middleware::from_fn(
+            middleware::require_admin_middleware,
+        ))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::authenticate_middleware,
@@ -94,9 +97,6 @@ async fn main() -> anyhow::Result<()> {
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             device_key::require_device_key,
-        ))
-        .route_layer(axum_middleware::from_fn(
-            middleware::require_admin_middleware,
         ))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
