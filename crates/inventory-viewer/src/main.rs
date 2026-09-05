@@ -31,6 +31,9 @@ fn main() {
                         .with_inner_size(dioxus_desktop::tao::dpi::LogicalSize::new(1200.0, 800.0))
                         .with_min_inner_size(dioxus_desktop::tao::dpi::LogicalSize::new(
                             900.0, 600.0,
+                        ))
+                        .with_position(dioxus_desktop::tao::dpi::LogicalPosition::new(
+                            100.0, 100.0,
                         )),
                 )
                 .with_icon(icon),

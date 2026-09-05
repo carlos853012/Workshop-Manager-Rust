@@ -106,8 +106,20 @@ impl IconName {
                 }
             },
             IconName::ShoppingCart => rsx! {
-                svg { xmlns: "http://www.w3.org/2000/svg", class: "icon", view_box: "0 0 24 24", fill: "none", stroke: "currentColor", stroke_width: "1.5",
-                    path { d: "M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.898 0 3.468-1.424 3.688-3.281l.375-3.375a1.125 1.125 0 0 0-1.119-1.244H5.25m8.25 12.75h.008v.008H13.5v-.008zM11.25 15.75h.008v.008h-.008v-.008zm-3 0h.008v.008H8.25v-.008z" }
+                svg {
+                    xmlns: "http://www.w3.org/2000/svg",
+                    class: "icon",
+                    view_box: "0 0 24 24",
+                    fill: "none",
+                    stroke: "currentColor",
+                    stroke_width: "1.5",
+                    stroke_linecap: "round",
+                    stroke_linejoin: "round",
+
+                    path { d: "M3 3h2l.4 2M7 13h10l4-8H5.4" }
+                    path { d: "M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17" }
+                    circle { cx: "7.5", cy: "19.5", r: "1.5" }
+                    circle { cx: "16.5", cy: "19.5", r: "1.5" }
                 }
             },
             IconName::Package => rsx! {
@@ -116,8 +128,21 @@ impl IconName {
                 }
             },
             IconName::Truck => rsx! {
-                svg { xmlns: "http://www.w3.org/2000/svg", class: "icon", view_box: "0 0 24 24", fill: "none", stroke: "currentColor", stroke_width: "1.5",
-                    path { d: "M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.5m-15 0H3.375A1.125 1.125 0 0 1 2.25 18.75V9.75c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v1.5m0-1.5h8.25m-8.25 0V5.25A2.25 2.25 0 0 1 5.25 3h10.5a2.25 2.25 0 0 1 2.25 2.25v4.5m-12.75 0h12.75" }
+                svg {
+                    xmlns: "http://www.w3.org/2000/svg",
+                    class: "icon",
+                    view_box: "0 0 24 24",
+                    fill: "none",
+                    stroke: "currentColor",
+                    stroke_width: "1.5",
+                    stroke_linecap: "round",
+                    stroke_linejoin: "round",
+
+                    path { d: "M2.25 6.75h12v9h-12z" }
+                    path { d: "M14.25 9.75h3.25l2.75 3.5v2.5h-6z" }
+                    path { d: "M2.25 15.75h1.5m4.5 0h6m4.5 0h1.5" }
+                    circle { cx: "6", cy: "17.25", r: "1.5" }
+                    circle { cx: "16.5", cy: "17.25", r: "1.5" }
                 }
             },
             IconName::ChartBar => rsx! {
