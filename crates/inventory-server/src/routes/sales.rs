@@ -334,6 +334,18 @@ fn validate_create_sale_request(req: &CreateSaleRequest) -> Result<(), AppError>
     }
 
     for (i, item) in req.items.iter().enumerate() {
+        if item.quantity == 0 {
+            return Err(AppError::Validation(format!(
+                "Item {} quantity must be greater than 0",
+                i + 1
+            )));
+        }
+        if item.unit_price < Decimal::ZERO {
+            return Err(AppError::Validation(format!(
+                "Item {} unit_price cannot be negative",
+                i + 1
+            )));
+        }
         if let Some(discount) = item.discount {
             if discount < Decimal::ZERO || discount > Decimal::from(100) {
                 return Err(AppError::Validation(format!(
@@ -408,5 +420,95 @@ mod tests {
         };
 
         assert!(validate_create_sale_request(&req).is_err());
+    }
+
+    #[test]
+    fn test_validate_sale_discount_out_of_range() {
+        let req = CreateSaleRequest {
+            customer_name: None,
+            customer_email: None,
+            customer_phone: None,
+            payment_method: PaymentMethod::Cash,
+            discount_amount: Some(Decimal::from(150)),
+            items: vec![SaleItemRequest {
+                product_id: Uuid::new_v4(),
+                quantity: 1,
+                unit_price: Decimal::from(10000),
+                discount: None,
+            }],
+        };
+        assert!(validate_create_sale_request(&req).is_err());
+    }
+
+    #[test]
+    fn test_validate_sale_item_discount_out_of_range() {
+        let req = CreateSaleRequest {
+            customer_name: None,
+            customer_email: None,
+            customer_phone: None,
+            payment_method: PaymentMethod::Cash,
+            discount_amount: None,
+            items: vec![SaleItemRequest {
+                product_id: Uuid::new_v4(),
+                quantity: 1,
+                unit_price: Decimal::from(10000),
+                discount: Some(Decimal::from(-10)),
+            }],
+        };
+        assert!(validate_create_sale_request(&req).is_err());
+    }
+
+    #[test]
+    fn test_validate_sale_zero_quantity() {
+        let req = CreateSaleRequest {
+            customer_name: None,
+            customer_email: None,
+            customer_phone: None,
+            payment_method: PaymentMethod::Cash,
+            discount_amount: None,
+            items: vec![SaleItemRequest {
+                product_id: Uuid::new_v4(),
+                quantity: 0,
+                unit_price: Decimal::from(10000),
+                discount: None,
+            }],
+        };
+        assert!(validate_create_sale_request(&req).is_err());
+    }
+
+    #[test]
+    fn test_validate_sale_negative_unit_price() {
+        let req = CreateSaleRequest {
+            customer_name: None,
+            customer_email: None,
+            customer_phone: None,
+            payment_method: PaymentMethod::Cash,
+            discount_amount: None,
+            items: vec![SaleItemRequest {
+                product_id: Uuid::new_v4(),
+                quantity: 1,
+                unit_price: Decimal::from(-5000),
+                discount: None,
+            }],
+        };
+        assert!(validate_create_sale_request(&req).is_err());
+    }
+
+    #[test]
+    fn test_validate_sale_valid_with_discounts() {
+        let req = CreateSaleRequest {
+            customer_name: None,
+            customer_email: None,
+            customer_phone: None,
+            payment_method: PaymentMethod::Cash,
+            discount_amount: Some(Decimal::from(10)),
+            items: vec![SaleItemRequest {
+                product_id: Uuid::new_v4(),
+                quantity: 2,
+                unit_price: Decimal::from(15000),
+                discount: Some(Decimal::from(5)),
+            }],
+        };
+        assert!(validate_create_sale_request(&req).is_ok());
     }
 }
