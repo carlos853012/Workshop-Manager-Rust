@@ -46,7 +46,7 @@
 - [x] **M-10** Permisos archivos sensibles en Windows
 - [x] **M-11** `unwrap()`/`expect()` en producción
 - [x] **M-12** Audit incompleto — add/remove parts sin log_change
-- [ ] **M-13** Device keys sin UI
+- [x] **M-13** Device keys sin UI
 - [x] **M-14** 30 `#[allow(dead_code)]` espurios
 - [x] **M-15** Índice único ignora soft-delete
 - [ ] **M-16** `DbManager::stop()` dead code — PG sin shutdown limpio
