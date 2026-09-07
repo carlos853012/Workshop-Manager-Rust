@@ -270,3 +270,14 @@ pub struct UpdateUserRequest {
     pub role: Option<String>,
     pub status: Option<String>,
 }
+
+// ==================== DEVICE KEYS ====================
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeviceKeySummary {
+    pub id: uuid::Uuid,
+    pub bound_ip: Option<String>,
+    pub active: bool,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub last_seen_at: Option<chrono::DateTime<chrono::Utc>>,
+}

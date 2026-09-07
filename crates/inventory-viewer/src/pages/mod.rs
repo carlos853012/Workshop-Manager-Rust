@@ -1,3 +1,4 @@
+pub mod device_keys;
 pub mod home;
 pub mod layout;
 pub mod login;

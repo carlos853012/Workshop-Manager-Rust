@@ -1,9 +1,9 @@
 use inventory_common::dto::{
     AddRepairPartRequest, ApiResponse, ClientHistoryResponse, ClientReport, CreateProductRequest,
     CreateRepairRequest, CreateSaleRequest, CreateSupplierRequest, CreateUserRequest,
-    DashboardResponse, KpisResponse, LoginRequest, LoginResponse, PaginatedResponse,
-    PosProductResponse, RegisterRequest, RepairDetail, RepairPartResponse, UpdateRepairRequest,
-    UpdateUserRequest,
+    DashboardResponse, DeviceKeySummary, KpisResponse, LoginRequest, LoginResponse,
+    PaginatedResponse, PosProductResponse, RegisterRequest, RepairDetail, RepairPartResponse,
+    UpdateRepairRequest, UpdateUserRequest,
 };
 use inventory_common::{Product, Repair, Sale, Supplier, User};
 use serde::{Deserialize, Serialize};
@@ -360,6 +360,43 @@ impl ApiClient {
     /// DELETE /api/users/:id
     pub async fn delete_user(&self, id: uuid::Uuid) -> Result<(), ApiError> {
         self.delete(&format!("/api/users/{}", id)).await
+    }
+
+    // ==================== DEVICE KEYS ====================
+
+    /// POST /api/device-keys
+    pub async fn generate_device_key(&self) -> Result<String, ApiError> {
+        #[derive(serde::Deserialize)]
+        struct GeneratedDeviceKey {
+            key: String,
+        }
+        let resp: GeneratedDeviceKey = self
+            .post("/api/device-keys", &serde_json::json!({}))
+            .await?;
+        Ok(resp.key)
+    }
+
+    /// GET /api/device-keys
+    pub async fn list_device_keys(&self) -> Result<Vec<DeviceKeySummary>, ApiError> {
+        self.get("/api/device-keys").await
+    }
+
+    /// POST /api/device-keys/:id/revoke
+    pub async fn revoke_device_key(&self, id: uuid::Uuid) -> Result<(), ApiError> {
+        self.post(
+            &format!("/api/device-keys/{}/revoke", id),
+            &serde_json::json!({}),
+        )
+        .await
+    }
+
+    /// POST /api/device-keys/:id/unbind
+    pub async fn unbind_device_key(&self, id: uuid::Uuid) -> Result<(), ApiError> {
+        self.post(
+            &format!("/api/device-keys/{}/unbind", id),
+            &serde_json::json!({}),
+        )
+        .await
     }
 
     async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, ApiError> {

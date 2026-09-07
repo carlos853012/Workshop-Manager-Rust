@@ -73,6 +73,11 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
             route: Route::Users {},
             icon: IconName::Users,
         },
+        NavItem {
+            label: "Claves Dispositivo".to_string(),
+            route: Route::DeviceKeys {},
+            icon: IconName::Key,
+        },
     ];
 
     let user_name = auth.user_email.read().clone();

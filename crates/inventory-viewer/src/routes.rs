@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 
+use crate::pages::device_keys::DeviceKeys;
 use crate::pages::home::{Dashboard, Root};
 use crate::pages::login::Login;
 use crate::pages::pos::Pos;
@@ -46,4 +47,7 @@ pub enum Route {
 
     #[route("/users")]
     Users {},
+
+    #[route("/device-keys")]
+    DeviceKeys {},
 }
