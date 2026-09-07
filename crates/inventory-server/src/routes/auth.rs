@@ -31,6 +31,15 @@ async fn login(
 ) -> Result<Json<ApiResponse<LoginResponse>>, AppError> {
     validate_email(&req.email)?;
 
+    let rate_key = format!("login:{}", req.email);
+    if !state
+        .login_rate_limiter
+        .check(&rate_key)
+        .map_err(|e| AppError::Internal(format!("Rate limiter error: {}", e)))?
+    {
+        return Err(AppError::TooManyRequests);
+    }
+
     let user: Option<User> = sqlx::query_as(
         "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
          FROM users WHERE email = $1 AND status = 'active'",
@@ -40,14 +49,20 @@ async fn login(
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
-    let user = user.ok_or(AppError::Unauthorized)?;
+    let user = user.ok_or_else(|| {
+        let _ = state.login_rate_limiter.record_attempt(&rate_key);
+        AppError::Unauthorized
+    })?;
 
     let valid = auth::verify_password(&user.password_hash, &req.password)
         .map_err(|e| AppError::Internal(format!("Password verification error: {}", e)))?;
 
     if !valid {
+        let _ = state.login_rate_limiter.record_attempt(&rate_key);
         return Err(AppError::Unauthorized);
     }
+
+    let _ = state.login_rate_limiter.record_attempt(&rate_key);
 
     let token = auth::create_token(
         user.id,

@@ -26,7 +26,11 @@ pub fn Login() -> Element {
 
         spawn(async move {
             let cfg = crate::config::config();
-            let client = match crate::api::ApiClient::new(None, cfg.server.api_key.clone(), true) {
+            let client = match crate::api::ApiClient::new(
+                None,
+                cfg.server.api_key.clone(),
+                cfg.server.tls_accept_invalid_certs,
+            ) {
                 Ok(c) => c,
                 Err(e) => {
                     error.set(Some(e.user_message().to_string()));

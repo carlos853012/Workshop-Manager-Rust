@@ -14,6 +14,12 @@ pub struct ServerSection {
     pub api_key: String,
     #[serde(default)]
     pub device_key: String,
+    #[serde(default = "default_true")]
+    pub tls_accept_invalid_certs: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn default_base_url() -> String {
@@ -31,6 +37,7 @@ impl Default for ViewerConfig {
                 base_url: default_base_url(),
                 api_key: default_api_key(),
                 device_key: String::new(),
+                tls_accept_invalid_certs: true,
             },
         }
     }

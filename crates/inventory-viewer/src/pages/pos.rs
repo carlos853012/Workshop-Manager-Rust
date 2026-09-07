@@ -37,7 +37,7 @@ pub fn Pos() -> Element {
         .iter()
         .map(|item| item.product.price * Decimal::from(item.quantity))
         .sum();
-    let tax = subtotal * Decimal::from_str_exact("0.19").unwrap_or_default();
+    let tax = subtotal * inventory_common::money::iva_rate();
     let total = subtotal + tax;
 
     let on_scan_keydown = move |evt: Event<KeyboardData>| {

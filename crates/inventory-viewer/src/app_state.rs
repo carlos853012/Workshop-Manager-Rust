@@ -47,9 +47,13 @@ impl AuthState {
     pub fn api_client(&self) -> Option<ApiClient> {
         let cfg = config();
         self.token.read().as_ref().and_then(|t| {
-            ApiClient::new(None, cfg.server.api_key.clone(), true)
-                .ok()
-                .map(|client| client.with_token(t.clone()))
+            ApiClient::new(
+                None,
+                cfg.server.api_key.clone(),
+                cfg.server.tls_accept_invalid_certs,
+            )
+            .ok()
+            .map(|client| client.with_token(t.clone()))
         })
     }
 }

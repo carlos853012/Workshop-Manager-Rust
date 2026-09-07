@@ -10,7 +10,6 @@ use inventory_common::{PaymentMethod, Sale, SaleItem, UserRole};
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use sqlx::{Postgres, Transaction};
-use std::str::FromStr;
 use uuid::Uuid;
 
 use crate::audit::{self, redact_sensitive};
@@ -145,7 +144,8 @@ async fn create_sale(
             let mut new_values = serde_json::to_value(&sale_detail).unwrap_or_default();
             redact_sensitive(&mut new_values);
 
-            audit::log_change(
+            // Audit is best-effort: don't fail the request if audit fails
+            if let Err(e) = audit::log_change(
                 &state.pool,
                 Some(user.id),
                 "create",
@@ -157,7 +157,9 @@ async fn create_sale(
                 None,
             )
             .await
-            .map_err(|e| AppError::Internal(format!("Audit error: {}", e)))?;
+            {
+                tracing::warn!("Audit log failed for sale {}: {}", sale_detail.sale.id, e);
+            }
 
             Ok(Json(ApiResponse::success(sale_detail)))
         }
@@ -192,7 +194,7 @@ async fn create_sale_in_transaction(
     let mut sale_items = Vec::with_capacity(req.items.len());
 
     let discount_amount = req.discount_amount.unwrap_or(Decimal::ZERO);
-    let iva_rate = Decimal::from_str("0.19").unwrap_or(Decimal::new(19, 2));
+    let iva_rate = inventory_common::money::iva_rate();
 
     for item_req in &req.items {
         if item_req.quantity <= 0 {

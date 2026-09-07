@@ -2,11 +2,14 @@ use axum::extract::FromRef;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
+use crate::rate_limiter::RateLimiter;
+
 #[derive(Clone)]
 pub struct AppState {
     pub secrets: Secrets,
     pub config: ServerConfig,
     pub pool: PgPool,
+    pub login_rate_limiter: std::sync::Arc<RateLimiter>,
 }
 
 #[derive(Clone)]
@@ -47,6 +50,7 @@ impl AppState {
             secrets,
             config,
             pool,
+            login_rate_limiter: std::sync::Arc::new(RateLimiter::new(5, 300)),
         }
     }
 }

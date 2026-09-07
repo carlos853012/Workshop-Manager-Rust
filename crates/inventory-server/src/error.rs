@@ -25,6 +25,9 @@ pub enum AppError {
 
     #[error("Validation error: {0}")]
     Validation(String),
+
+    #[error("Too many requests")]
+    TooManyRequests,
 }
 
 impl IntoResponse for AppError {
@@ -37,6 +40,7 @@ impl IntoResponse for AppError {
             AppError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
             AppError::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.clone()),
             AppError::Validation(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg.clone()),
+            AppError::TooManyRequests => (StatusCode::TOO_MANY_REQUESTS, self.to_string()),
         };
 
         let body = json!({

@@ -49,6 +49,7 @@ pub fn ConnectionSettings(show: bool, on_close: EventHandler<()>) -> Element {
                 base_url: base_url_value,
                 api_key: api_key.read().trim().to_string(),
                 device_key: device_key.read().trim().to_string(),
+                tls_accept_invalid_certs: initial.server.tls_accept_invalid_certs,
             },
         };
 

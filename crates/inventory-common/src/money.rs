@@ -1,6 +1,16 @@
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 
+/// Tasa de IVA chilena vigente (19%).
+pub fn iva_rate() -> Decimal {
+    Decimal::new(19, 2)
+}
+
+/// Calcula el IVA de un monto (monto * tasa IVA), redondeado a múltiplo de 10.
+pub fn calculate_iva(amount: Decimal) -> Decimal {
+    round_to_ten(amount * iva_rate())
+}
+
 /// Redondea un monto CLP a la múltiplo de 10 más cercana (Ley del Redondeo chilena).
 /// Ej: 15678 → 15680, 15673 → 15670, 15675 → 15680, 999 → 1000
 pub fn round_to_ten(amount: Decimal) -> Decimal {

@@ -63,7 +63,11 @@ pub fn Setup() -> Element {
 
         spawn(async move {
             let cfg = crate::config::config();
-            let client = match ApiClient::new(None, cfg.server.api_key.clone(), true) {
+            let client = match ApiClient::new(
+                None,
+                cfg.server.api_key.clone(),
+                cfg.server.tls_accept_invalid_certs,
+            ) {
                 Ok(c) => c,
                 Err(e) => {
                     error_set.set(Some(e.user_message().to_string()));
