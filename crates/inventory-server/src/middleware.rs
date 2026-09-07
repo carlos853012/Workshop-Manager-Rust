@@ -11,9 +11,9 @@ use crate::state::AppState;
 
 /// Usuario autenticado inyectado en la request por el middleware.
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct AuthenticatedUser {
     pub id: uuid::Uuid,
+    #[allow(dead_code)]
     pub email: String,
     pub role: UserRole,
     pub workshop_id: uuid::Uuid,

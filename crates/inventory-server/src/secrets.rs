@@ -45,6 +45,15 @@ fn load_or_generate_jwt_secret(data_dir: &Path) -> anyhow::Result<String> {
         std::fs::set_permissions(&secret_path, perms)?;
     }
 
+    // En Windows, marcar como oculto para proteger archivos sensibles
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("attrib")
+            .arg("+H")
+            .arg(&secret_path)
+            .output();
+    }
+
     Ok(secret)
 }
 
@@ -70,6 +79,15 @@ fn load_or_generate_crypto_key(data_dir: &Path) -> anyhow::Result<Vec<u8>> {
         let mut perms = std::fs::metadata(&key_path)?.permissions();
         perms.set_mode(0o600);
         std::fs::set_permissions(&key_path, perms)?;
+    }
+
+    // En Windows, marcar como oculto para proteger archivos sensibles
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("attrib")
+            .arg("+H")
+            .arg(&key_path)
+            .output();
     }
 
     Ok(key)

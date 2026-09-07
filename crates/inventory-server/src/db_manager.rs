@@ -97,6 +97,15 @@ fn load_or_generate_password(data_dir: &Path) -> anyhow::Result<String> {
         std::fs::set_permissions(&password_path, permissions)?;
     }
 
+    // En Windows, marcar como oculto
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("attrib")
+            .arg("+H")
+            .arg(&password_path)
+            .output();
+    }
+
     Ok(password)
 }
 

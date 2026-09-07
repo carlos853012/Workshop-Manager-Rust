@@ -34,21 +34,21 @@
 
 ## 🟡 MEDIA (próximo sprint)
 
-- [ ] **M-1** Backup duerme 24h antes del primer backup
+- [x] **M-1** Backup duerme 24h antes del primer backup
 - [ ] **M-2** No hay DOWN migrations
-- [ ] **M-3** Deadlock por orden de locks en ventas concurrentes
+- [x] **M-3** Deadlock por orden de locks en ventas concurrentes
 - [ ] **M-4** Barcode con sufijo aleatorio — colisión ~40% con 1000 productos
 - [ ] **M-5** repair_parts no descuenta stock de products
-- [ ] **M-6** `create_repair` sin transacción
-- [ ] **M-7** Viewer no hace logout en 401
+- [x] **M-6** `create_repair` sin transacción
+- [x] **M-7** Viewer no hace logout en 401
 - [ ] **M-8** Enums decodificados como String en reports
-- [ ] **M-9** Descuentos sin validar rango — totales negativos posibles
-- [ ] **M-10** Permisos archivos sensibles en Windows
-- [ ] **M-11** `unwrap()`/`expect()` en producción
-- [ ] **M-12** Audit incompleto — add/remove parts sin log_change
+- [x] **M-9** Descuentos sin validar rango — totales negativos posibles
+- [x] **M-10** Permisos archivos sensibles en Windows
+- [x] **M-11** `unwrap()`/`expect()` en producción
+- [x] **M-12** Audit incompleto — add/remove parts sin log_change
 - [ ] **M-13** Device keys sin UI
-- [ ] **M-14** 30 `#[allow(dead_code)]` espurios
-- [ ] **M-15** Índice único ignora soft-delete
+- [x] **M-14** 30 `#[allow(dead_code)]` espurios
+- [x] **M-15** Índice único ignora soft-delete
 - [ ] **M-16** `DbManager::stop()` dead code — PG sin shutdown limpio
 
 ## 🔵 BAJA (backlog)

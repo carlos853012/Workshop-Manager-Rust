@@ -4,7 +4,6 @@ use sqlx::PgPool;
 /// Inserta un registro de auditoría en la base de datos.
 /// Los valores sensibles deben ser removidos o enmascarados antes de llamar esta función.
 #[allow(clippy::too_many_arguments)]
-#[allow(dead_code)]
 pub async fn log_change(
     pool: &PgPool,
     user_id: Option<uuid::Uuid>,
@@ -45,7 +44,6 @@ pub async fn log_change(
 }
 
 /// Remueve campos sensibles de un objeto JSON antes de auditarlo.
-#[allow(dead_code)]
 pub fn redact_sensitive(value: &mut Value) {
     if let Value::Object(map) = value {
         for key in ["password_hash", "password", "crypto_key", "jwt_secret"] {

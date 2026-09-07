@@ -3,7 +3,6 @@ use axum::response::{IntoResponse, Response};
 use serde_json::json;
 
 #[derive(Debug, thiserror::Error)]
-#[allow(dead_code)]
 pub enum AppError {
     #[error("Unauthorized")]
     Unauthorized,
@@ -15,6 +14,7 @@ pub enum AppError {
     NotFound(String),
 
     #[error("Bad request: {0}")]
+    #[expect(dead_code)]
     BadRequest(String),
 
     #[error("Conflict: {0}")]

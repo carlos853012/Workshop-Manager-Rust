@@ -77,6 +77,26 @@ fn generate_self_signed_cert(
     std::fs::write(data_dir.join(CERT_FILE), &cert_pem)?;
     std::fs::write(data_dir.join(KEY_FILE), &key_pem)?;
 
+    // Restringir permisos en Unix
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let key_path = data_dir.join(KEY_FILE);
+        let mut perms = std::fs::metadata(&key_path)?.permissions();
+        perms.set_mode(0o600);
+        std::fs::set_permissions(&key_path, perms)?;
+    }
+
+    // En Windows, marcar clave TLS como oculta
+    #[cfg(target_os = "windows")]
+    {
+        let key_path = data_dir.join(KEY_FILE);
+        let _ = std::process::Command::new("attrib")
+            .arg("+H")
+            .arg(&key_path)
+            .output();
+    }
+
     parse_tls_files(cert_pem.as_bytes(), key_pem.as_bytes())
 }
 

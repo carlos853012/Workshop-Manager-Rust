@@ -3,14 +3,12 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 use std::time::{Duration, Instant};
 
-#[allow(dead_code)]
 pub struct RateLimiter {
     attempts: RwLock<HashMap<String, (u32, Instant)>>,
     max_attempts: u32,
     window: Duration,
 }
 
-#[allow(dead_code)]
 impl RateLimiter {
     pub fn new(max_attempts: u32, window_secs: u64) -> Self {
         Self {
