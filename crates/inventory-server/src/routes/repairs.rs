@@ -1,12 +1,15 @@
 use axum::{
     extract::{Path, Query, State},
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
     Extension, Json, Router,
 };
 use chrono::Utc;
-use inventory_common::dto::{ApiResponse, CreateRepairRequest, PaginatedResponse};
+use inventory_common::dto::{
+    AddRepairPartRequest, ApiResponse, CreateRepairRequest, PaginatedResponse, RepairPartResponse,
+};
 use inventory_common::patente;
-use inventory_common::{Repair, RepairStatus, RepairUpdate};
+use inventory_common::{Repair, RepairPart, RepairStatus, RepairUpdate};
+use rust_decimal::Decimal;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -21,6 +24,9 @@ pub fn routes() -> Router<AppState> {
         .route("/", post(create_repair))
         .route("/:id", get(get_repair))
         .route("/:id", put(update_repair))
+        .route("/:id/parts", get(list_repair_parts))
+        .route("/:id/parts", post(add_repair_part))
+        .route("/:id/parts/:part_id", delete(remove_repair_part))
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,7 +58,7 @@ async fn list_repairs(
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<Repair> = sqlx::query_as(
-        "SELECT id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
+        "SELECT id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
          status, estimated_cost, final_cost, created_at, updated_at \
          FROM repairs WHERE status != 'deleted' \
@@ -126,7 +132,7 @@ async fn create_repair(
         "INSERT INTO repairs \
          (id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, description, \
            priority, status, estimated_cost, estimated_delivery, created_at, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $12)"
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', $10, $11, $12, $13)"
     )
     .bind(id)
     .bind(user.workshop_id)
@@ -376,6 +382,128 @@ fn validate_create_repair_request(req: &CreateRepairRequest) -> Result<(), AppEr
     }
 
     Ok(())
+}
+
+async fn list_repair_parts(
+    State(state): State<AppState>,
+    Extension(_user): Extension<AuthenticatedUser>,
+    Path(repair_id): Path<Uuid>,
+) -> Result<Json<ApiResponse<Vec<RepairPartResponse>>>, AppError> {
+    let parts: Vec<RepairPart> = sqlx::query_as(
+        "SELECT id, repair_id, name, quantity, unit_cost, total_cost, created_at \
+         FROM repair_parts WHERE repair_id = $1 ORDER BY created_at ASC",
+    )
+    .bind(repair_id)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    let response: Vec<RepairPartResponse> = parts
+        .into_iter()
+        .map(|p| RepairPartResponse {
+            id: p.id,
+            repair_id: p.repair_id,
+            name: p.name,
+            quantity: p.quantity,
+            unit_cost: p.unit_cost,
+            total_cost: p.total_cost,
+            created_at: p.created_at,
+        })
+        .collect();
+
+    Ok(Json(ApiResponse::success(response)))
+}
+
+async fn add_repair_part(
+    State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
+    Path(repair_id): Path<Uuid>,
+    Json(req): Json<AddRepairPartRequest>,
+) -> Result<Json<ApiResponse<RepairPartResponse>>, AppError> {
+    if req.name.trim().is_empty() {
+        return Err(AppError::Validation("name is required".to_string()));
+    }
+    if req.quantity <= Decimal::ZERO {
+        return Err(AppError::Validation("quantity must be > 0".to_string()));
+    }
+
+    let repair: Option<Repair> = sqlx::query_as(
+        "SELECT id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, description, \
+         diagnosis, technician_id, estimated_delivery, priority, status, estimated_cost, final_cost, created_at, updated_at \
+         FROM repairs WHERE id = $1 AND workshop_id = $2",
+    )
+    .bind(repair_id)
+    .bind(user.workshop_id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    let _repair = repair.ok_or(AppError::NotFound("Repair not found".to_string()))?;
+
+    let total_cost = req.unit_cost.map(|uc| uc * req.quantity);
+    let id = Uuid::new_v4();
+    let now = Utc::now();
+
+    sqlx::query(
+        "INSERT INTO repair_parts (id, repair_id, name, quantity, unit_cost, total_cost, created_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+    )
+    .bind(id)
+    .bind(repair_id)
+    .bind(&req.name)
+    .bind(req.quantity)
+    .bind(req.unit_cost)
+    .bind(total_cost)
+    .bind(now)
+    .execute(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    let part = RepairPartResponse {
+        id,
+        repair_id,
+        name: req.name,
+        quantity: req.quantity,
+        unit_cost: req.unit_cost,
+        total_cost,
+        created_at: now,
+    };
+
+    Ok(Json(ApiResponse::success(part)))
+}
+
+async fn remove_repair_part(
+    State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
+    Path((repair_id, part_id)): Path<(Uuid, Uuid)>,
+) -> Result<Json<ApiResponse<()>>, AppError> {
+    let repair: Option<Repair> = sqlx::query_as(
+        "SELECT id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, description, \
+         diagnosis, technician_id, estimated_delivery, priority, status, estimated_cost, final_cost, created_at, updated_at \
+         FROM repairs WHERE id = $1 AND workshop_id = $2",
+    )
+    .bind(repair_id)
+    .bind(user.workshop_id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    if repair.is_none() {
+        return Err(AppError::NotFound("Repair not found".to_string()));
+    }
+
+    let rows = sqlx::query("DELETE FROM repair_parts WHERE id = $1 AND repair_id = $2")
+        .bind(part_id)
+        .bind(repair_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    if rows.rows_affected() == 0 {
+        return Err(AppError::NotFound("Part not found".to_string()));
+    }
+
+    Ok(Json(ApiResponse::success(())))
 }
 
 #[cfg(test)]

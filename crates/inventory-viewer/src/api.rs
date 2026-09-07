@@ -1,7 +1,8 @@
 use inventory_common::dto::{
-    ApiResponse, ClientHistoryResponse, ClientReport, CreateProductRequest, CreateRepairRequest,
-    CreateSaleRequest, CreateSupplierRequest, CreateUserRequest, DashboardResponse, KpisResponse,
-    LoginRequest, LoginResponse, PaginatedResponse, PosProductResponse, RegisterRequest,
+    AddRepairPartRequest, ApiResponse, ClientHistoryResponse, ClientReport, CreateProductRequest,
+    CreateRepairRequest, CreateSaleRequest, CreateSupplierRequest, CreateUserRequest,
+    DashboardResponse, KpisResponse, LoginRequest, LoginResponse, PaginatedResponse,
+    PosProductResponse, RegisterRequest, RepairDetail, RepairPartResponse, UpdateRepairRequest,
     UpdateUserRequest,
 };
 use inventory_common::{Product, Repair, Sale, Supplier, User};
@@ -235,6 +236,48 @@ impl ApiClient {
     /// POST /api/repairs
     pub async fn create_repair(&self, request: &CreateRepairRequest) -> Result<Repair, ApiError> {
         self.post("/api/repairs", request).await
+    }
+
+    /// GET /api/repairs/:id
+    pub async fn get_repair(&self, id: uuid::Uuid) -> Result<RepairDetail, ApiError> {
+        self.get(&format!("/api/repairs/{}", id)).await
+    }
+
+    /// PUT /api/repairs/:id
+    pub async fn update_repair(
+        &self,
+        id: uuid::Uuid,
+        request: &UpdateRepairRequest,
+    ) -> Result<RepairDetail, ApiError> {
+        self.put(&format!("/api/repairs/{}", id), request).await
+    }
+
+    /// GET /api/repairs/:id/parts
+    pub async fn list_repair_parts(
+        &self,
+        repair_id: uuid::Uuid,
+    ) -> Result<Vec<RepairPartResponse>, ApiError> {
+        self.get(&format!("/api/repairs/{}/parts", repair_id)).await
+    }
+
+    /// POST /api/repairs/:id/parts
+    pub async fn add_repair_part(
+        &self,
+        repair_id: uuid::Uuid,
+        request: &AddRepairPartRequest,
+    ) -> Result<RepairPartResponse, ApiError> {
+        self.post(&format!("/api/repairs/{}/parts", repair_id), request)
+            .await
+    }
+
+    /// DELETE /api/repairs/:id/parts/:part_id
+    pub async fn remove_repair_part(
+        &self,
+        repair_id: uuid::Uuid,
+        part_id: uuid::Uuid,
+    ) -> Result<(), ApiError> {
+        self.delete(&format!("/api/repairs/{}/parts/{}", repair_id, part_id))
+            .await
     }
 
     /// POST /api/suppliers

@@ -87,7 +87,7 @@ pub fn Sales() -> Element {
         Column {
             key: "status".to_string(),
             header: "Estado".to_string(),
-            render: Rc::new(|s: &Sale| rsx! { span { class: "badge", "{s.status}" } }),
+            render: Rc::new(|s: &Sale| rsx! { span { "{s.status}" } }),
         },
     ];
 

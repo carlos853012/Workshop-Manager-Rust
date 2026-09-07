@@ -29,6 +29,7 @@ pub enum IconName {
     X,
     Exclamation,
     InformationCircle,
+    Cash,
 }
 
 impl IconName {
@@ -189,6 +190,30 @@ impl IconName {
             IconName::InformationCircle => rsx! {
                 svg { xmlns: "http://www.w3.org/2000/svg", class: "icon", view_box: "0 0 24 24", fill: "none", stroke: "currentColor", stroke_width: "1.5",
                     path { d: "M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM9.75 9.75c0 .414.168.75.375.75s.375-.336.375-.75-.168-.75-.375-.75-.375.336-.375.75z" }
+                }
+            },
+            IconName::Cash => rsx! {
+                svg {
+                    xmlns: "http://www.w3.org/2000/svg",
+                    class: "icon",
+                    view_box: "0 0 24 24",
+                    fill: "none",
+                    stroke: "currentColor",
+                    stroke_width: "1.5",
+                    stroke_linecap: "round",
+                    stroke_linejoin: "round",
+
+                    // Billete de atrás (asoma detrás del de adelante)
+                    path { d: "M4.5 4.5h16.5a1.5 1.5 0 0 1 1.5 1.5v7.5a1.5 1.5 0 0 1-1.5 1.5H4.5" }
+
+                    // Billete de adelante (principal)
+                    path { d: "M2.25 8.25h16.5a1.5 1.5 0 0 1 1.5 1.5v7.5a1.5 1.5 0 0 1-1.5 1.5H2.25a1.5 1.5 0 0 1-1.5-1.5v-7.5a1.5 1.5 0 0 1 1.5-1.5Z" }
+
+                    // Emblema/moneda central
+                    circle { cx: "10.5", cy: "13.5", r: "2.25" }
+
+                    // Detalles de textura en las esquinas del billete
+                    path { d: "M4.5 10.5v1.5M16.5 10.5v1.5M4.5 15v1.5M16.5 15v1.5" }
                 }
             },
         }

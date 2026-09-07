@@ -4,7 +4,6 @@ use inventory_common::{User, UserRole};
 
 use crate::api::ApiError;
 use crate::app_state::use_auth;
-use crate::components::atoms::badge::{Badge, BadgeVariant};
 use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::components::atoms::input::Input;
 use crate::components::atoms::spinner::Spinner;
@@ -84,12 +83,12 @@ pub fn Users() -> Element {
     });
 
     let role_badge = |role: &UserRole| -> Element {
-        let (text, variant) = match role {
-            UserRole::Admin => ("Admin", BadgeVariant::Danger),
-            UserRole::Mechanic => ("Mecánico", BadgeVariant::Warning),
-            UserRole::Seller => ("Vendedor", BadgeVariant::Info),
+        let text = match role {
+            UserRole::Admin => "Admin",
+            UserRole::Mechanic => "Mecánico",
+            UserRole::Seller => "Vendedor",
         };
-        rsx! { Badge { variant, "{text}" } }
+        rsx! { span { "{text}" } }
     };
 
     let columns: Vec<Column<User>> = vec![
@@ -114,17 +113,12 @@ pub fn Users() -> Element {
             key: "status".to_string(),
             header: "Estado".to_string(),
             render: Rc::new(|u: &User| {
-                let variant = if u.status == "active" {
-                    BadgeVariant::Success
-                } else {
-                    BadgeVariant::Default
-                };
                 let text = if u.status == "active" {
                     "Activo"
                 } else {
                     "Inactivo"
                 };
-                rsx! { Badge { variant, "{text}" } }
+                rsx! { span { "{text}" } }
             }),
         },
         Column {

@@ -89,54 +89,35 @@ pub fn Dashboard() -> Element {
             } else {
                 div { class: "grid grid-4",
                     DashboardCard {
-                        title: "Productos".to_string(),
-                        value: total_products.read().to_string(),
-                        icon: IconName::Package,
+                        title: "Ingresos".to_string(),
+                        value: format_clp(*total_revenue.read()),
+                        icon: IconName::Cash,
+                        subtitle: Some(format!("Promedio: {}", format_clp(*average_sale.read()))),
                     }
                     DashboardCard {
                         title: "Ventas".to_string(),
                         value: total_sales.read().to_string(),
                         icon: IconName::ShoppingCart,
+                        
                     }
                     DashboardCard {
-                        title: "Reparaciones".to_string(),
+                        title: "Productos".to_string(),
+                        value: total_products.read().to_string(),
+                        icon: IconName::Package,
+                    }
+                    DashboardCard {
+                        title: "Reparaciones Pendientes".to_string(),
                         value: pending_repairs.read().to_string(),
                         icon: IconName::Wrench,
+                        subtitle: Some(format!("En Progreso: {}", in_progress_repairs.read().to_string())),
                     }
                     DashboardCard {
-                        title: "Proveedores".to_string(),
-                        value: total_suppliers.read().to_string(),
-                        icon: IconName::Truck,
+                        title: "Clientes".to_string(),
+                        value: total_customers.read().to_string(),
+                        icon: IconName::User,
                     }
-                }
-                div { class: "grid grid-3 mt-lg",
-                    Card {
-                        div { class: "flex items-center gap-md",
-                            span { class: "text-2xl text-primary", {IconName::ChartBar.render()} }
-                            div {
-                                p { class: "text-muted text-sm", "Ticket promedio" }
-                                p { class: "text-xl font-semibold", "{format_clp(*average_sale.read())}" }
-                            }
-                        }
-                    }
-                    Card {
-                        div { class: "flex items-center gap-md",
-                            span { class: "text-2xl text-success", {IconName::User.render()} }
-                            div {
-                                p { class: "text-muted text-sm", "Clientes" }
-                                p { class: "text-xl font-semibold", "{total_customers.read()}" }
-                            }
-                        }
-                    }
-                    Card {
-                        div { class: "flex items-center gap-md",
-                            span { class: "text-2xl text-warning", {IconName::Wrench.render()} }
-                            div {
-                                p { class: "text-muted text-sm", "En reparación" }
-                                p { class: "text-xl font-semibold", "{in_progress_repairs.read()}" }
-                            }
-                        }
-                    }
+
+
                 }
             }
         }
@@ -158,7 +139,12 @@ pub fn Root() -> Element {
 }
 
 #[component]
-fn DashboardCard(title: String, value: String, icon: IconName) -> Element {
+fn DashboardCard(
+    title: String,
+    value: String,
+    icon: IconName,
+    subtitle: Option<String>,
+) -> Element {
     rsx! {
         Card {
             div { class: "flex items-center gap-md",
@@ -166,6 +152,9 @@ fn DashboardCard(title: String, value: String, icon: IconName) -> Element {
                 div {
                     p { class: "text-muted text-sm", "{title}" }
                     p { class: "text-xl font-semibold", "{value}" }
+                    if let Some(sub) = subtitle {
+                        p { class: "text-xs text-muted", "{sub}" }
+                    }
                 }
             }
         }

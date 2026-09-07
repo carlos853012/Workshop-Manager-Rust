@@ -128,7 +128,7 @@ pub fn Reports() -> Element {
                                 for repair in history.repairs.iter() {
                                     tr {
                                         td { class: "text-muted", "{repair.created_at.format(\"%d-%m-%Y\")}" }
-                                        td { span { class: "badge", "{repair.status}" } }
+                                        td { "{repair.status}" }
                                         td { class: "text-muted", "{repair.description.as_deref().unwrap_or(\"-\")}" }
                                         td { class: "text-right",
                                             if let Some(total) = repair.total {

@@ -6,7 +6,6 @@ use rust_decimal::Decimal;
 
 use crate::api::ApiError;
 use crate::app_state::use_auth;
-use crate::components::atoms::badge::{Badge, BadgeVariant};
 use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::components::atoms::input::Input;
 use crate::components::atoms::spinner::Spinner;
@@ -38,6 +37,16 @@ pub fn Products() -> Element {
     let mut stock_product = use_signal(|| None::<PosProductResponse>);
 
     let mut barcode_search = use_signal(|| "".to_string());
+
+    let modal_key = if *show_edit_modal.read() {
+        let ep = editing_product.read();
+        match ep.as_ref() {
+            Some(p) => format!("edit-{}", p.id),
+            None => "edit-unknown".to_string(),
+        }
+    } else {
+        "create".to_string()
+    };
 
     let load_data = move || {
         let client = auth.api_client();
@@ -173,7 +182,7 @@ pub fn Products() -> Element {
                                             td { class: "text-right", "{format_clp(p.price)}" }
                                             td {
                                                 if p.stock <= p.min_stock {
-                                                    Badge { variant: BadgeVariant::Danger, "{p.stock}" }
+                                                    span { class: "text-danger", "{p.stock}" }
                                                 } else {
                                                     span { "{p.stock}" }
                                                 }
@@ -248,23 +257,16 @@ pub fn Products() -> Element {
                 }
             }
             ProductFormModal {
-                show: *show_create_modal.read(),
-                edit_product: None,
-                on_close: move |_| show_create_modal.set(false),
-                on_saved: move |_| {
-                    show_create_modal.set(false);
-                    let current = *refresh.read();
-                    refresh.set(current + 1);
-                },
-            }
-            ProductFormModal {
-                show: *show_edit_modal.read(),
-                edit_product: editing_product.read().clone(),
+                key: "{modal_key}",
+                show: *show_create_modal.read() || *show_edit_modal.read(),
+                edit_product: if *show_edit_modal.read() { editing_product.read().clone() } else { None },
                 on_close: move |_| {
+                    show_create_modal.set(false);
                     show_edit_modal.set(false);
                     editing_product.set(None);
                 },
                 on_saved: move |_| {
+                    show_create_modal.set(false);
                     show_edit_modal.set(false);
                     editing_product.set(None);
                     let current = *refresh.read();

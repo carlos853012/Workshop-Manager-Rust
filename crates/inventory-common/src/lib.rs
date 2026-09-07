@@ -97,6 +97,17 @@ pub struct RepairUpdate {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
+pub struct RepairPart {
+    pub id: uuid::Uuid,
+    pub repair_id: uuid::Uuid,
+    pub name: String,
+    pub quantity: Decimal,
+    pub unit_cost: Option<Decimal>,
+    pub total_cost: Option<Decimal>,
+    pub created_at: DateTime<Utc>,
+}
+
 // ==================== PROVEEDORES ====================
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
@@ -218,6 +229,7 @@ impl std::fmt::Display for Priority {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type)]
+#[serde(rename_all = "snake_case")]
 #[sqlx(type_name = "user_role", rename_all = "snake_case")]
 pub enum UserRole {
     Admin,

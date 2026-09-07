@@ -105,6 +105,41 @@ pub struct CreateRepairRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AddRepairPartRequest {
+    pub name: String,
+    pub quantity: Decimal,
+    pub unit_cost: Option<Decimal>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepairPartResponse {
+    pub id: uuid::Uuid,
+    pub repair_id: uuid::Uuid,
+    pub name: String,
+    pub quantity: Decimal,
+    pub unit_cost: Option<Decimal>,
+    pub total_cost: Option<Decimal>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RepairDetail {
+    #[serde(flatten)]
+    pub repair: crate::Repair,
+    pub updates: Vec<crate::RepairUpdate>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateRepairRequest {
+    pub status: Option<crate::RepairStatus>,
+    pub diagnosis: Option<String>,
+    pub technician_id: Option<uuid::Uuid>,
+    pub estimated_cost: Option<Decimal>,
+    pub final_cost: Option<Decimal>,
+    pub estimated_delivery: Option<chrono::NaiveDate>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateSupplierRequest {
     pub name: String,
     pub contact_person: Option<String>,

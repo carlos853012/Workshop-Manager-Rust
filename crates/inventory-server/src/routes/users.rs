@@ -132,10 +132,11 @@ async fn create_user(
     let now = Utc::now();
 
     sqlx::query(
-        "INSERT INTO users (id, email, display_name, password_hash, role, status, created_at) \
-         VALUES ($1, $2, $3, $4, $5, 'active', $6)",
+        "INSERT INTO users (id, workshop_id, email, display_name, password_hash, role, status, created_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)",
     )
     .bind(id)
+    .bind(admin.workshop_id)
     .bind(&req.email)
     .bind(&req.display_name)
     .bind(&password_hash)
@@ -147,7 +148,7 @@ async fn create_user(
 
     let user = User {
         id,
-        workshop_id: find_admin_workshop_id(&state, admin.id).await?,
+        workshop_id: admin.workshop_id,
         email: req.email,
         display_name: req.display_name,
         password_hash: String::new(),
@@ -318,14 +319,6 @@ fn validate_create_user_request(req: &CreateUserRequest) -> Result<(), AppError>
 fn hide_password_hash(mut user: User) -> User {
     user.password_hash = String::new();
     user
-}
-
-async fn find_admin_workshop_id(state: &AppState, admin_id: Uuid) -> Result<Uuid, AppError> {
-    sqlx::query_scalar("SELECT workshop_id FROM users WHERE id = $1")
-        .bind(admin_id)
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))
 }
 
 #[cfg(test)]
