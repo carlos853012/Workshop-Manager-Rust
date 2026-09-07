@@ -26,6 +26,7 @@ pub fn Repairs() -> Element {
     }
 
     let auth = use_auth();
+    let navigator = dioxus_router::prelude::use_navigator();
     let repairs = use_signal(Vec::<inventory_common::Repair>::new);
     let mut page = use_signal(|| 1);
     let total = use_signal(|| 0);
@@ -47,6 +48,7 @@ pub fn Repairs() -> Element {
         loading_set.set(true);
         error_set.set(None);
 
+        let mut auth = auth;
         spawn(async move {
             if let Some(client) = client {
                 match client.list_repairs(current_page, 10).await {
@@ -55,7 +57,8 @@ pub fn Repairs() -> Element {
                         total_set.set(response.total);
                     }
                     Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
-                        error_set.set(Some("Sesión expirada".to_string()));
+                        auth.logout();
+                        navigator.push(Route::Login {});
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));

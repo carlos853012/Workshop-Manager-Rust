@@ -117,6 +117,12 @@ async fn create_repair(
 ) -> Result<Json<ApiResponse<RepairDetail>>, AppError> {
     validate_create_repair_request(&req)?;
 
+    let mut tx = state
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
     let id = Uuid::new_v4();
     let now = Utc::now();
 
@@ -139,7 +145,7 @@ async fn create_repair(
     .bind(req.estimated_delivery)
     .bind(now)
     .bind(now)
-    .execute(&state.pool)
+    .execute(&mut *tx)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
@@ -163,9 +169,13 @@ async fn create_repair(
     .bind(&initial_update.description)
     .bind(initial_update.created_by)
     .bind(initial_update.created_at)
-    .execute(&state.pool)
+    .execute(&mut *tx)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::Internal(format!("Transaction commit error: {}", e)))?;
 
     let repair = Repair {
         id,
@@ -474,6 +484,25 @@ async fn add_repair_part(
         created_at: now,
     };
 
+    let mut new_values = serde_json::to_value(&part).unwrap_or_default();
+    redact_sensitive(&mut new_values);
+
+    if let Err(e) = audit::log_change(
+        &state.pool,
+        Some(user.id),
+        "add_part",
+        "repair",
+        repair_id,
+        None,
+        Some(new_values),
+        None,
+        None,
+    )
+    .await
+    {
+        tracing::warn!("Audit log failed for add_repair_part: {}", e);
+    }
+
     Ok(Json(ApiResponse::success(part)))
 }
 
@@ -506,6 +535,22 @@ async fn remove_repair_part(
 
     if rows.rows_affected() == 0 {
         return Err(AppError::NotFound("Part not found".to_string()));
+    }
+
+    if let Err(e) = audit::log_change(
+        &state.pool,
+        Some(user.id),
+        "remove_part",
+        "repair",
+        repair_id,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await
+    {
+        tracing::warn!("Audit log failed for remove_repair_part: {}", e);
     }
 
     Ok(Json(ApiResponse::success(())))

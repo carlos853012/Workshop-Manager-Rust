@@ -182,7 +182,11 @@ async fn create_sale_in_transaction(
     let discount_amount = req.discount_amount.unwrap_or(Decimal::ZERO);
     let iva_rate = inventory_common::money::iva_rate();
 
-    for item_req in &req.items {
+    // Sort items by product_id to prevent deadlocks (consistent lock ordering)
+    let mut sorted_items = req.items.clone();
+    sorted_items.sort_by_key(|a| a.product_id);
+
+    for item_req in &sorted_items {
         if item_req.quantity <= 0 {
             return Err(AppError::Validation(
                 "Item quantity must be positive".to_string(),
@@ -318,6 +322,25 @@ fn validate_create_sale_request(req: &CreateSaleRequest) -> Result<(), AppError>
             return Err(AppError::Validation(
                 "customer_phone must be <= 20 characters".to_string(),
             ));
+        }
+    }
+
+    if let Some(discount) = req.discount_amount {
+        if discount < Decimal::ZERO || discount > Decimal::from(100) {
+            return Err(AppError::Validation(
+                "discount_amount must be between 0 and 100".to_string(),
+            ));
+        }
+    }
+
+    for (i, item) in req.items.iter().enumerate() {
+        if let Some(discount) = item.discount {
+            if discount < Decimal::ZERO || discount > Decimal::from(100) {
+                return Err(AppError::Validation(format!(
+                    "Item {} discount must be between 0 and 100",
+                    i + 1
+                )));
+            }
         }
     }
 

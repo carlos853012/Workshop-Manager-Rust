@@ -34,7 +34,7 @@ pub fn validate_ean13(code: &str) -> Result<(), String> {
     }
 
     let base = &code[..12];
-    let check_digit = code.chars().nth(12).unwrap() as u32 - '0' as u32;
+    let check_digit = code.chars().nth(12).ok_or("EAN-13 must be 13 digits")? as u32 - '0' as u32;
     let expected = calculate_ean13_check_digit(base);
 
     if check_digit == expected {

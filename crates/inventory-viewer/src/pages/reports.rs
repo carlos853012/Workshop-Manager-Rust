@@ -18,6 +18,7 @@ pub fn Reports() -> Element {
     }
 
     let auth = use_auth();
+    let navigator = dioxus_router::prelude::use_navigator();
     let clients = use_signal(Vec::<ClientReport>::new);
     let loading = use_signal(|| false);
     let error = use_signal(|| None::<String>);
@@ -32,6 +33,7 @@ pub fn Reports() -> Element {
         loading_set.set(true);
         error_set.set(None);
 
+        let mut auth = auth;
         spawn(async move {
             if let Some(api) = client {
                 match api.list_clients().await {
@@ -39,7 +41,8 @@ pub fn Reports() -> Element {
                         clients_set.set(data);
                     }
                     Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
-                        error_set.set(Some("Sesión expirada".to_string()));
+                        auth.logout();
+                        navigator.push(Route::Login {});
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));

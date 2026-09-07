@@ -42,7 +42,9 @@ async fn main() -> anyhow::Result<()> {
 
     // 3. Init secrets
     let data_dir = dirs::data_local_dir()
-        .unwrap_or_else(|| std::env::current_dir().unwrap())
+        .unwrap_or_else(|| {
+            std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."))
+        })
         .join("WorkshopManager")
         .join("data");
     std::fs::create_dir_all(&data_dir)?;
@@ -114,10 +116,10 @@ async fn main() -> anyhow::Result<()> {
         .layer(
             CorsLayer::new()
                 .allow_origin(tower_http::cors::AllowOrigin::list(vec![
-                    "http://localhost".parse().unwrap(),
-                    "https://localhost".parse().unwrap(),
-                    "http://127.0.0.1".parse().unwrap(),
-                    "https://127.0.0.1".parse().unwrap(),
+                    "http://localhost".parse().expect("valid CORS origin"),
+                    "https://localhost".parse().expect("valid CORS origin"),
+                    "http://127.0.0.1".parse().expect("valid CORS origin"),
+                    "https://127.0.0.1".parse().expect("valid CORS origin"),
                 ]))
                 .allow_methods(tower_http::cors::Any)
                 .allow_headers(tower_http::cors::Any),
@@ -171,6 +173,14 @@ async fn backup_scheduler(
 ) {
     const BACKUP_INTERVAL_HOURS: u64 = 24;
     const KEEP_BACKUP_COUNT: usize = 7;
+
+    // First backup immediately at boot
+    if let Err(e) = backup::create_backup(&pg_dump_path, &database_url, &backups_dir).await {
+        tracing::error!(error = %e, "Initial backup failed");
+    }
+    if let Err(e) = backup::prune_old_backups(&backups_dir, KEEP_BACKUP_COUNT) {
+        tracing::error!(error = %e, "Backup pruning failed");
+    }
 
     loop {
         tokio::time::sleep(tokio::time::Duration::from_secs(

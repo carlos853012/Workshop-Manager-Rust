@@ -18,6 +18,7 @@ pub fn Dashboard() -> Element {
     }
 
     let auth = use_auth();
+    let navigator = dioxus_router::prelude::use_navigator();
     let loading = use_signal(|| true);
     let error = use_signal(|| None::<String>);
 
@@ -46,6 +47,7 @@ pub fn Dashboard() -> Element {
         loading_set.set(true);
         error_set.set(None);
 
+        let mut auth = auth;
         spawn(async move {
             if let Some(client) = client {
                 match client.get_dashboard().await {
@@ -57,7 +59,8 @@ pub fn Dashboard() -> Element {
                         average_sale_set.set(d.average_sale);
                     }
                     Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
-                        error_set.set(Some("Sesión expirada".to_string()));
+                        auth.logout();
+                        navigator.push(Route::Login {});
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));

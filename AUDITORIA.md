@@ -22,14 +22,14 @@
 - [x] **A-1** Rate limiter escrito pero nunca conectado — login sin protección
 - [x] **A-2** Viewer acepta cualquier cert TLS (`accept_invalid_certs(true)`)
 - [x] **A-3** Auditoría post-commit → 500 con éxito real → duplicados en POS
-- [ ] **A-4** JWT sin revocación — usuario desactivado con acceso 24h
+- [x] **A-4** JWT sin revocación — usuario desactivado con acceso 24h
 - [x] **A-5** IVA 19% hardcodeado en server Y viewer
-- [ ] **A-6** 10 DTOs duplicados entre server e inventory-common
+- [x] **A-6** 10 DTOs duplicados entre server e inventory-common
 - [ ] **A-7** Tests faltantes: lógica monetaria + aislamiento multi-taller
-- [ ] **A-8** Errores de DB expuestos al cliente (~40 sitios)
-- [ ] **A-9** API key hardcodeada y commiteada en git
-- [ ] **A-10** CORS totalmente permisivo
-- [ ] **A-11** Backup sin cifrar + contraseña en línea de comandos
+- [x] **A-8** Errores de DB expuestos al cliente (~40 sitios)
+- [x] **A-9** API key hardcodeada y commiteada en git
+- [x] **A-10** CORS totalmente permisivo
+- [x] **A-11** Backup sin cifrar + contraseña en línea de comandos
 - [x] **A-12** Clippy warning rompe CI — `home.rs:112`
 
 ## 🟡 MEDIA (próximo sprint)
