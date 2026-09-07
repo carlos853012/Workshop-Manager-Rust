@@ -11,6 +11,15 @@ pub fn calculate_iva(amount: Decimal) -> Decimal {
     round_to_ten(amount * iva_rate())
 }
 
+/// Extrae el IVA de un precio que ya incluye IVA (Chile: precio final = base + IVA).
+/// Ej: $11.900 → base=$10.000, iva=$1.900
+pub fn extract_iva(price_including_iva: Decimal) -> (Decimal, Decimal) {
+    let one_plus_iva = Decimal::ONE + iva_rate();
+    let base = round_to_ten(price_including_iva / one_plus_iva);
+    let iva = price_including_iva - base;
+    (base, iva)
+}
+
 /// Redondea un monto CLP a la múltiplo de 10 más cercana (Ley del Redondeo chilena).
 /// Ej: 15678 → 15680, 15673 → 15670, 15675 → 15680, 999 → 1000
 /// Negativos: -15678 → -15680 (redondea hacia afuera del cero)
@@ -80,6 +89,25 @@ mod tests {
     }
 
     #[test]
+    fn test_extract_iva() {
+        // $11.900 → base=$10.000, iva=$1.900
+        let (base, iva) = extract_iva(Decimal::from(11900));
+        assert_eq!(base, Decimal::from(10000));
+        assert_eq!(iva, Decimal::from(1900));
+        // $10.000 → base=$8.410, iva=$1.590 (redondeado)
+        let (base, iva) = extract_iva(Decimal::from(10000));
+        assert_eq!(base + iva, Decimal::from(10000));
+        // $0 → base=$0, iva=$0
+        let (base, iva) = extract_iva(Decimal::ZERO);
+        assert_eq!(base, Decimal::ZERO);
+        assert_eq!(iva, Decimal::ZERO);
+        // $1.190 → base=$1.000, iva=$190
+        let (base, iva) = extract_iva(Decimal::from(1190));
+        assert_eq!(base, Decimal::from(1000));
+        assert_eq!(iva, Decimal::from(190));
+    }
+
+    #[test]
     fn test_round_to_ten() {
         assert_eq!(round_to_ten(Decimal::from(15678)), Decimal::from(15680));
         assert_eq!(round_to_ten(Decimal::from(15673)), Decimal::from(15670));
@@ -121,12 +149,23 @@ mod tests {
 
     #[test]
     fn test_iva_rounding_chain() {
-        // Simulaflujo completo: precio con IVA + redondeo
+        // Simula flujo completo: precio con IVA + redondeo
         let base = Decimal::from(10000);
         let iva = calculate_iva(base); // 10000 * 0.19 = 1900
         assert_eq!(iva, Decimal::from(1900));
         let total = base + iva;
         assert_eq!(total, Decimal::from(11900));
         assert_eq!(format_clp(total), "$11.900");
+    }
+
+    #[test]
+    fn test_extract_iva_roundtrip() {
+        // Extraer IVA de un precio y verificar que base + iva = precio
+        let price = Decimal::from(15680);
+        let (base, iva) = extract_iva(price);
+        assert_eq!(base + iva, price);
+        // Verificar que el IVA es razonable (~19%)
+        assert!(iva > Decimal::from(2000));
+        assert!(iva < Decimal::from(3500));
     }
 }

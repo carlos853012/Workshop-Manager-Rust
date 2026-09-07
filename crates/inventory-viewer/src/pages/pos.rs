@@ -37,8 +37,10 @@ pub fn Pos() -> Element {
         .iter()
         .map(|item| item.product.price * Decimal::from(item.quantity))
         .sum();
-    let tax = subtotal * inventory_common::money::iva_rate();
-    let total = subtotal + tax;
+    // En Chile el precio ya incluye IVA — el total es el subtotal
+    // El IVA se extrae solo para desglose informativo
+    let (base, _tax) = inventory_common::money::extract_iva(subtotal);
+    let total = subtotal;
 
     let on_scan_keydown = move |evt: Event<KeyboardData>| {
         if evt.key() == Key::Enter {
@@ -171,12 +173,12 @@ pub fn Pos() -> Element {
                         }
                         div { class: "pos-totals",
                             div { class: "pos-total-row",
-                                span { "Subtotal" }
-                                span { "{format_clp(subtotal)}" }
+                                span { "Subtotal (neto)" }
+                                span { "{format_clp(base)}" }
                             }
                             div { class: "pos-total-row",
                                 span { "IVA (19%)" }
-                                span { "{format_clp(tax)}" }
+                                span { "{format_clp(_tax)}" }
                             }
                             div { class: "pos-total-row pos-total-final",
                                 span { "TOTAL" }

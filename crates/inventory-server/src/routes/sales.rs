@@ -5,7 +5,6 @@ use axum::{
 };
 use chrono::Utc;
 use inventory_common::dto::{ApiResponse, CreateSaleRequest, PaginatedResponse};
-use inventory_common::money::round_to_ten;
 use inventory_common::{PaymentMethod, Sale, SaleItem, UserRole};
 use rust_decimal::Decimal;
 use sqlx::{Postgres, Transaction};
@@ -180,7 +179,6 @@ async fn create_sale_in_transaction(
     let mut sale_items = Vec::with_capacity(req.items.len());
 
     let discount_amount = req.discount_amount.unwrap_or(Decimal::ZERO);
-    let iva_rate = inventory_common::money::iva_rate();
 
     // Sort items by product_id to prevent deadlocks (consistent lock ordering)
     let mut sorted_items = req.items.clone();
@@ -216,9 +214,9 @@ async fn create_sale_in_transaction(
         let item_discount = item_req.discount.unwrap_or(Decimal::ZERO);
         let item_subtotal = unit_price * Decimal::from(item_req.quantity);
         let item_discount_amount = item_subtotal * item_discount / Decimal::from(100);
-        let item_taxable = item_subtotal - item_discount_amount;
-        let item_tax = round_to_ten(item_taxable * iva_rate);
-        let item_total = item_taxable + item_tax;
+        let item_total = item_subtotal - item_discount_amount;
+        // En Chile el precio ya incluye IVA — extraer base e IVA (solo para registro)
+        let (_item_base, _item_tax) = inventory_common::money::extract_iva(item_total);
 
         sale_subtotal += item_subtotal;
 
@@ -245,9 +243,9 @@ async fn create_sale_in_transaction(
     }
 
     let discount_amount_total = (sale_subtotal * discount_amount) / Decimal::from(100);
-    let taxable_amount = sale_subtotal - discount_amount_total;
-    let tax_amount = round_to_ten(taxable_amount * iva_rate);
-    let total = taxable_amount + tax_amount;
+    let total = sale_subtotal - discount_amount_total;
+    // En Chile el precio ya incluye IVA — extraer base e IVA del total
+    let (taxable_amount, tax_amount) = inventory_common::money::extract_iva(total);
 
     sqlx::query(
         "INSERT INTO sales \
