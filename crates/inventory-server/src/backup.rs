@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use tokio::process::Command;
 
-/// Crea un backup comprimido de la base de datos usando pg_dump.
-/// Retorna la ruta del archivo .sql.gz generado.
+/// Crea un backup comprimido y cifrado de la base de datos usando pg_dump.
+/// Retorna la ruta del archivo .sql.gz.enc generado.
 pub async fn create_backup(
     pg_dump_path: &Path,
     database_url: &str,
@@ -15,7 +15,7 @@ pub async fn create_backup(
     fs::create_dir_all(backups_dir)?;
 
     let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
-    let backup_file = backups_dir.join(format!("workshop_manager_backup_{}.sql.gz", timestamp));
+    let backup_file = backups_dir.join(format!("workshop_manager_backup_{}.sql.gz.enc", timestamp));
 
     let output = Command::new(pg_dump_path)
         .arg("--dbname")
@@ -33,6 +33,7 @@ pub async fn create_backup(
         return Err(anyhow::anyhow!("pg_dump failed: {}", stderr));
     }
 
+    // Compress
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
     std::io::Write::write_all(&mut encoder, &output.stdout)
         .map_err(|e| anyhow::anyhow!("Failed to compress backup: {}", e))?;
@@ -40,9 +41,13 @@ pub async fn create_backup(
         .finish()
         .map_err(|e| anyhow::anyhow!("Failed to finish gzip compression: {}", e))?;
 
-    fs::write(&backup_file, compressed)?;
+    // Encrypt using the server's crypto key
+    let encrypted = crate::crypto::encrypt_bytes(&compressed)
+        .map_err(|e| anyhow::anyhow!("Failed to encrypt backup: {}", e))?;
 
-    tracing::info!(backup_file = %backup_file.display(), "Backup created");
+    fs::write(&backup_file, encrypted)?;
+
+    tracing::info!(backup_file = %backup_file.display(), "Encrypted backup created");
     Ok(backup_file)
 }
 
@@ -55,7 +60,7 @@ pub fn prune_old_backups(backups_dir: &Path, keep_count: usize) -> anyhow::Resul
                 .path()
                 .extension()
                 .and_then(|ext| ext.to_str())
-                .map(|ext| ext == "gz")
+                .map(|ext| ext == "enc")
                 .unwrap_or(false)
         })
         .collect();
@@ -91,7 +96,7 @@ mod tests {
         fs::create_dir_all(&temp_dir)?;
 
         for i in 0..5 {
-            let file = temp_dir.join(format!("backup_{}.sql.gz", i));
+            let file = temp_dir.join(format!("backup_{}.sql.gz.enc", i));
             fs::write(&file, b"dummy")?;
             // Fuerza timestamps distintos esperando 10ms
             std::thread::sleep(std::time::Duration::from_millis(10));

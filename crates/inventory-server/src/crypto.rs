@@ -40,6 +40,11 @@ fn get_cipher() -> anyhow::Result<&'static Aes256Gcm> {
 
 #[allow(dead_code)]
 pub fn encrypt(plaintext: &str) -> anyhow::Result<String> {
+    encrypt_bytes(plaintext.as_bytes())
+}
+
+#[allow(dead_code)]
+pub fn encrypt_bytes(plaintext: &[u8]) -> anyhow::Result<String> {
     let cipher = get_cipher()?;
 
     let mut nonce_bytes = [0u8; 12];
@@ -47,7 +52,7 @@ pub fn encrypt(plaintext: &str) -> anyhow::Result<String> {
     let nonce = Nonce::from_slice(&nonce_bytes);
 
     let ciphertext = cipher
-        .encrypt(nonce, plaintext.as_bytes())
+        .encrypt(nonce, plaintext)
         .map_err(|e| anyhow::anyhow!("Encryption failed: {}", e))?;
 
     // Formato: base64(nonce || ciphertext)

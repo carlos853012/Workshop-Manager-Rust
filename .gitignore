@@ -12,3 +12,5 @@ data/
 .DS_Store
 Thumbs.db
 elimar_datos.md
+config/server.toml
+config/viewer.toml

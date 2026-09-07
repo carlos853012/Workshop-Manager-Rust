@@ -111,7 +111,17 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/health", get(health))
         .nest("/api", api)
-        .layer(CorsLayer::permissive())
+        .layer(
+            CorsLayer::new()
+                .allow_origin(tower_http::cors::AllowOrigin::list(vec![
+                    "http://localhost".parse().unwrap(),
+                    "https://localhost".parse().unwrap(),
+                    "http://127.0.0.1".parse().unwrap(),
+                    "https://127.0.0.1".parse().unwrap(),
+                ]))
+                .allow_methods(tower_http::cors::Any)
+                .allow_headers(tower_http::cors::Any),
+        )
         .layer(TraceLayer::new_for_http())
         .with_state(state.clone());
 

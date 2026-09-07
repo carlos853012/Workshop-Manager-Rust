@@ -15,6 +15,8 @@ use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
 use crate::state::AppState;
 
+use super::pagination::PaginationParams;
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_users))
@@ -22,14 +24,6 @@ pub fn routes() -> Router<AppState> {
         .route("/:id", get(get_user))
         .route("/:id", put(update_user))
         .route("/:id", delete(delete_user))
-}
-
-#[derive(Debug, Deserialize)]
-struct PaginationParams {
-    #[serde(default = "super::products::default_page")]
-    page: i32,
-    #[serde(default = "super::products::default_per_page")]
-    per_page: i32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,16 +46,9 @@ async fn list_users(
     Extension(user): Extension<AuthenticatedUser>,
     Query(params): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<PaginatedResponse<User>>>, AppError> {
-    if params.page < 1 {
-        return Err(AppError::Validation("page must be >= 1".to_string()));
-    }
-    if params.per_page < 1 || params.per_page > 100 {
-        return Err(AppError::Validation(
-            "per_page must be between 1 and 100".to_string(),
-        ));
-    }
+    params.validate().map_err(AppError::Validation)?;
 
-    let offset = (params.page - 1) * params.per_page;
+    let offset = params.offset();
 
     let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE workshop_id = $1")
         .bind(user.workshop_id)

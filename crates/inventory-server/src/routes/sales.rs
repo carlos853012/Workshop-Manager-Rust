@@ -8,7 +8,6 @@ use inventory_common::dto::{ApiResponse, CreateSaleRequest, PaginatedResponse};
 use inventory_common::money::round_to_ten;
 use inventory_common::{PaymentMethod, Sale, SaleItem, UserRole};
 use rust_decimal::Decimal;
-use serde::Deserialize;
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
@@ -17,6 +16,8 @@ use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
 use crate::state::AppState;
 
+use super::pagination::PaginationParams;
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_sales))
@@ -24,29 +25,14 @@ pub fn routes() -> Router<AppState> {
         .route("/:id", get(get_sale))
 }
 
-#[derive(Debug, Deserialize)]
-struct PaginationParams {
-    #[serde(default = "super::products::default_page")]
-    page: i32,
-    #[serde(default = "super::products::default_per_page")]
-    per_page: i32,
-}
-
 async fn list_sales(
     State(state): State<AppState>,
     Extension(user): Extension<AuthenticatedUser>,
     Query(params): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<PaginatedResponse<Sale>>>, AppError> {
-    if params.page < 1 {
-        return Err(AppError::Validation("page must be >= 1".to_string()));
-    }
-    if params.per_page < 1 || params.per_page > 100 {
-        return Err(AppError::Validation(
-            "per_page must be between 1 and 100".to_string(),
-        ));
-    }
+    params.validate().map_err(AppError::Validation)?;
 
-    let offset = (params.page - 1) * params.per_page;
+    let offset = params.offset();
 
     let total: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM sales WHERE status = 'completed' AND workshop_id = $1",

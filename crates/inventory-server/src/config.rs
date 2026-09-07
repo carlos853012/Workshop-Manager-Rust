@@ -45,27 +45,35 @@ impl Default for Config {
 pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
     let config_path = std::env::current_dir()?.join("config").join("server.toml");
 
-    if config_path.exists() {
+    let mut server_config = if config_path.exists() {
         let content = std::fs::read_to_string(&config_path)?;
         let config: Config = toml::from_str(&content)?;
-        Ok(super::state::ServerConfig {
+        super::state::ServerConfig {
             host: config.server.host,
             port: config.server.port,
             api_key: config.server.api_key,
             require_device_key: config.server.require_device_key,
-        })
+        }
     } else {
-        // Crear config por defecto
         let default_config = Config::default();
         let config_dir = std::env::current_dir()?.join("config");
         std::fs::create_dir_all(&config_dir)?;
         let content = toml::to_string_pretty(&default_config)?;
         std::fs::write(config_path, content)?;
-        Ok(super::state::ServerConfig {
+        super::state::ServerConfig {
             host: default_config.server.host,
             port: default_config.server.port,
             api_key: default_config.server.api_key,
             require_device_key: default_config.server.require_device_key,
-        })
+        }
+    };
+
+    // Allow env var to override API key (for production deployments)
+    if let Ok(env_key) = std::env::var("WORKSHOP_MANAGER_API_KEY") {
+        if !env_key.is_empty() {
+            server_config.api_key = env_key;
+        }
     }
+
+    Ok(server_config)
 }

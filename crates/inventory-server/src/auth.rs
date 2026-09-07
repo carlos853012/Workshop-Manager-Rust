@@ -7,7 +7,7 @@ use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-const TOKEN_DURATION_HOURS: i64 = 24;
+const TOKEN_DURATION_HOURS: i64 = 8;
 
 /// Claims incluidos en el JWT.
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -5,6 +5,7 @@ use crate::state::AppState;
 mod analytics;
 mod auth;
 mod device_keys;
+pub(crate) mod pagination;
 mod products;
 mod repairs;
 mod reports;

@@ -9,7 +9,6 @@ use inventory_common::dto::{
 };
 use inventory_common::{Product, UserRole};
 use rust_decimal::Decimal;
-use serde::Deserialize;
 
 use uuid::Uuid;
 
@@ -19,6 +18,8 @@ use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
 
 use crate::state::AppState;
+
+use super::pagination::PaginationParams;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -30,37 +31,14 @@ pub fn routes() -> Router<AppState> {
         .route("/lookup", get(lookup_product_by_barcode))
 }
 
-#[derive(Debug, Deserialize)]
-struct PaginationParams {
-    #[serde(default = "default_page")]
-    page: i32,
-    #[serde(default = "default_per_page")]
-    per_page: i32,
-}
-
-pub(crate) fn default_page() -> i32 {
-    1
-}
-
-pub(crate) fn default_per_page() -> i32 {
-    20
-}
-
 async fn list_products(
     State(state): State<AppState>,
     Extension(user): Extension<AuthenticatedUser>,
     Query(params): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<PaginatedResponse<Product>>>, AppError> {
-    if params.page < 1 {
-        return Err(AppError::Validation("page must be >= 1".to_string()));
-    }
-    if params.per_page < 1 || params.per_page > 100 {
-        return Err(AppError::Validation(
-            "per_page must be between 1 and 100".to_string(),
-        ));
-    }
+    params.validate().map_err(AppError::Validation)?;
 
-    let offset = (params.page - 1) * params.per_page;
+    let offset = params.offset();
 
     let total: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM products WHERE status = 'active' AND workshop_id = $1",
