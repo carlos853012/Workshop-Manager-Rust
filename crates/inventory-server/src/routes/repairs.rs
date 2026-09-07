@@ -39,6 +39,7 @@ struct PaginationParams {
 
 async fn list_repairs(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Query(params): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<PaginatedResponse<Repair>>>, AppError> {
     if params.page < 1 {
@@ -52,20 +53,24 @@ async fn list_repairs(
 
     let offset = (params.page - 1) * params.per_page;
 
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM repairs WHERE status != 'deleted'")
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+    let total: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM repairs WHERE status != 'deleted' AND workshop_id = $1",
+    )
+    .bind(user.workshop_id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<Repair> = sqlx::query_as(
         "SELECT id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
          status, estimated_cost, final_cost, created_at, updated_at \
-         FROM repairs WHERE status != 'deleted' \
+         FROM repairs WHERE status != 'deleted' AND workshop_id = $3 \
          ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(params.per_page)
     .bind(offset)
+    .bind(user.workshop_id)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -386,9 +391,22 @@ fn validate_create_repair_request(req: &CreateRepairRequest) -> Result<(), AppEr
 
 async fn list_repair_parts(
     State(state): State<AppState>,
-    Extension(_user): Extension<AuthenticatedUser>,
+    Extension(user): Extension<AuthenticatedUser>,
     Path(repair_id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Vec<RepairPartResponse>>>, AppError> {
+    let repair_exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM repairs WHERE id = $1 AND workshop_id = $2 AND status != 'deleted')",
+    )
+    .bind(repair_id)
+    .bind(user.workshop_id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    if !repair_exists {
+        return Err(AppError::NotFound("Repair not found".to_string()));
+    }
+
     let parts: Vec<RepairPart> = sqlx::query_as(
         "SELECT id, repair_id, name, quantity, unit_cost, total_cost, created_at \
          FROM repair_parts WHERE repair_id = $1 ORDER BY created_at ASC",

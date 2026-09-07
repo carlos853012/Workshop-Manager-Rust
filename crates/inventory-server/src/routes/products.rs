@@ -7,7 +7,7 @@ use chrono::Utc;
 use inventory_common::dto::{
     ApiResponse, CreateProductRequest, PaginatedResponse, PosLookupRequest, PosProductResponse,
 };
-use inventory_common::Product;
+use inventory_common::{Product, UserRole};
 use rust_decimal::Decimal;
 use serde::Deserialize;
 
@@ -120,6 +120,9 @@ async fn create_product(
     Extension(user): Extension<AuthenticatedUser>,
     Json(req): Json<CreateProductRequest>,
 ) -> Result<Json<ApiResponse<Product>>, AppError> {
+    if !matches!(user.role, UserRole::Admin | UserRole::Seller) {
+        return Err(AppError::Forbidden);
+    }
     validate_create_product_request(&req)?;
 
     let id = Uuid::new_v4();
@@ -215,6 +218,9 @@ async fn update_product(
     Path(id): Path<Uuid>,
     Json(req): Json<CreateProductRequest>,
 ) -> Result<Json<ApiResponse<Product>>, AppError> {
+    if !matches!(user.role, UserRole::Admin | UserRole::Seller) {
+        return Err(AppError::Forbidden);
+    }
     validate_create_product_request(&req)?;
 
     let old_product: Option<Product> = sqlx::query_as(
@@ -305,6 +311,9 @@ async fn delete_product(
     Extension(user): Extension<AuthenticatedUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<()>>, AppError> {
+    if !user.is_admin() {
+        return Err(AppError::Forbidden);
+    }
     let old_product: Option<Product> = sqlx::query_as(
         "SELECT id, workshop_id, name, description, category, brand, model, sku, barcode, price, cost, stock, min_stock, \
          location, supplier_id, status, created_at, updated_at \
@@ -360,13 +369,16 @@ async fn lookup_product_by_barcode(
         uuid::Uuid,
         String,
         Decimal,
+        Decimal,
+        i32,
         i32,
         Option<String>,
         Option<String>,
+        Option<uuid::Uuid>,
     );
 
     let product: Option<ProductRow> = sqlx::query_as(
-        "SELECT id, name, price, stock, barcode, sku \
+        "SELECT id, name, price, cost, stock, min_stock, barcode, sku, supplier_id \
          FROM products WHERE barcode = $1 AND status = 'active' AND workshop_id = $2",
     )
     .bind(barcode)
@@ -376,14 +388,17 @@ async fn lookup_product_by_barcode(
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     match product {
-        Some((id, name, price, stock, barcode, sku)) => {
+        Some((id, name, price, cost, stock, min_stock, barcode, sku, supplier_id)) => {
             let response = PosProductResponse {
                 product_id: id,
                 name,
                 price,
+                cost,
                 stock,
+                min_stock,
                 barcode,
                 sku,
+                supplier_id,
             };
             Ok(Json(ApiResponse::success(response)))
         }

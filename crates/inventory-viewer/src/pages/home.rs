@@ -98,7 +98,7 @@ pub fn Dashboard() -> Element {
                         title: "Ventas".to_string(),
                         value: total_sales.read().to_string(),
                         icon: IconName::ShoppingCart,
-                        
+
                     }
                     DashboardCard {
                         title: "Productos".to_string(),
@@ -109,7 +109,7 @@ pub fn Dashboard() -> Element {
                         title: "Reparaciones Pendientes".to_string(),
                         value: pending_repairs.read().to_string(),
                         icon: IconName::Wrench,
-                        subtitle: Some(format!("En Progreso: {}", in_progress_repairs.read().to_string())),
+                        subtitle: Some(format!("En Progreso: {}", in_progress_repairs.read())),
                     }
                     DashboardCard {
                         title: "Clientes".to_string(),

@@ -506,6 +506,9 @@ fn StockEntryModal(
     let submit_sku = product.as_ref().and_then(|p| p.sku.clone());
     let submit_barcode = product.as_ref().and_then(|p| p.barcode.clone());
     let submit_price = product.as_ref().map(|p| p.price).unwrap_or_default();
+    let submit_cost = product.as_ref().map(|p| p.cost).unwrap_or_default();
+    let submit_min_stock = product.as_ref().map(|p| p.min_stock).unwrap_or(0);
+    let submit_supplier_id = product.as_ref().and_then(|p| p.supplier_id);
 
     let on_submit = {
         let product_name_display = product_name_display.clone();
@@ -532,6 +535,9 @@ fn StockEntryModal(
             let sku = submit_sku.clone();
             let barcode = submit_barcode.clone();
             let price = submit_price;
+            let cost = submit_cost;
+            let min_stock = submit_min_stock;
+            let supplier_id = submit_supplier_id;
             let mut saving_clone = saving;
             let mut error_clone = form_error;
             let on_saved_clone = on_saved;
@@ -550,11 +556,11 @@ fn StockEntryModal(
                     sku,
                     barcode,
                     price,
-                    cost: Decimal::ZERO,
+                    cost,
                     stock: new_stock,
-                    min_stock: 0,
+                    min_stock,
                     location: None,
-                    supplier_id: None,
+                    supplier_id,
                 };
                 match client.update_product(pid, &request).await {
                     Ok(_) => {

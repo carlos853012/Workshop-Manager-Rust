@@ -126,7 +126,7 @@ async fn client_history(
         .collect();
 
     let repairs_rows = sqlx::query(
-        "SELECT id, description, status, total, created_at \
+        "SELECT id, description, status, final_cost AS total, created_at \
          FROM repairs \
          WHERE customer_email = $1 AND workshop_id = $2 \
          ORDER BY created_at DESC",

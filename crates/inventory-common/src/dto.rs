@@ -64,9 +64,12 @@ pub struct PosProductResponse {
     pub product_id: uuid::Uuid,
     pub name: String,
     pub price: Decimal,
+    pub cost: Decimal,
     pub stock: i32,
+    pub min_stock: i32,
     pub barcode: Option<String>,
     pub sku: Option<String>,
+    pub supplier_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

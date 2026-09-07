@@ -49,6 +49,7 @@ struct UpdateUserRequest {
 
 async fn list_users(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Query(params): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<PaginatedResponse<User>>>, AppError> {
     if params.page < 1 {
@@ -62,17 +63,19 @@ async fn list_users(
 
     let offset = (params.page - 1) * params.per_page;
 
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
+    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE workshop_id = $1")
+        .bind(user.workshop_id)
         .fetch_one(&state.pool)
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let items: Vec<User> = sqlx::query_as(
         "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
-         FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+         FROM users WHERE workshop_id = $3 ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(params.per_page)
     .bind(offset)
+    .bind(user.workshop_id)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -91,19 +94,21 @@ async fn list_users(
 
 async fn get_user(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<User>>, AppError> {
-    let user: Option<User> = sqlx::query_as(
+    let user_obj: Option<User> = sqlx::query_as(
         "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
-         FROM users WHERE id = $1",
+         FROM users WHERE id = $1 AND workshop_id = $2",
     )
     .bind(id)
+    .bind(user.workshop_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
-    match user {
-        Some(user) => Ok(Json(ApiResponse::success(hide_password_hash(user)))),
+    match user_obj {
+        Some(u) => Ok(Json(ApiResponse::success(hide_password_hash(u)))),
         None => Err(AppError::NotFound("User not found".to_string())),
     }
 }
@@ -185,9 +190,10 @@ async fn update_user(
 ) -> Result<Json<ApiResponse<User>>, AppError> {
     let old_user: Option<User> = sqlx::query_as(
         "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
-         FROM users WHERE id = $1",
+         FROM users WHERE id = $1 AND workshop_id = $2",
     )
     .bind(id)
+    .bind(admin.workshop_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -213,11 +219,12 @@ async fn update_user(
         ));
     }
 
-    sqlx::query("UPDATE users SET display_name = $2, role = $3, status = $4 WHERE id = $1")
+    sqlx::query("UPDATE users SET display_name = $2, role = $3, status = $4 WHERE id = $1 AND workshop_id = $5")
         .bind(id)
         .bind(&new_display_name)
         .bind(&new_role)
         .bind(&new_status)
+        .bind(admin.workshop_id)
         .execute(&state.pool)
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -266,17 +273,19 @@ async fn delete_user(
 
     let old_user: Option<User> = sqlx::query_as(
         "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
-         FROM users WHERE id = $1",
+         FROM users WHERE id = $1 AND workshop_id = $2",
     )
     .bind(id)
+    .bind(admin.workshop_id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let old_user = old_user.ok_or(AppError::NotFound("User not found".to_string()))?;
 
-    sqlx::query("UPDATE users SET status = 'inactive' WHERE id = $1")
+    sqlx::query("UPDATE users SET status = 'inactive' WHERE id = $1 AND workshop_id = $2")
         .bind(id)
+        .bind(admin.workshop_id)
         .execute(&state.pool)
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;

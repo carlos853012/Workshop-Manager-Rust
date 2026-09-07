@@ -461,9 +461,15 @@ impl ApiClient {
         if status.is_success() {
             let parsed: ApiResponse<T> = serde_json::from_str(&body_text)
                 .map_err(|e| ApiError::Unknown(format!("JSON parse error: {}", e)))?;
-            parsed
-                .data
-                .ok_or_else(|| ApiError::Unknown("Empty response data".to_string()))
+            match parsed.data {
+                Some(data) => Ok(data),
+                None => {
+                    // For ApiResponse<()> the server returns {"data":null}
+                    // Try to deserialize null as T (works for unit type)
+                    serde_json::from_str("null")
+                        .map_err(|e| ApiError::Unknown(format!("Empty response data: {}", e)))
+                }
+            }
         } else {
             match status.as_u16() {
                 401 => Err(ApiError::Unauthorized),

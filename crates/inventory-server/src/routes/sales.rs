@@ -6,7 +6,7 @@ use axum::{
 use chrono::Utc;
 use inventory_common::dto::{ApiResponse, CreateSaleRequest, PaginatedResponse};
 use inventory_common::money::round_to_ten;
-use inventory_common::{PaymentMethod, Sale, SaleItem};
+use inventory_common::{PaymentMethod, Sale, SaleItem, UserRole};
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use sqlx::{Postgres, Transaction};
@@ -120,6 +120,9 @@ async fn create_sale(
     Extension(user): Extension<AuthenticatedUser>,
     Json(req): Json<CreateSaleRequest>,
 ) -> Result<Json<ApiResponse<SaleDetail>>, AppError> {
+    if !matches!(user.role, UserRole::Admin | UserRole::Seller) {
+        return Err(AppError::Forbidden);
+    }
     validate_create_sale_request(&req)?;
 
     let payment_method = req.payment_method.clone();
@@ -199,9 +202,10 @@ async fn create_sale_in_transaction(
         }
 
         let product: Option<(String, Decimal, i32)> = sqlx::query_as(
-            "SELECT name, price, stock FROM products WHERE id = $1 AND status = 'active' FOR UPDATE"
+            "SELECT name, price, stock FROM products WHERE id = $1 AND status = 'active' AND workshop_id = $2 FOR UPDATE"
         )
         .bind(item_req.product_id)
+        .bind(workshop_id)
         .fetch_optional(&mut **tx)
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -226,9 +230,10 @@ async fn create_sale_in_transaction(
 
         sale_subtotal += item_subtotal;
 
-        sqlx::query("UPDATE products SET stock = stock - $2, updated_at = $3 WHERE id = $1")
+        sqlx::query("UPDATE products SET stock = stock - $2, updated_at = $4 WHERE id = $1 AND workshop_id = $3")
             .bind(item_req.product_id)
             .bind(item_req.quantity)
+            .bind(workshop_id)
             .bind(now)
             .execute(&mut **tx)
             .await
