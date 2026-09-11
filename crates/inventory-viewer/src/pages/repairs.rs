@@ -116,14 +116,14 @@ pub fn Repairs() -> Element {
                     rsx! {
                         div { class: "table-actions",
                             button {
-                                class: "btn-icon",
+                                class: "btn-icon btn-edit",
                                 title: "Ver detalle",
                                 onclick: move |e| {
                                     e.stop_propagation();
                                     detail_id.set(Some(rid));
                                     show_detail.set(true);
                                 },
-                                {IconName::DocumentText.render()}
+                                {IconName::Eye.render()}
                             }
                         }
                     }
@@ -433,7 +433,7 @@ fn RepairDetailModal(
                         .collect();
                     mechanics_set.set(mechs);
                 }
-                if let Ok(prod_page) = client.list_products(1, 200).await {
+                if let Ok(prod_page) = client.list_products(1, 100).await {
                     products_set.set(prod_page.items);
                 } else {
                     eprintln!("[repairs] Failed to load products for dropdown");
@@ -455,6 +455,7 @@ fn RepairDetailModal(
                     technician_id: None,
                     estimated_cost: None,
                     final_cost: None,
+                    labor_cost: None,
                     estimated_delivery: None,
                 };
                 if let Ok(updated) = client.update_repair(repair_id, &req).await {
@@ -482,6 +483,7 @@ fn RepairDetailModal(
                     technician_id: tech_id,
                     estimated_cost: None,
                     final_cost: None,
+                    labor_cost: None,
                     estimated_delivery: None,
                 };
                 if let Ok(updated) = client.update_repair(repair_id, &req).await {
@@ -654,6 +656,7 @@ fn RepairDetailModal(
                             technician_id: None,
                             estimated_cost: None,
                             final_cost: None,
+                            labor_cost: None,
                             estimated_delivery: None,
                         };
                         if let Ok(updated) = client.update_repair(repair_id, &req).await {

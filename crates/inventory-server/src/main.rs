@@ -58,7 +58,10 @@ async fn main() -> anyhow::Result<()> {
 
     // 5. Start embedded PostgreSQL
     let mut db_manager = db_manager::DbManager::new(&data_dir)?;
-    let database_url = db_manager.start().await?;
+    let database_url = db_manager.start().await.map_err(|e| {
+        tracing::error!(error = %e, "Failed to start embedded PostgreSQL");
+        e
+    })?;
     tracing::info!("PostgreSQL embedded started");
 
     // 6. Create connection pool and run migrations
@@ -161,6 +164,12 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Shutdown requested");
     handle.graceful_shutdown(Some(std::time::Duration::from_secs(10)));
     server_task.await??;
+
+    tracing::info!("Stopping embedded PostgreSQL...");
+    if let Err(e) = db_manager.stop().await {
+        tracing::error!(error = %e, "Failed to stop PostgreSQL gracefully");
+    }
+    tracing::info!("Shutdown complete");
 
     Ok(())
 }

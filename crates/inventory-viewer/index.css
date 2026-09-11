@@ -218,6 +218,10 @@ body {
   overflow-y: auto;
 }
 
+.modal-lg {
+  min-width: 700px;
+}
+
 .modal-header {
   display: flex;
   align-items: center;

@@ -83,6 +83,7 @@ pub struct Repair {
     pub status: RepairStatus,
     pub estimated_cost: Option<Decimal>,
     pub final_cost: Option<Decimal>,
+    pub labor_cost: Option<Decimal>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

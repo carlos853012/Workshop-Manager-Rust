@@ -141,6 +141,7 @@ pub struct UpdateRepairRequest {
     pub technician_id: Option<uuid::Uuid>,
     pub estimated_cost: Option<Decimal>,
     pub final_cost: Option<Decimal>,
+    pub labor_cost: Option<Decimal>,
     pub estimated_delivery: Option<chrono::NaiveDate>,
 }
 

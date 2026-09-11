@@ -51,7 +51,7 @@ async fn list_repairs(
     let items: Vec<Repair> = sqlx::query_as(
         "SELECT id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
-         status, estimated_cost, final_cost, created_at, updated_at \
+         status, estimated_cost, final_cost, labor_cost, created_at, updated_at \
          FROM repairs WHERE status != 'deleted' AND workshop_id = $3 \
          ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
@@ -80,7 +80,7 @@ async fn get_repair(
     let repair: Option<Repair> = sqlx::query_as(
         "SELECT id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
-         status, estimated_cost, final_cost, created_at, updated_at \
+         status, estimated_cost, final_cost, labor_cost, created_at, updated_at \
          FROM repairs WHERE id = $1 AND status != 'deleted' AND workshop_id = $2"
     )
     .bind(id)
@@ -193,6 +193,7 @@ async fn create_repair(
         status: RepairStatus::Pending,
         estimated_cost: req.estimated_cost,
         final_cost: None,
+        labor_cost: None,
         created_at: now,
         updated_at: now,
     };
@@ -229,6 +230,7 @@ struct UpdateRepairRequest {
     pub technician_id: Option<Uuid>,
     pub estimated_cost: Option<rust_decimal::Decimal>,
     pub final_cost: Option<rust_decimal::Decimal>,
+    pub labor_cost: Option<rust_decimal::Decimal>,
     pub estimated_delivery: Option<chrono::NaiveDate>,
 }
 
@@ -241,7 +243,7 @@ async fn update_repair(
     let old_repair: Option<Repair> = sqlx::query_as(
         "SELECT id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, \
          description, diagnosis, technician_id, estimated_delivery, priority, \
-         status, estimated_cost, final_cost, created_at, updated_at \
+         status, estimated_cost, final_cost, labor_cost, created_at, updated_at \
          FROM repairs WHERE id = $1 AND status != 'deleted' AND workshop_id = $2"
     )
     .bind(id)
@@ -259,14 +261,15 @@ async fn update_repair(
     let new_technician_id = req.technician_id.or(old_repair.technician_id);
     let new_estimated_cost = req.estimated_cost.or(old_repair.estimated_cost);
     let new_final_cost = req.final_cost.or(old_repair.final_cost);
+    let new_labor_cost = req.labor_cost.or(old_repair.labor_cost);
     let new_estimated_delivery = req.estimated_delivery.or(old_repair.estimated_delivery);
     let now = Utc::now();
 
     sqlx::query(
         "UPDATE repairs SET \
          status = $2, diagnosis = $3, technician_id = $4, estimated_cost = $5, final_cost = $6, \
-         estimated_delivery = $7, updated_at = $8 \
-         WHERE id = $1 AND status != 'deleted' AND workshop_id = $9",
+         labor_cost = $7, estimated_delivery = $8, updated_at = $9 \
+         WHERE id = $1 AND status != 'deleted' AND workshop_id = $10",
     )
     .bind(id)
     .bind(&new_status)
@@ -274,6 +277,7 @@ async fn update_repair(
     .bind(new_technician_id)
     .bind(new_estimated_cost)
     .bind(new_final_cost)
+    .bind(new_labor_cost)
     .bind(new_estimated_delivery)
     .bind(now)
     .bind(user.workshop_id)
@@ -318,6 +322,7 @@ async fn update_repair(
         status: new_status,
         estimated_cost: new_estimated_cost,
         final_cost: new_final_cost,
+        labor_cost: old_repair.labor_cost,
         created_at: old_repair.created_at,
         updated_at: now,
     };
@@ -443,18 +448,43 @@ async fn add_repair_part(
         return Err(AppError::Validation("quantity must be > 0".to_string()));
     }
 
+    let mut tx = state
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
     let repair: Option<Repair> = sqlx::query_as(
         "SELECT id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, description, \
-         diagnosis, technician_id, estimated_delivery, priority, status, estimated_cost, final_cost, created_at, updated_at \
+         diagnosis, technician_id, estimated_delivery, priority, status, estimated_cost, final_cost, labor_cost, created_at, updated_at \
          FROM repairs WHERE id = $1 AND workshop_id = $2",
     )
     .bind(repair_id)
     .bind(user.workshop_id)
-    .fetch_optional(&state.pool)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     let _repair = repair.ok_or(AppError::NotFound("Repair not found".to_string()))?;
+
+    if let Some(pid) = req.product_id {
+        let rows = sqlx::query(
+            "UPDATE products SET stock = stock - $1, updated_at = NOW() \
+             WHERE id = $2 AND workshop_id = $3 AND stock >= $1",
+        )
+        .bind(req.quantity)
+        .bind(pid)
+        .bind(user.workshop_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+        if rows.rows_affected() == 0 {
+            return Err(AppError::Validation(
+                "Stock insuficiente para este producto".to_string(),
+            ));
+        }
+    }
 
     let total_cost = req.unit_cost.map(|uc| uc * req.quantity);
     let id = Uuid::new_v4();
@@ -472,9 +502,13 @@ async fn add_repair_part(
     .bind(total_cost)
     .bind(req.product_id)
     .bind(now)
-    .execute(&state.pool)
+    .execute(&mut *tx)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::Internal(format!("Transaction commit error: {}", e)))?;
 
     let part = RepairPartResponse {
         id,
@@ -514,14 +548,20 @@ async fn remove_repair_part(
     Extension(user): Extension<AuthenticatedUser>,
     Path((repair_id, part_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<ApiResponse<()>>, AppError> {
+    let mut tx = state
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
     let repair: Option<Repair> = sqlx::query_as(
         "SELECT id, workshop_id, customer_name, customer_email, customer_phone, vehicle, license_plate, description, \
-         diagnosis, technician_id, estimated_delivery, priority, status, estimated_cost, final_cost, created_at, updated_at \
+         diagnosis, technician_id, estimated_delivery, priority, status, estimated_cost, final_cost, labor_cost, created_at, updated_at \
          FROM repairs WHERE id = $1 AND workshop_id = $2",
     )
     .bind(repair_id)
     .bind(user.workshop_id)
-    .fetch_optional(&state.pool)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
@@ -529,16 +569,41 @@ async fn remove_repair_part(
         return Err(AppError::NotFound("Repair not found".to_string()));
     }
 
-    let rows = sqlx::query("DELETE FROM repair_parts WHERE id = $1 AND repair_id = $2")
+    let part: Option<RepairPart> = sqlx::query_as(
+        "SELECT id, repair_id, name, quantity, unit_cost, total_cost, product_id, created_at \
+         FROM repair_parts WHERE id = $1 AND repair_id = $2",
+    )
+    .bind(part_id)
+    .bind(repair_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    let part = part.ok_or(AppError::NotFound("Part not found".to_string()))?;
+
+    sqlx::query("DELETE FROM repair_parts WHERE id = $1 AND repair_id = $2")
         .bind(part_id)
         .bind(repair_id)
-        .execute(&state.pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
-    if rows.rows_affected() == 0 {
-        return Err(AppError::NotFound("Part not found".to_string()));
+    if let Some(pid) = part.product_id {
+        sqlx::query(
+            "UPDATE products SET stock = stock + $1, updated_at = NOW() \
+             WHERE id = $2 AND workshop_id = $3",
+        )
+        .bind(part.quantity)
+        .bind(pid)
+        .bind(user.workshop_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
     }
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::Internal(format!("Transaction commit error: {}", e)))?;
 
     if let Err(e) = audit::log_change(
         &state.pool,

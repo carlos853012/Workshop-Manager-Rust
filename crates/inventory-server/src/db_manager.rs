@@ -36,10 +36,22 @@ impl DbManager {
 
     /// Descarga/instala PostgreSQL si es necesario, inicia el servidor, crea la base de datos y retorna el connection string.
     pub async fn start(&mut self) -> anyhow::Result<String> {
-        self.postgresql.setup().await?;
-        self.postgresql.start().await?;
+        tracing::info!("PostgreSQL setup starting...");
+        self.postgresql.setup().await
+            .map_err(|e| {
+                tracing::error!(error = %e, "PostgreSQL setup failed");
+                e
+            })?;
+        tracing::info!("PostgreSQL setup complete, starting...");
+        self.postgresql.start().await
+            .map_err(|e| {
+                tracing::error!(error = %e, "PostgreSQL start failed");
+                e
+            })?;
+        tracing::info!("PostgreSQL started, checking database...");
 
         if !self.postgresql.database_exists(&self.database_name).await? {
+            tracing::info!("Database '{}' does not exist, creating...", self.database_name);
             self.postgresql.create_database(&self.database_name).await?;
         }
 
@@ -49,7 +61,6 @@ impl DbManager {
     }
 
     /// Detiene el servidor PostgreSQL embebido.
-    #[allow(dead_code)]
     pub async fn stop(&self) -> anyhow::Result<()> {
         self.postgresql.stop().await?;
         Ok(())
@@ -70,6 +81,16 @@ impl DbManager {
     #[allow(dead_code)]
     pub fn database_name(&self) -> &str {
         &self.database_name
+    }
+}
+
+impl Drop for DbManager {
+    fn drop(&mut self) {
+        let pg_ctl = self.postgresql.settings().binary_dir().join("pg_ctl");
+        let data_dir = self.postgresql.settings().data_dir.clone();
+        let _ = std::process::Command::new(&pg_ctl)
+            .args(["stop", "-D", &data_dir.to_string_lossy(), "-m", "fast"])
+            .output();
     }
 }
 
@@ -111,6 +132,11 @@ fn load_or_generate_password(data_dir: &Path) -> anyhow::Result<String> {
 
 /// Crea un pool de conexiones contra PostgreSQL.
 pub async fn create_pool(database_url: &str) -> anyhow::Result<PgPool> {
-    let pool = PgPool::connect(database_url).await?;
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(5)
+        .acquire_timeout(std::time::Duration::from_secs(60))
+        .min_connections(1)
+        .connect(database_url)
+        .await?;
     Ok(pool)
 }
