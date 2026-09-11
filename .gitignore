@@ -14,3 +14,4 @@ Thumbs.db
 elimar_datos.md
 config/server.toml
 config/viewer.toml
+.opencode/node_modules/

@@ -1,4 +1,4 @@
-# Comandos Importantes — Equipos-Rust
+# Comandos Importantes — WorkshopManager
 
 ## Compilación y desarrollo
 
@@ -10,29 +10,29 @@ cargo build
 cargo build --release
 
 # Compilar solo un crate
-cargo build -p server
-cargo build -p viewer
+cargo build -p inventory-server
+cargo build -p inventory-viewer
 
 # Verificar sin generar binarios (más rápido)
-cargo check -p server
+cargo check -p inventory-viewer
 
 # Ejecutar server (con terminal visible en debug)
-cargo run -p server
+cargo run -p inventory-server
 
 # Ejecutar viewer
-cargo run -p viewer
+cargo run -p inventory-viewer
 ```
 
 ## MSI / Instaladores
 
 ```powershell
 # Server MSI (requiere WiX Toolset v3)
-cargo wix -p server --nocapture --install-version 0.3.0
-cargo wix -p server --nocapture -o "target/wix/EquiposServer-v0.3.0.msi"
+cargo wix -p inventory-server --nocapture --install-version 0.1.0
+cargo wix -p inventory-server --nocapture -o "target/wix/WorkshopManagerServer-v0.1.0.msi"
 
 # Viewer MSI
-cargo wix -p viewer --nocapture
-cargo wix -p viewer --nocapture -o "target/wix/EquiposViewer-v0.3.0.msi"
+cargo wix -p inventory-viewer --nocapture
+cargo wix -p inventory-viewer --nocapture -o "target/wix/WorkshopManagerViewer-v0.1.0.msi"
 
 # Limpiar artefactos WiX anteriores
 Remove-Item -Recurse -Force target\wix -ErrorAction SilentlyContinue
@@ -41,57 +41,57 @@ Remove-Item -Recurse -Force target\wix -ErrorAction SilentlyContinue
 ## Despliegue Linux (servidor)
 
 El server se distribuye como `.deb` (amd64/arm64) y corre como servicio
-systemd con el usuario `equipos`:
+systemd con el usuario `workshopmanager`:
 
 ```bash
 # Instalar el .deb (el postinst crea el usuario y arranca el servicio)
-sudo dpkg -i server_0.3.0-1_amd64.deb
+sudo dpkg -i inventory-server_0.1.0-1_amd64.deb
 
 # Estado y logs
-systemctl status equipos-server
-journalctl -u equipos-server -f          # esperar "server ready at https://0.0.0.0:3000"
-sudo ufw allow 3000                       # abrir puerto si ufw está activo
+systemctl status workshopmanager-server
+journalctl -u workshopmanager-server -f          # esperar "server ready at https://0.0.0.0:8443"
+sudo ufw allow 8443                               # abrir puerto si ufw está activo
 
 # Rutas del server Linux
-/var/lib/equipos-server/.local/share/EquiposIndustriales/data/   # DB, secretos, cert TLS
-/var/lib/equipos-server/.theseus/postgresql/18.3.0/bin/          # binarios PostgreSQL
+/var/lib/workshopmanager-server/.local/share/WorkshopManager/data/   # DB, secretos, cert TLS
+/var/lib/workshopmanager-server/.theseus/postgresql/18.3.0/bin/      # binarios PostgreSQL
 
 # psql contra la DB embebida (user/password en .superuser_credentials.json)
-cat /var/lib/equipos-server/.local/share/EquiposIndustriales/data/.superuser_credentials.json
-PGPASSWORD='<password>' /var/lib/equipos-server/.theseus/postgresql/18.3.0/bin/psql \
-  -h 127.0.0.1 -U <user> -d equipos_redes
+cat /var/lib/workshopmanager-server/.local/share/WorkshopManager/data/.superuser_credentials.json
+PGPASSWORD='<password>' /var/lib/workshopmanager-server/.theseus/postgresql/18.3.0/bin/psql \
+  -h 127.0.0.1 -U <user> -d workshop_manager
 
 # Registrar una Device Key en headless (no hay tray icon en Linux)
 KEY=$(tr -dc 'A-Z0-9' < /dev/urandom | head -c 32)   # 32 chars A-Z0-9
 HASH=$(printf '%s' "$KEY" | sha256sum | awk '{print $1}')
-PGPASSWORD='<password>' /var/lib/equipos-server/.theseus/postgresql/18.3.0/bin/psql \
-  -h 127.0.0.1 -U <user> -d equipos_redes \
+PGPASSWORD='<password>' /var/lib/workshopmanager-server/.theseus/postgresql/18.3.0/bin/psql \
+  -h 127.0.0.1 -U <user> -d workshop_manager \
   -c "INSERT INTO device_keys (key_hash, device_name) VALUES ('$HASH', 'carlos-pc');"
 
-# Validar una key sin abrir el viewer (v0.3.1+): 200 {"valid":true} = OK
-curl -k -H "X-Device-Key: $KEY" https://<ip>:3000/api/device-key/check
+# Validar una key sin abrir el viewer (v0.1.0+): 200 {"valid":true} = OK
+curl -k -H "X-Device-Key: $KEY" https://<ip>:8443/api/device-key/check
 
 # Diagnóstico "Exec format error" en arm64 (PG embebido con arquitectura
-# equivocada — incidente v0.3.0): el binario debe decir "ARM aarch64" en la Pi.
-file /var/lib/equipos-server/.theseus/postgresql/18.3.0/bin/postgres
+# equivocada): el binario debe decir "ARM aarch64" en la Pi.
+file /var/lib/workshopmanager-server/.theseus/postgresql/18.3.0/bin/postgres
 
 # Remover el paquete (conserva los datos)
-sudo dpkg -r server
-# Limpieza total: sudo userdel -r equipos && sudo rm -rf /var/lib/equipos-server
+sudo dpkg -r inventory-server
+# Limpieza total: sudo userdel -r workshopmanager && sudo rm -rf /var/lib/workshopmanager-server
 ```
 
 ## Build de release multi-plataforma
 
 ```powershell
 # MSIs (Windows, requiere WiX Toolset v3)
-cargo build --release -p server -p viewer
-cargo wix -p server --nocapture
-cargo wix -p viewer --nocapture
+cargo build --release -p inventory-server -p inventory-viewer
+cargo wix -p inventory-server --nocapture
+cargo wix -p inventory-viewer --nocapture
 
 # .deb Linux (requiere cargo-deb: cargo install cargo-deb --locked)
-# Nota: cargo-deb espera target/release/server sin extensión .exe
-Copy-Item target\release\server.exe target\release\server
-cargo deb -p server
+# Nota: cargo-deb espera target/release/inventory-server sin extensión .exe
+Copy-Item target\release\inventory-server.exe target\release\inventory-server
+cargo deb -p inventory-server
 
 # Versionado del workspace (bump + commit + tag v<version>)
 .\scripts\bump.ps1 0.4.0
@@ -113,20 +113,20 @@ C:\Users\carlos\.theseus\postgresql\18.3.0\bin\
 /var/lib/equipos-server/.theseus/postgresql/18.3.0/bin/
 
 # Ruta de datos en desarrollo (relativa al dir de trabajo)
-crates\server\data\pgdata\
+crates\inventory-server\data\pgdata\
 
 # Ruta de datos en producción (MSI)
-%LOCALAPPDATA%\EquiposIndustriales\data\pgdata\
+%LOCALAPPDATA%\WorkshopManager\data\pgdata\
 
 # Conectarse a la base (mientras el server corre)
-& "C:\Users\carlos\.theseus\postgresql\18.3.0\bin\psql.exe" -h localhost -U postgres -d equipos_redes
+& "C:\Users\carlos\.theseus\postgresql\18.3.0\bin\psql.exe" -h localhost -U postgres -d workshop_manager
 
 # Verificar que las credenciales están cifradas en DB
-& "C:\Users\carlos\.theseus\postgresql\18.3.0\bin\psql.exe" -h localhost -U postgres -d equipos_redes -c "SELECT id, ip_address, LEFT(clave_windows, 40) AS clave_hex FROM equipos WHERE clave_windows IS NOT NULL;"
+& "C:\Users\carlos\.theseus\postgresql\18.3.0\bin\psql.exe" -h localhost -U postgres -d workshop_manager -c "SELECT id, ip_address, LEFT(clave_windows, 40) AS clave_hex FROM equipos WHERE clave_windows IS NOT NULL;"
 # Si está cifrado, clave_hex se ve como: 1a2b3c4d... (hexadecimal)
 
 # Limpiar datos corruptos (detener server primero)
-Remove-Item -Recurse -Force "%LOCALAPPDATA%\EquiposIndustriales\data\pgdata"
+Remove-Item -Recurse -Force "%LOCALAPPDATA%\WorkshopManager\data\pgdata"
 ```
 
 ## Escaneo de red (ICMP)
@@ -147,13 +147,13 @@ entrada en `HKCU\...\Run` y se marca/desmarca visualmente el ✓.
 
 ```powershell
 # Verificar entrada actual
-Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "EquiposIndustrialesServer"
+Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "WorkshopManagerServer"
 
 # Eliminar manualmente
-Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "EquiposIndustrialesServer"
+Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "WorkshopManagerServer"
 
 # Agregar manualmente
-Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "EquiposIndustrialesServer" -Value "C:\Program Files\EquiposIndustriales\bin\server.exe"
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "WorkshopManagerServer" -Value "C:\Program Files\WorkshopManager\bin\inventory-server.exe"
 ```
 
 ## Pruebas de seguridad
@@ -178,29 +178,29 @@ PowerShell -ExecutionPolicy Bypass -File test_seguridad.ps1
 
 ```
 # Código fuente
-C:\Users\carlos\Desktop\Equipos-Rust\
+C:\Users\carlos\Desktop\workshop-manager\
 
 # Datos de PostgreSQL (desarrollo)
-C:\Users\carlos\Desktop\Equipos-Rust\crates\server\data\pgdata\
+C:\Users\carlos\Desktop\workshop-manager\crates\inventory-server\data\pgdata\
 
 # Datos de PostgreSQL (producción)
-%LOCALAPPDATA%\EquiposIndustriales\data\pgdata\
+%LOCALAPPDATA%\WorkshopManager\data\pgdata\
 
 # Llave de cifrado AES-256-GCM (auto-generada, no compartir)
-%LOCALAPPDATA%\EquiposIndustriales\data\.crypto_key
+%LOCALAPPDATA%\WorkshopManager\data\.crypto_key
 
 # Configuración del viewer
-%LOCALAPPDATA%\EquiposIndustriales\viewer_storage\
+%LOCALAPPDATA%\WorkshopManager\viewer_storage\
 
 # Assets del server
-C:\Users\carlos\Desktop\Equipos-Rust\crates\server\assets\icon.png
-C:\Users\carlos\Desktop\Equipos-Rust\crates\server\assets\icon.ico
+C:\Users\carlos\Desktop\workshop-manager\crates\inventory-server\assets\icon.png
+C:\Users\carlos\Desktop\workshop-manager\crates\inventory-server\assets\icon.ico
 
 # CSS compilado del viewer
-C:\Users\carlos\Desktop\Equipos-Rust\crates\viewer\index.css
+C:\Users\carlos\Desktop\workshop-manager\crates\inventory-viewer\index.css
 
 # MSIs generados
-C:\Users\carlos\Desktop\Equipos-Rust\target\wix\
+C:\Users\carlos\Desktop\workshop-manager\target\wix\
 
 # PostgreSQL embebido (binarios descargados por cargo)
 C:\Users\carlos\.theseus\postgresql\18.3.0\bin\
@@ -213,7 +213,7 @@ C:\Users\carlos\.theseus\postgresql\18.3.0\bin\
 $env:JWT_SECRET="mi-secreto-personalizado"
 
 # URL de base de datos (opcional, el server usa la embebida por defecto)
-$env:DATABASE_URL="postgres://postgres:postgres@localhost:5432/equipos_redes"
+$env:DATABASE_URL="postgres://postgres:postgres@localhost:5432/workshop_manager"
 ```
 
 ## Solución de problemas
@@ -221,14 +221,14 @@ $env:DATABASE_URL="postgres://postgres:postgres@localhost:5432/equipos_redes"
 ```powershell
 # Error "Permission denied" al iniciar PostgreSQL en MSI
 # -> Migrar datos de %ProgramFiles% a %LOCALAPPDATA%:
-Move-Item "$env:ProgramFiles\EquiposIndustriales\bin\data\pgdata" "$env:LOCALAPPDATA\EquiposIndustriales\data\pgdata"
+Move-Item "$env:ProgramFiles\WorkshopManager\bin\data\pgdata" "$env:LOCALAPPDATA\WorkshopManager\data\pgdata"
 
 # Error "postmaster.pid" archivo stale
 # -> Detener server, borrar el archivo:
-Remove-Item "$env:LOCALAPPDATA\EquiposIndustriales\data\pgdata\postmaster.pid" -ErrorAction SilentlyContinue
+Remove-Item "$env:LOCALAPPDATA\WorkshopManager\data\pgdata\postmaster.pid" -ErrorAction SilentlyContinue
 
 # El server no arranca por puerto ocupado
-netstat -ano | findstr :3000
+netstat -ano | findstr :8443
 # PID del proceso que ocupa el puerto
 taskkill /PID <PID> /F
 
@@ -236,11 +236,11 @@ taskkill /PID <PID> /F
 # -> Verificar que el server esté corriendo
 # -> Revisar la IP configurada en el engranaje de Login
 # -> Firewall: permitir puerto 3000
-New-NetFirewallRule -DisplayName "Equipos Server" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow
+New-NetFirewallRule -DisplayName "WorkshopManager Server" -Direction Inbound -Protocol TCP -LocalPort 8443 -Action Allow
 
 # Reconstruir el viewer con CSS actualizado
 # (el CSS está inlinado en el binario vía include_str!)
-cargo build -p viewer
+cargo build -p inventory-viewer
 ```
 
 ## Dependencias del sistema
