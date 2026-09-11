@@ -7,6 +7,7 @@ pub mod products;
 pub mod repairs;
 pub mod reports;
 pub mod sales;
+pub mod service_certificate;
 pub mod setup;
 pub mod suppliers;
 pub mod users;

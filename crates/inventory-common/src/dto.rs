@@ -112,6 +112,7 @@ pub struct AddRepairPartRequest {
     pub name: String,
     pub quantity: Decimal,
     pub unit_cost: Option<Decimal>,
+    pub product_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,6 +123,7 @@ pub struct RepairPartResponse {
     pub quantity: Decimal,
     pub unit_cost: Option<Decimal>,
     pub total_cost: Option<Decimal>,
+    pub product_id: Option<uuid::Uuid>,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -269,6 +271,71 @@ pub struct UpdateUserRequest {
     pub display_name: Option<String>,
     pub role: Option<String>,
     pub status: Option<String>,
+}
+
+// ==================== SERVICE CERTIFICATE ====================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClientSearchResult {
+    pub customer_name: Option<String>,
+    pub customer_email: Option<String>,
+    pub customer_phone: Option<String>,
+    pub vehicles: Vec<VehicleSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VehicleSummary {
+    pub license_plate: Option<String>,
+    pub vehicle: Option<String>,
+    pub total_repairs: i64,
+    pub last_repair_date: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServiceCertificate {
+    pub workshop: WorkshopInfo,
+    pub client: ClientInfo,
+    pub vehicle: VehicleInfo,
+    pub services: Vec<ServiceEntry>,
+    pub parts_used: Vec<PartEntry>,
+    pub generated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorkshopInfo {
+    pub name: String,
+    pub address: String,
+    pub city: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClientInfo {
+    pub name: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VehicleInfo {
+    pub description: Option<String>,
+    pub license_plate: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServiceEntry {
+    pub date: chrono::DateTime<chrono::Utc>,
+    pub description: Option<String>,
+    pub diagnosis: Option<String>,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PartEntry {
+    pub name: String,
+    pub quantity: Decimal,
+    pub product_brand: Option<String>,
+    pub product_model: Option<String>,
+    pub product_sku: Option<String>,
 }
 
 // ==================== DEVICE KEYS ====================

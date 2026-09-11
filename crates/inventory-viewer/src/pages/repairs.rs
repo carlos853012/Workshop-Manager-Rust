@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use inventory_common::dto::{
     AddRepairPartRequest, RepairDetail, RepairPartResponse, UpdateRepairRequest,
 };
-use inventory_common::{Priority, RepairStatus, User};
+use inventory_common::{Priority, Product, RepairStatus, User};
 use rust_decimal::Decimal;
 
 use crate::api::ApiError;
@@ -391,6 +391,8 @@ fn RepairDetailModal(
     let mut new_part_name = use_signal(String::new);
     let mut new_part_qty = use_signal(|| "1".to_string());
     let mut new_part_cost = use_signal(String::new);
+    let mut selected_product_id = use_signal(|| None::<uuid::Uuid>);
+    let products = use_signal(Vec::<Product>::new);
 
     let mut show_status_confirm = use_signal(|| false);
     let pending_status = use_signal(|| None::<RepairStatus>);
@@ -402,6 +404,7 @@ fn RepairDetailModal(
         let mut detail_set = detail;
         let mut parts_set = parts;
         let mut mechanics_set = mechanics;
+        let mut products_set = products;
 
         loading_set.set(true);
         error_set.set(None);
@@ -429,6 +432,11 @@ fn RepairDetailModal(
                         .filter(|u| format!("{}", u.role) == "mechanic")
                         .collect();
                     mechanics_set.set(mechs);
+                }
+                if let Ok(prod_page) = client.list_products(1, 200).await {
+                    products_set.set(prod_page.items);
+                } else {
+                    eprintln!("[repairs] Failed to load products for dropdown");
                 }
             }
             loading_set.set(false);
@@ -491,6 +499,7 @@ fn RepairDetailModal(
         }
         let qty: Decimal = new_part_qty.read().parse().unwrap_or(Decimal::ONE);
         let cost: Option<Decimal> = new_part_cost.read().parse().ok();
+        let product_id = *selected_product_id.read();
         let client = auth.api_client();
         spawn(async move {
             if let Some(client) = client {
@@ -498,6 +507,7 @@ fn RepairDetailModal(
                     name,
                     quantity: qty,
                     unit_cost: cost,
+                    product_id,
                 };
                 if let Ok(part) = client.add_repair_part(repair_id, &req).await {
                     let mut current = parts.read().clone();
@@ -506,6 +516,7 @@ fn RepairDetailModal(
                     new_part_name.set(String::new());
                     new_part_qty.set("1".to_string());
                     new_part_cost.set(String::new());
+                    selected_product_id.set(None);
                 }
             }
         });
@@ -612,6 +623,8 @@ fn RepairDetailModal(
                     new_part_name: new_part_name,
                     new_part_qty: new_part_qty,
                     new_part_cost: new_part_cost,
+                    selected_product_id: selected_product_id,
+                    products: products,
                     add_part: add_part,
                     remove_part: remove_part,
                 }
@@ -894,6 +907,8 @@ fn PartsTab(
     new_part_name: Signal<String>,
     new_part_qty: Signal<String>,
     new_part_cost: Signal<String>,
+    selected_product_id: Signal<Option<uuid::Uuid>>,
+    products: Signal<Vec<Product>>,
     add_part: EventHandler<()>,
     remove_part: EventHandler<uuid::Uuid>,
 ) -> Element {
@@ -954,6 +969,36 @@ fn PartsTab(
                 }
             }
             div { class: "form-row mt-md",
+                div { class: "form-group",
+                    label { class: "form-label", "Producto (opcional)" }
+                    select {
+                        class: "input",
+                        value: {
+                            match selected_product_id.read().as_ref() {
+                                Some(id) => id.to_string(),
+                                None => String::new(),
+                            }
+                        },
+                        onchange: move |evt: Event<FormData>| {
+                            let val = evt.value();
+                            if val.is_empty() {
+                                selected_product_id.set(None);
+                            } else {
+                                if let Ok(id) = uuid::Uuid::parse_str(&val) {
+                                    selected_product_id.set(Some(id));
+                                    if let Some(prod) = products.read().iter().find(|p| p.id == id) {
+                                        new_part_name.set(prod.name.clone());
+                                        new_part_cost.set(prod.price.to_string());
+                                    }
+                                }
+                            }
+                        },
+                        option { value: "", "-- Seleccionar producto --" }
+                        for prod in products.read().iter() {
+                            option { value: "{prod.id}", "{prod.name}" }
+                        }
+                    }
+                }
                 Input {
                     label: Some("Nombre *".to_string()),
                     value: new_part_name.read().clone(),

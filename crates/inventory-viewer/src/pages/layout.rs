@@ -69,6 +69,11 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
             icon: IconName::ChartBar,
         },
         NavItem {
+            label: "Certificado Servicios".to_string(),
+            route: Route::ServiceCertificatePage {},
+            icon: IconName::DocumentText,
+        },
+        NavItem {
             label: "Usuarios".to_string(),
             route: Route::Users {},
             icon: IconName::Users,

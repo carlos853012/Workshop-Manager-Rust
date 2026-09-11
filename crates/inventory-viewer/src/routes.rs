@@ -9,6 +9,7 @@ use crate::pages::products::Products;
 use crate::pages::repairs::Repairs;
 use crate::pages::reports::Reports;
 use crate::pages::sales::Sales;
+use crate::pages::service_certificate::ServiceCertificatePage;
 use crate::pages::setup::Setup;
 use crate::pages::suppliers::Suppliers;
 use crate::pages::users::Users;
@@ -44,6 +45,9 @@ pub enum Route {
 
     #[route("/reports")]
     Reports {},
+
+    #[route("/service-certificate")]
+    ServiceCertificatePage {},
 
     #[route("/users")]
     Users {},

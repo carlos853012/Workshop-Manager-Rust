@@ -8,6 +8,7 @@ mod audit;
 mod auth;
 mod backup;
 mod barcode;
+mod certificate;
 mod config;
 mod crypto;
 mod db_manager;
@@ -147,9 +148,11 @@ async fn main() -> anyhow::Result<()> {
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
         let tray_pool = state.pool.clone();
         std::thread::spawn(move || tray::run(shutdown_tx, tray_pool));
-        shutdown_rx
-            .await
-            .map_err(|_| anyhow::anyhow!("Tray shutdown signal lost"))?;
+        let ctrl_c = tokio::signal::ctrl_c();
+        tokio::select! {
+            _ = shutdown_rx => {}
+            _ = ctrl_c => {}
+        }
     }
 
     #[cfg(not(target_os = "windows"))]

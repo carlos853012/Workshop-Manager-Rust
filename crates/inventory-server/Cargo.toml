@@ -38,6 +38,7 @@ base64 = "0.22"
 obfstr = "0.4"
 anyhow = "1.0"
 thiserror = "1.0"
+genpdf = "0.2"
 
 [target.'cfg(windows)'.dependencies]
 tao = "0.30"

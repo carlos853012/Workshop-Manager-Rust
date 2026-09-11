@@ -105,6 +105,7 @@ pub struct RepairPart {
     pub quantity: Decimal,
     pub unit_cost: Option<Decimal>,
     pub total_cost: Option<Decimal>,
+    pub product_id: Option<uuid::Uuid>,
     pub created_at: DateTime<Utc>,
 }
 

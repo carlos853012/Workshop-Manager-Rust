@@ -8,7 +8,7 @@ mod device_keys;
 pub(crate) mod pagination;
 mod products;
 mod repairs;
-mod reports;
+pub(crate) mod reports;
 mod sales;
 mod suppliers;
 mod users;

@@ -405,7 +405,7 @@ async fn list_repair_parts(
     }
 
     let parts: Vec<RepairPart> = sqlx::query_as(
-        "SELECT id, repair_id, name, quantity, unit_cost, total_cost, created_at \
+        "SELECT id, repair_id, name, quantity, unit_cost, total_cost, product_id, created_at \
          FROM repair_parts WHERE repair_id = $1 ORDER BY created_at ASC",
     )
     .bind(repair_id)
@@ -422,6 +422,7 @@ async fn list_repair_parts(
             quantity: p.quantity,
             unit_cost: p.unit_cost,
             total_cost: p.total_cost,
+            product_id: p.product_id,
             created_at: p.created_at,
         })
         .collect();
@@ -460,8 +461,8 @@ async fn add_repair_part(
     let now = Utc::now();
 
     sqlx::query(
-        "INSERT INTO repair_parts (id, repair_id, name, quantity, unit_cost, total_cost, created_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO repair_parts (id, repair_id, name, quantity, unit_cost, total_cost, product_id, created_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind(id)
     .bind(repair_id)
@@ -469,6 +470,7 @@ async fn add_repair_part(
     .bind(req.quantity)
     .bind(req.unit_cost)
     .bind(total_cost)
+    .bind(req.product_id)
     .bind(now)
     .execute(&state.pool)
     .await
@@ -481,6 +483,7 @@ async fn add_repair_part(
         quantity: req.quantity,
         unit_cost: req.unit_cost,
         total_cost,
+        product_id: req.product_id,
         created_at: now,
     };
 

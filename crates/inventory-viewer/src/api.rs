@@ -1,14 +1,14 @@
 use inventory_common::dto::{
-    AddRepairPartRequest, ApiResponse, ClientHistoryResponse, ClientReport, CreateProductRequest,
-    CreateRepairRequest, CreateSaleRequest, CreateSupplierRequest, CreateUserRequest,
-    DashboardResponse, DeviceKeySummary, KpisResponse, LoginRequest, LoginResponse,
-    PaginatedResponse, PosProductResponse, RegisterRequest, RepairDetail, RepairPartResponse,
-    UpdateRepairRequest, UpdateUserRequest,
+    AddRepairPartRequest, ApiResponse, ClientHistoryResponse, ClientReport, ClientSearchResult,
+    CreateProductRequest, CreateRepairRequest, CreateSaleRequest, CreateSupplierRequest,
+    CreateUserRequest, DashboardResponse, DeviceKeySummary, KpisResponse, LoginRequest,
+    LoginResponse, PaginatedResponse, PosProductResponse, RegisterRequest, RepairDetail,
+    RepairPartResponse, UpdateRepairRequest, UpdateUserRequest,
 };
 use inventory_common::{Product, Repair, Sale, Supplier, User};
 use serde::{Deserialize, Serialize};
 
-const DEFAULT_TIMEOUT_SECONDS: u64 = 10;
+const DEFAULT_TIMEOUT_SECONDS: u64 = 60;
 
 /// Error posible al llamar a la API.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -323,6 +323,70 @@ impl ApiClient {
             &[("email", email.to_string())],
         )
         .await
+    }
+
+    /// GET /api/reports/client-search?query=XXX
+    pub async fn client_search(&self, query: &str) -> Result<Vec<ClientSearchResult>, ApiError> {
+        self.get_with_query(
+            "/api/reports/client-search",
+            &[("query", query.to_string())],
+        )
+        .await
+    }
+
+    /// GET /api/reports/client-certificate.pdf?email=XXX&plate=YYY
+    /// Returns raw PDF bytes.
+    pub async fn download_certificate(
+        &self,
+        email: Option<&str>,
+        name: Option<&str>,
+        plate: Option<&str>,
+    ) -> Result<Vec<u8>, ApiError> {
+        let mut query = Vec::new();
+        if let Some(e) = email {
+            query.push(("email".to_string(), e.to_string()));
+        }
+        if let Some(n) = name {
+            query.push(("name".to_string(), n.to_string()));
+        }
+        if let Some(p) = plate {
+            query.push(("plate".to_string(), p.to_string()));
+        }
+        let url = self.url("/api/reports/client-certificate.pdf");
+        let mut request = self
+            .client
+            .get(&url)
+            .query(&query)
+            .header("X-WorkshopManager-Key", &self.api_key);
+        if !self.device_key.is_empty() {
+            request = request.header("X-WorkshopManager-Device-Key", &self.device_key);
+        }
+        if let Some(header) = self.auth_header() {
+            request = request.header("Authorization", header);
+        }
+        let response = request
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+        let status = response.status();
+        if status.is_success() {
+            response
+                .bytes()
+                .await
+                .map(|b| b.to_vec())
+                .map_err(|e| ApiError::Network(e.to_string()))
+        } else {
+            match status.as_u16() {
+                401 => Err(ApiError::Unauthorized),
+                403 => Err(ApiError::Forbidden),
+                404 => Err(ApiError::NotFound("Certificado no encontrado".into())),
+                500..=599 => {
+                    let body = response.text().await.unwrap_or_default();
+                    Err(ApiError::Server(body))
+                }
+                _ => Err(ApiError::Unknown(format!("HTTP {}", status))),
+            }
+        }
     }
 
     // ==================== USERS ====================
