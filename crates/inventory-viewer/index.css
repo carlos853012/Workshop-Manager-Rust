@@ -331,6 +331,39 @@ body {
   min-width: 140px;
 }
 
+.detail-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  background-color: var(--surface);
+}
+
+.cost-summary {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-md);
+}
+
+.cost-totals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--bg);
+  border-radius: var(--radius-md);
+}
+
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.cost-total {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-xs);
+  font-size: 1rem;
+}
+
 /* Timeline */
 .timeline {
   border-left: 2px solid var(--border);

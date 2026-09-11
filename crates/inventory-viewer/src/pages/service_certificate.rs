@@ -7,7 +7,6 @@ use rust_decimal::Decimal;
 use crate::api::ApiError;
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
-use crate::components::atoms::input::Input;
 use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::molecules::modal::Modal;
@@ -297,6 +296,7 @@ fn CertificateDetailModal(
     let mut new_part_qty = use_signal(|| "1".to_string());
     let mut new_part_cost = use_signal(String::new);
     let mut labor_cost_input = use_signal(String::new);
+    let mut active_tab = use_signal(|| "info".to_string());
 
     use_effect(move || {
         let client = auth.api_client();
@@ -406,6 +406,12 @@ fn CertificateDetailModal(
             on_close: on_close,
             class: Some("modal-lg".to_string()),
             footer: rsx! {
+                Button {
+                    class: Some("cancel-button".to_string()),
+                    variant: ButtonVariant::Ghost,
+                    onclick: move |_| on_close.call(()),
+                    "Cancelar"
+                }
                 if let Some(ref d) = *detail.read() {
                     Button {
                         variant: ButtonVariant::Primary,
@@ -426,206 +432,237 @@ fn CertificateDetailModal(
                 div { class: "alert alert-danger", "{err}" }
             } else if let Some(ref d) = *detail.read() {
                 { let rep = &d.repair; rsx! {
-                div { class: "form-row mb-md",
-                    div {
-                        label { class: "form-label", "Cliente" }
-                        p { "{rep.customer_name.as_deref().unwrap_or(\"-\")}" }
+                div { class: "tabs mb-md",
+                    button {
+                        class: if *active_tab.read() == "info" { "tab-link active" } else { "tab-link" },
+                        onclick: move |_| active_tab.set("info".to_string()),
+                        "Información"
                     }
-                    div {
-                        label { class: "form-label", "Email" }
-                        p { "{rep.customer_email.as_deref().unwrap_or(\"-\")}" }
-                    }
-                    div {
-                        label { class: "form-label", "Teléfono" }
-                        p { "{rep.customer_phone.as_deref().unwrap_or(\"-\")}" }
+                    button {
+                        class: if *active_tab.read() == "parts" { "tab-link active" } else { "tab-link" },
+                        onclick: move |_| active_tab.set("parts".to_string()),
+                        "Insumos"
                     }
                 }
-                div { class: "form-row mb-md",
-                    div {
-                        label { class: "form-label", "Vehículo" }
-                        p { "{rep.vehicle.as_deref().unwrap_or(\"-\")}" }
-                    }
-                    div {
-                        label { class: "form-label", "Patente" }
-                        p {
-                            if let Some(ref plate) = rep.license_plate {
-                                "{plate.to_uppercase()}"
-                            } else {
-                                "-"
-                            }
+                if *active_tab.read() == "info" {
+                    div { class: "detail-section",
+                        div { class: "detail-row",
+                            span { class: "detail-label", "Cliente" }
+                            span { "{rep.customer_name.as_deref().unwrap_or(\"-\")}" }
                         }
-                    }
-                    div {
-                        label { class: "form-label", "Estado" }
-                        p { "{rep.status}" }
-                    }
-                }
-                if let Some(ref desc) = rep.description {
-                    if !desc.is_empty() {
-                        div { class: "mb-md",
-                            label { class: "form-label", "Descripción" }
-                            p { "{desc}" }
+                        div { class: "detail-row",
+                            span { class: "detail-label", "Email" }
+                            span { "{rep.customer_email.as_deref().unwrap_or(\"-\")}" }
                         }
-                    }
-                }
-                if let Some(ref diag) = rep.diagnosis {
-                    if !diag.is_empty() {
-                        div { class: "mb-md",
-                            label { class: "form-label", "Diagnóstico" }
-                            p { "{diag}" }
+                        div { class: "detail-row",
+                            span { class: "detail-label", "Teléfono" }
+                            span { "{rep.customer_phone.as_deref().unwrap_or(\"-\")}" }
                         }
-                    }
-                }
-                div { class: "detail-section mt-md",
-                    label { class: "form-label", "Insumos / Piezas" }
-                    if parts.read().is_empty() {
-                        p { class: "text-muted", "Sin insumos registrados" }
-                    } else {
-                        table { class: "data-table mt-sm",
-                            thead {
-                                tr {
-                                    th { "Nombre" }
-                                    th { "Cant." }
-                                    th { "Costo Unit." }
-                                    th { "Total" }
-                                    th { "" }
+                        div { class: "detail-row",
+                            span { class: "detail-label", "Vehículo" }
+                            span { "{rep.vehicle.as_deref().unwrap_or(\"-\")}" }
+                        }
+                        div { class: "detail-row",
+                            span { class: "detail-label", "Patente" }
+                            span {
+                                if let Some(ref plate) = rep.license_plate {
+                                    "{plate.to_uppercase()}"
+                                } else {
+                                    "-"
                                 }
                             }
-                            tbody {
-                                for part in parts.read().iter() {
+                        }
+                        div { class: "detail-row",
+                            span { class: "detail-label", "Estado" }
+                            span { "{rep.status}" }
+                        }
+                        if let Some(ref desc) = rep.description {
+                            if !desc.is_empty() {
+                                div { class: "form-group mt-md",
+                                    label { class: "form-label", "Descripción" }
+                                    p { "{desc}" }
+                                }
+                            }
+                        }
+                        if let Some(ref diag) = rep.diagnosis {
+                            if !diag.is_empty() {
+                                div { class: "form-group mt-md",
+                                    label { class: "form-label", "Diagnóstico" }
+                                    p { "{diag}" }
+                                }
+                            }
+                        }
+                    }
+                }
+                if *active_tab.read() == "parts" {
+                    div { class: "detail-section",
+                        label { class: "form-label", "Repuestos / Insumos" }
+                        if parts.read().is_empty() {
+                            p { class: "text-muted", "Sin insumos registrados" }
+                        } else {
+                            table { class: "data-table mt-sm",
+                                thead {
                                     tr {
-                                        td { "{part.name}" }
-                                        td { "{part.quantity}" }
-                                        td {
-                                            { part.unit_cost
-                                                .map(format_clp)
-                                                .unwrap_or_else(|| "-".to_string()) }
-                                        }
-                                        td {
-                                            { part.total_cost
-                                                .map(format_clp)
-                                                .unwrap_or_else(|| "-".to_string()) }
-                                        }
-                                        td {
-                                            button {
-                                                class: "btn-icon btn-danger",
-                                                title: "Eliminar",
-                                                onclick: {
-                                                    let part_id = part.id;
-                                                    move |_| remove_part(part_id)
-                                                },
-                                                {IconName::Trash.render()}
+                                        th { "Nombre" }
+                                        th { "Cant." }
+                                        th { "Costo Unit." }
+                                        th { "Total" }
+                                        th { "" }
+                                    }
+                                }
+                                tbody {
+                                    for part in parts.read().iter() {
+                                        tr {
+                                            td { "{part.name}" }
+                                            td { "{part.quantity}" }
+                                            td {
+                                                { part.unit_cost
+                                                    .map(format_clp)
+                                                    .unwrap_or_else(|| "-".to_string()) }
+                                            }
+                                            td {
+                                                { part.total_cost
+                                                    .map(format_clp)
+                                                    .unwrap_or_else(|| "-".to_string()) }
+                                            }
+                                            td {
+                                                button {
+                                                    class: "btn-icon btn-danger",
+                                                    title: "Eliminar",
+                                                    onclick: {
+                                                        let part_id = part.id;
+                                                        move |_| remove_part(part_id)
+                                                    },
+                                                    {IconName::Trash.render()}
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    div { class: "form-row mt-md",
-                        div { class: "form-group",
-                            label { class: "form-label", "Producto (opcional)" }
-                            select {
-                                class: "input",
-                                value: {
-                                    match selected_product_id.read().as_ref() {
-                                        Some(id) => id.to_string(),
-                                        None => String::new(),
-                                    }
-                                },
-                                onchange: move |evt: Event<FormData>| {
-                                    let val = evt.value();
-                                    if val.is_empty() {
-                                        selected_product_id.set(None);
-                                    } else {
-                                        if let Ok(id) = uuid::Uuid::parse_str(&val) {
-                                            selected_product_id.set(Some(id));
-                                            if let Some(prod) = products.read().iter().find(|p| p.id == id) {
-                                                new_part_name.set(prod.name.clone());
-                                                new_part_cost.set(prod.price.to_string());
+                        div { class: "form-row mt-md",
+                            div { class: "form-group",
+                                label { class: "form-label", "Producto (opcional)" }
+                                select {
+                                    class: "input",
+                                    value: {
+                                        match selected_product_id.read().as_ref() {
+                                            Some(id) => id.to_string(),
+                                            None => String::new(),
+                                        }
+                                    },
+                                    onchange: move |evt: Event<FormData>| {
+                                        let val = evt.value();
+                                        if val.is_empty() {
+                                            selected_product_id.set(None);
+                                        } else {
+                                            if let Ok(id) = uuid::Uuid::parse_str(&val) {
+                                                selected_product_id.set(Some(id));
+                                                if let Some(prod) = products.read().iter().find(|p| p.id == id) {
+                                                    new_part_name.set(prod.name.clone());
+                                                    new_part_cost.set(prod.price.to_string());
+                                                }
                                             }
                                         }
+                                    },
+                                    option { value: "", "-- Seleccionar producto --" }
+                                    for prod in products.read().iter() {
+                                        option { value: "{prod.id}", "{prod.name}" }
                                     }
-                                },
-                                option { value: "", "-- Seleccionar producto --" }
-                                for prod in products.read().iter() {
-                                    option { value: "{prod.id}", "{prod.name}" }
+                                }
+                            }
+                            div { class: "form-group",
+                                label { class: "form-label", "Nombre *" }
+                                input {
+                                    class: "input",
+                                    r#type: "text",
+                                    value: new_part_name.read().clone(),
+                                    oninput: move |evt: Event<FormData>| new_part_name.set(evt.value().clone()),
                                 }
                             }
                         }
-                        Input {
-                            label: Some("Nombre *".to_string()),
-                            value: new_part_name.read().clone(),
-                            oninput: move |evt: FormEvent| new_part_name.set(evt.value().clone()),
-                        }
-                        Input {
-                            label: Some("Cantidad".to_string()),
-                            r#type: "number".to_string(),
-                            value: new_part_qty.read().clone(),
-                            oninput: move |evt: FormEvent| new_part_qty.set(evt.value().clone()),
-                        }
-                        Input {
-                            label: Some("Costo unitario".to_string()),
-                            r#type: "number".to_string(),
-                            value: new_part_cost.read().clone(),
-                            oninput: move |evt: FormEvent| new_part_cost.set(evt.value().clone()),
-                        }
-                    }
-                    Button {
-                        class: Some("mt-sm".to_string()),
-                        variant: ButtonVariant::Primary,
-                        onclick: add_part,
-                        "Agregar insumo"
-                    }
-                }
-                div { class: "detail-section mt-md",
-                    label { class: "form-label", "Costo de mano de obra" }
-                    div { class: "form-row",
-                        Input {
-                            label: Some("$".to_string()),
-                            value: labor_cost_input.read().clone(),
-                            oninput: move |evt: FormEvent| labor_cost_input.set(evt.value().clone()),
+                        div { class: "form-row",
+                            div { class: "form-group",
+                                label { class: "form-label", "Cantidad" }
+                                input {
+                                    class: "input",
+                                    r#type: "number",
+                                    value: new_part_qty.read().clone(),
+                                    oninput: move |evt: Event<FormData>| new_part_qty.set(evt.value().clone()),
+                                }
+                            }
+                            div { class: "form-group",
+                                label { class: "form-label", "Costo unitario" }
+                                input {
+                                    class: "input",
+                                    r#type: "number",
+                                    value: new_part_cost.read().clone(),
+                                    oninput: move |evt: Event<FormData>| new_part_cost.set(evt.value().clone()),
+                                }
+                            }
                         }
                         Button {
                             class: Some("mt-sm".to_string()),
                             variant: ButtonVariant::Primary,
-                            onclick: {
-                                let repair_id = repair_id;
-                                move |_| {
-                                    let parsed: Option<Decimal> =
-                                        labor_cost_input.read().replace(".", "").replace(",", "").replace("$", "").replace(" ", "").parse().ok();
-                                    let client = auth.api_client();
-                                    let req = UpdateRepairRequest {
-                                        status: None,
-                                        diagnosis: None,
-                                        technician_id: None,
-                                        estimated_cost: None,
-                                        final_cost: None,
-                                        labor_cost: parsed,
-                                        estimated_delivery: None,
-                                    };
-                                    spawn(async move {
-                                        if let Some(client) = client {
-                                            let _ = client.update_repair(repair_id, &req).await;
-                                        }
-                                    });
+                            onclick: add_part,
+                            "Agregar insumo"
+                        }
+                        div { class: "cost-summary mt-md",
+                            label { class: "form-label", "Costo de mano de obra" }
+                            div { class: "form-row",
+                                div { class: "form-group",
+                                    input {
+                                        class: "input",
+                                        r#type: "text",
+                                        placeholder: "$0",
+                                        value: labor_cost_input.read().clone(),
+                                        oninput: move |evt: Event<FormData>| labor_cost_input.set(evt.value().clone()),
+                                    }
                                 }
-                            },
-                            "Guardar mano de obra"
-                        }
-                    }
-                }
-                div { class: "detail-section mt-md",
-                    label { class: "form-label", "Resumen de costos" }
-                    div { class: "form-row",
-                        div { class: "form-group",
-                            p { "Mano de obra: {labor_cost_input.read()}" }
-                        }
-                        div { class: "form-group",
-                            p { "Repuestos: {format_clp(total_parts)}" }
-                        }
-                        div { class: "form-group",
-                            p { strong { "Total: {format_clp(total_repair)}" } }
+                                div { class: "form-group",
+                                    Button {
+                                        variant: ButtonVariant::Primary,
+                                        onclick: {
+                                            let repair_id = repair_id;
+                                            move |_| {
+                                                let parsed: Option<Decimal> =
+                                                    labor_cost_input.read().replace(".", "").replace(",", "").replace("$", "").replace(" ", "").parse().ok();
+                                                let client = auth.api_client();
+                                                let req = UpdateRepairRequest {
+                                                    status: None,
+                                                    diagnosis: None,
+                                                    technician_id: None,
+                                                    estimated_cost: None,
+                                                    final_cost: None,
+                                                    labor_cost: parsed,
+                                                    estimated_delivery: None,
+                                                };
+                                                spawn(async move {
+                                                    if let Some(client) = client {
+                                                        let _ = client.update_repair(repair_id, &req).await;
+                                                    }
+                                                });
+                                            }
+                                        },
+                                        "Guardar"
+                                    }
+                                }
+                            }
+                            div { class: "cost-totals mt-sm",
+                                div { class: "cost-row",
+                                    span { "Mano de obra" }
+                                    span { "{labor_cost_input.read()}" }
+                                }
+                                div { class: "cost-row",
+                                    span { "Repuestos" }
+                                    span { "{format_clp(total_parts)}" }
+                                }
+                                div { class: "cost-row cost-total",
+                                    span { strong { "Total" } }
+                                    span { strong { "{format_clp(total_repair)}" } }
+                                }
+                            }
                         }
                     }
                 }
