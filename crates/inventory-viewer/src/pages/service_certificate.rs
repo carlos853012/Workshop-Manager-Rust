@@ -573,17 +573,6 @@ fn CertificateDetailModal(
                                 }
                             }
                             div { class: "form-group",
-                                label { class: "form-label", "Nombre *" }
-                                input {
-                                    class: "input",
-                                    r#type: "text",
-                                    value: new_part_name.read().clone(),
-                                    oninput: move |evt: Event<FormData>| new_part_name.set(evt.value().clone()),
-                                }
-                            }
-                        }
-                        div { class: "form-row",
-                            div { class: "form-group",
                                 label { class: "form-label", "Cantidad" }
                                 input {
                                     class: "input",
@@ -601,12 +590,15 @@ fn CertificateDetailModal(
                                     oninput: move |evt: Event<FormData>| new_part_cost.set(evt.value().clone()),
                                 }
                             }
-                        }
-                        Button {
-                            class: Some("mt-sm".to_string()),
-                            variant: ButtonVariant::Primary,
-                            onclick: add_part,
-                            "Agregar insumo"
+                            div { class: "form-group",
+                                label { class: "form-label", " " }
+                                button {
+                                    class: "btn-icon btn-primary",
+                                    title: "Agregar insumo",
+                                    onclick: add_part,
+                                    {IconName::Plus.render()}
+                                }
+                            }
                         }
                         div { class: "cost-summary mt-md",
                             label { class: "form-label", "Costo de mano de obra" }
