@@ -1,3 +1,10 @@
 pub mod connection_settings;
 pub mod data_table;
 pub mod header;
+pub mod repair_form_modal;
+pub mod repair_detail_modal;
+pub mod product_form_modal;
+pub mod stock_entry_modal;
+pub mod supplier_form_modal;
+pub mod certificate_detail_modal;
+pub mod tabs;

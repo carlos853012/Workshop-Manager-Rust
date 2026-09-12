@@ -8,6 +8,7 @@ use crate::api::ApiError;
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::components::atoms::input::Input;
+use crate::icons::IconName;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
 
@@ -120,8 +121,8 @@ pub fn Pos() -> Element {
                                 tr {
                                     th { "Producto" }
                                     th { "Cant" }
-                                    th { "Precio" }
-                                    th { "Subtotal" }
+                                    th { class: "pos-cart-price", "Precio"}
+                                    th { class: "pos-cart-subtotal", "Subtotal"}
                                     th { }
                                 }
                             }
@@ -158,13 +159,13 @@ pub fn Pos() -> Element {
                                         td { class: "pos-cart-subtotal", "{format_clp(item.product.price * Decimal::from(item.quantity))}" }
                                         td {
                                             button {
-                                                class: "pos-remove-btn",
+                                                class: "btn-icon btn-danger",
                                                 onclick: move |_| {
                                                     let mut current = cart.read().clone();
                                                     current.remove(index);
                                                     cart.set(current);
                                                 },
-                                                "X"
+                                                {IconName::Trash.render()}
                                             }
                                         }
                                     }

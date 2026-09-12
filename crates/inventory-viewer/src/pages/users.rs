@@ -248,17 +248,17 @@ pub fn Users() -> Element {
                     },
                     div { class: "form-grid",
                         Input {
-                            label: "Email".to_string(),
+                            label: Some("Email".to_string()),
                             value: create_email.read().clone(),
                             oninput: move |evt: FormEvent| create_email.set(evt.value()),
                         }
                         Input {
-                            label: "Nombre".to_string(),
+                            label: Some("Nombre".to_string()),
                             value: create_name.read().clone(),
                             oninput: move |evt: FormEvent| create_name.set(evt.value()),
                         }
                         Input {
-                            label: "Contraseña".to_string(),
+                            label: Some("Contraseña".to_string()),
                             r#type: "password".to_string(),
                             value: create_password.read().clone(),
                             oninput: move |evt: FormEvent| create_password.set(evt.value()),
@@ -266,7 +266,7 @@ pub fn Users() -> Element {
                         div { class: "form-group",
                             label { class: "form-label", "Rol" }
                             select {
-                                class: "form-select",
+                                class: "input",
                                 value: create_role.read().clone(),
                                 onchange: move |evt: FormEvent| create_role.set(evt.value()),
                                 option { value: "admin", "Admin" }
@@ -326,14 +326,14 @@ pub fn Users() -> Element {
                     },
                     div { class: "form-grid",
                         Input {
-                            label: "Nombre".to_string(),
+                            label: Some("Nombre".to_string()),
                             value: edit_name.read().clone(),
                             oninput: move |evt: FormEvent| edit_name.set(evt.value()),
                         }
                         div { class: "form-group",
                             label { class: "form-label", "Rol" }
                             select {
-                                class: "form-select",
+                                class: "input",
                                 value: edit_role.read().clone(),
                                 onchange: move |evt: FormEvent| edit_role.set(evt.value()),
                                 option { value: "admin", "Admin" }

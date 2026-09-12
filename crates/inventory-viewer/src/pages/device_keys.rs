@@ -7,6 +7,7 @@ use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::molecules::confirm_modal::ConfirmModal;
+use crate::components::molecules::modal::Modal;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
 
@@ -218,30 +219,29 @@ pub fn DeviceKeys() -> Element {
         }
 
         if show_new_key && !new_key_display.is_empty() {
-            div { class: "modal-overlay",
-                div { class: "modal",
-                    div { class: "modal-header",
-                        h3 { "Clave Generada" }
+            Modal {
+                show: true,
+                title: "Clave Generada".to_string(),
+                on_close: move |_| {
+                    show_new_key_modal.set(false);
+                    new_key_value.set(None);
+                },
+                footer: rsx! {
+                    Button {
+                        variant: ButtonVariant::Primary,
+                        onclick: move |_| {
+                            show_new_key_modal.set(false);
+                            new_key_value.set(None);
+                        },
+                        "Cerrar"
                     }
-                    div { class: "modal-body",
-                        p { class: "text-muted", "Copia esta clave y guárdala en un lugar seguro. No se volverá a mostrar." }
-                        div { class: "mt-2",
-                            input {
-                                class: "input",
-                                value: "{new_key_display}",
-                                readonly: true,
-                            }
-                        }
-                    }
-                    div { class: "modal-footer",
-                        Button {
-                            variant: ButtonVariant::Primary,
-                            onclick: move |_| {
-                                show_new_key_modal.set(false);
-                                new_key_value.set(None);
-                            },
-                            "Cerrar"
-                        }
+                },
+                p { class: "text-muted", "Copia esta clave y guárdala en un lugar seguro. No se volverá a mostrar." }
+                div { class: "mt-md",
+                    input {
+                        class: "input",
+                        value: "{new_key_display}",
+                        readonly: true,
                     }
                 }
             }

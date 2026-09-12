@@ -1,16 +1,16 @@
 use dioxus::prelude::*;
-use inventory_common::dto::{CreateProductRequest, PosProductResponse};
+use inventory_common::dto::PosProductResponse;
 use inventory_common::money::format_clp;
 use inventory_common::Product;
-use rust_decimal::Decimal;
 
 use crate::api::ApiError;
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
-use crate::components::atoms::input::Input;
 use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
-use crate::components::molecules::modal::Modal;
+use crate::components::molecules::confirm_modal::ConfirmModal;
+use crate::components::organisms::product_form_modal::ProductFormModal;
+use crate::components::organisms::stock_entry_modal::StockEntryModal;
 use crate::icons::IconName;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
@@ -38,6 +38,9 @@ pub fn Products() -> Element {
     let mut stock_product = use_signal(|| None::<PosProductResponse>);
 
     let mut barcode_search = use_signal(|| "".to_string());
+
+    let mut show_delete_confirm = use_signal(|| false);
+    let deleting_product = use_signal(|| None::<Product>);
 
     let modal_key = if *show_edit_modal.read() {
         let ep = editing_product.read();
@@ -210,24 +213,12 @@ pub fn Products() -> Element {
                                                         class: "btn-icon btn-danger",
                                                         title: "Borrar",
                                                         onclick: {
-                                                            let p_id = p.id;
+                                                            let p = p.clone();
+                                                            let mut deleting_product = deleting_product;
+                                                            let mut show_delete_confirm = show_delete_confirm;
                                                             move |_| {
-                                                                let client = match auth.api_client() {
-                                                                    Some(c) => c,
-                                                                    None => return,
-                                                                };
-                                                                let p_id = p_id;
-                                                                spawn(async move {
-                                                                    match client.delete_product(p_id).await {
-                                                                        Ok(_) => {
-                                                                            let current = *refresh.read();
-                                                                            refresh.set(current + 1);
-                                                                        }
-                                                                        Err(e) => {
-                                                                            error.set(Some(e.user_message().to_string()));
-                                                                        }
-                                                                    }
-                                                                });
+                                                                deleting_product.set(Some(p.clone()));
+                                                                show_delete_confirm.set(true);
                                                             }
                                                         },
                                                         {IconName::Trash.render()}
@@ -290,332 +281,38 @@ pub fn Products() -> Element {
                     refresh.set(current + 1);
                 },
             }
-        }
-    }
-}
-
-#[component]
-fn ProductFormModal(
-    show: bool,
-    edit_product: Option<Product>,
-    on_close: EventHandler<()>,
-    on_saved: EventHandler<()>,
-) -> Element {
-    let auth = use_auth();
-    let is_edit = edit_product.is_some();
-
-    let mut name = use_signal(|| {
-        edit_product
-            .as_ref()
-            .map(|p| p.name.clone())
-            .unwrap_or_default()
-    });
-    let mut sku = use_signal(|| {
-        edit_product
-            .as_ref()
-            .and_then(|p| p.sku.clone())
-            .unwrap_or_default()
-    });
-    let mut barcode = use_signal(|| {
-        edit_product
-            .as_ref()
-            .and_then(|p| p.barcode.clone())
-            .unwrap_or_default()
-    });
-    let mut price = use_signal(|| {
-        edit_product
-            .as_ref()
-            .map(|p| p.price.to_string())
-            .unwrap_or_default()
-    });
-    let mut cost = use_signal(|| {
-        edit_product
-            .as_ref()
-            .map(|p| p.cost.to_string())
-            .unwrap_or_default()
-    });
-    let mut stock = use_signal(|| {
-        edit_product
-            .as_ref()
-            .map(|p| p.stock.to_string())
-            .unwrap_or_default()
-    });
-    let mut min_stock = use_signal(|| {
-        edit_product
-            .as_ref()
-            .map(|p| p.min_stock.to_string())
-            .unwrap_or_default()
-    });
-    let saving = use_signal(|| false);
-    let mut form_error = use_signal(|| None::<String>);
-
-    let title = if is_edit {
-        "Editar producto"
-    } else {
-        "Nuevo producto"
-    };
-
-    let on_submit = move |_| {
-        let name_value = name.read().trim().to_string();
-        if name_value.is_empty() {
-            form_error.set(Some("El nombre es obligatorio".to_string()));
-            return;
-        }
-        let price_dec = price.read().parse::<Decimal>().unwrap_or(Decimal::ZERO);
-        let cost_dec = cost.read().parse::<Decimal>().unwrap_or(Decimal::ZERO);
-        let stock_i = stock.read().parse::<i32>().unwrap_or(0);
-        let min_stock_i = min_stock.read().parse::<i32>().unwrap_or(0);
-
-        let request = CreateProductRequest {
-            name: name_value,
-            description: None,
-            category: None,
-            brand: None,
-            model: None,
-            sku: Some(sku.read().clone()).filter(|s| !s.is_empty()),
-            barcode: Some(barcode.read().clone()).filter(|s| !s.is_empty()),
-            price: price_dec,
-            cost: cost_dec,
-            stock: stock_i,
-            min_stock: min_stock_i,
-            location: None,
-            supplier_id: None,
-        };
-
-        let client = auth.api_client();
-        let mut saving_set = saving;
-        let mut error_set = form_error;
-        let on_saved_clone = on_saved;
-        let edit_id = edit_product.as_ref().map(|p| p.id);
-
-        saving_set.set(true);
-        error_set.set(None);
-
-        spawn(async move {
-            match client {
-                Some(client) => {
-                    let result = if let Some(id) = edit_id {
-                        client.update_product(id, &request).await
-                    } else {
-                        client.create_product(&request).await
+            ConfirmModal {
+                title: "Eliminar producto".to_string(),
+                message: if let Some(p) = deleting_product.read().as_ref() {
+                    format!("¿Eliminar el producto \"{}\"? Esta acción no se puede deshacer.", p.name)
+                } else {
+                    "¿Eliminar este producto?".to_string()
+                },
+                show: *show_delete_confirm.read(),
+                confirm_text: Some("Eliminar".to_string()),
+                on_confirm: move |_| {
+                    let product = match deleting_product.read().as_ref() {
+                        Some(p) => p.clone(),
+                        None => return,
                     };
-                    match result {
-                        Ok(_) => {
-                            on_saved_clone.call(());
+                    let client = match auth.api_client() {
+                        Some(c) => c,
+                        None => return,
+                    };
+                    spawn(async move {
+                        match client.delete_product(product.id).await {
+                            Ok(_) => {
+                                show_delete_confirm.set(false);
+                                let current = *refresh.read();
+                                refresh.set(current + 1);
+                            }
+                            Err(e) => {
+                                error.set(Some(e.user_message().to_string()));
+                            }
                         }
-                        Err(e) => {
-                            error_set.set(Some(e.user_message().to_string()));
-                        }
-                    }
-                }
-                None => {
-                    error_set.set(Some("No hay cliente API".to_string()));
-                }
-            }
-            saving_set.set(false);
-        });
-    };
-
-    rsx! {
-        Modal {
-            show: show,
-            title: title.to_string(),
-            on_close: move |_| on_close.call(()),
-            footer: rsx! {
-                Button {
-                    class: Some("cancel-button".to_string()),
-                    variant: ButtonVariant::Ghost,
-                    onclick: move |_| on_close.call(()),
-                    "Cancelar"
-                }
-                Button {
-                    variant: ButtonVariant::Primary,
-                    loading: *saving.read(),
-                    onclick: on_submit,
-                    "Guardar"
-                }
-            },
-            if let Some(err) = form_error.read().as_ref() {
-                div { class: "alert alert-danger mb-md", "{err}" }
-            }
-            div { class: "form-row",
-                Input {
-                    label: Some("Nombre *".to_string()),
-                    value: name.read().clone(),
-                    oninput: move |evt: FormEvent| name.set(evt.value().clone()),
-                }
-                Input {
-                    label: Some("SKU".to_string()),
-                    value: sku.read().clone(),
-                    oninput: move |evt: FormEvent| sku.set(evt.value().clone()),
-                }
-            }
-            div { class: "form-row mt-md",
-                Input {
-                    label: Some("Código de barras".to_string()),
-                    value: barcode.read().clone(),
-                    oninput: move |evt: FormEvent| barcode.set(evt.value().clone()),
-                    placeholder: Some("Vacío = auto-generar".to_string()),
-                }
-            }
-            div { class: "form-row mt-md",
-                Input {
-                    label: Some("Precio *".to_string()),
-                    r#type: "number".to_string(),
-                    value: price.read().clone(),
-                    oninput: move |evt: FormEvent| price.set(evt.value().clone()),
-                }
-                Input {
-                    label: Some("Costo".to_string()),
-                    r#type: "number".to_string(),
-                    value: cost.read().clone(),
-                    oninput: move |evt: FormEvent| cost.set(evt.value().clone()),
-                }
-            }
-            div { class: "form-row mt-md",
-                Input {
-                    label: Some("Stock *".to_string()),
-                    r#type: "number".to_string(),
-                    value: stock.read().clone(),
-                    oninput: move |evt: FormEvent| stock.set(evt.value().clone()),
-                }
-                Input {
-                    label: Some("Stock mínimo".to_string()),
-                    r#type: "number".to_string(),
-                    value: min_stock.read().clone(),
-                    oninput: move |evt: FormEvent| min_stock.set(evt.value().clone()),
-                }
-            }
-        }
-    }
-}
-
-#[component]
-fn StockEntryModal(
-    show: bool,
-    product: Option<PosProductResponse>,
-    on_close: EventHandler<()>,
-    on_saved: EventHandler<()>,
-) -> Element {
-    let auth = use_auth();
-    let mut quantity = use_signal(|| "".to_string());
-    let saving = use_signal(|| false);
-    let mut form_error = use_signal(|| None::<String>);
-
-    let has_product = product.is_some();
-    let product_name_display = product.as_ref().map(|p| p.name.clone()).unwrap_or_default();
-    let current_stock = product.as_ref().map(|p| p.stock).unwrap_or(0);
-    let product_id = product.as_ref().map(|p| p.product_id);
-    let submit_sku = product.as_ref().and_then(|p| p.sku.clone());
-    let submit_barcode = product.as_ref().and_then(|p| p.barcode.clone());
-    let submit_price = product.as_ref().map(|p| p.price).unwrap_or_default();
-    let submit_cost = product.as_ref().map(|p| p.cost).unwrap_or_default();
-    let submit_min_stock = product.as_ref().map(|p| p.min_stock).unwrap_or(0);
-    let submit_supplier_id = product.as_ref().and_then(|p| p.supplier_id);
-
-    let on_submit = {
-        let product_name_display = product_name_display.clone();
-        move |_| {
-            let qty = match quantity.read().parse::<i32>() {
-                Ok(q) if q > 0 => q,
-                _ => {
-                    form_error.set(Some("Ingrese una cantidad válida".to_string()));
-                    return;
-                }
-            };
-            let pid = match product_id {
-                Some(id) => id,
-                None => return,
-            };
-            let client = match auth.api_client() {
-                Some(c) => c,
-                None => {
-                    form_error.set(Some("No hay cliente API".to_string()));
-                    return;
-                }
-            };
-            let product_name = product_name_display.clone();
-            let sku = submit_sku.clone();
-            let barcode = submit_barcode.clone();
-            let price = submit_price;
-            let cost = submit_cost;
-            let min_stock = submit_min_stock;
-            let supplier_id = submit_supplier_id;
-            let mut saving_clone = saving;
-            let mut error_clone = form_error;
-            let on_saved_clone = on_saved;
-
-            saving_clone.set(true);
-            error_clone.set(None);
-
-            spawn(async move {
-                let new_stock = current_stock + qty;
-                let request = CreateProductRequest {
-                    name: product_name,
-                    description: None,
-                    category: None,
-                    brand: None,
-                    model: None,
-                    sku,
-                    barcode,
-                    price,
-                    cost,
-                    stock: new_stock,
-                    min_stock,
-                    location: None,
-                    supplier_id,
-                };
-                match client.update_product(pid, &request).await {
-                    Ok(_) => {
-                        on_saved_clone.call(());
-                    }
-                    Err(e) => {
-                        error_clone.set(Some(e.user_message().to_string()));
-                    }
-                }
-                saving_clone.set(false);
-            });
-        }
-    };
-
-    if !show || !has_product {
-        return rsx! {};
-    }
-
-    rsx! {
-        Modal {
-            show: show,
-            title: "Ingreso de stock".to_string(),
-            on_close: move |_| on_close.call(()),
-            footer: rsx! {
-                Button {
-                    class: Some("cancel-button".to_string()),
-                    variant: ButtonVariant::Ghost,
-                    onclick: move |_| on_close.call(()),
-                    "Cancelar"
-                }
-                Button {
-                    variant: ButtonVariant::Primary,
-                    loading: *saving.read(),
-                    onclick: on_submit,
-                    "Confirmar"
-                }
-            },
-            if let Some(err) = form_error.read().as_ref() {
-                div { class: "alert alert-danger mb-md", "{err}" }
-            }
-            div { class: "stock-entry-info",
-                p { "Producto: " strong { "{product_name_display}" } }
-                p { "Stock actual: " strong { "{current_stock}" } }
-            }
-            div { class: "mt-md",
-                Input {
-                    label: Some("Cantidad a ingresar *".to_string()),
-                    r#type: "number".to_string(),
-                    value: quantity.read().clone(),
-                    oninput: move |evt: FormEvent| quantity.set(evt.value().clone()),
-                    placeholder: Some("Ej: 10".to_string()),
-                }
+                    });
+                },
+                on_cancel: move |_| show_delete_confirm.set(false),
             }
         }
     }

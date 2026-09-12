@@ -26,14 +26,6 @@ pub fn ConfirmModal(
             div {
                 class: "modal",
                 onclick: move |evt| evt.stop_propagation(),
-                div { class: "modal-header",
-                    h3 { "{title}" }
-                    button {
-                        class: "btn btn-ghost btn-sm",
-                        onclick: move |_evt| on_cancel.call(()),
-                        "✕"
-                    }
-                }
                 div { class: "modal-body",
                     p { "{message}" }
                 }

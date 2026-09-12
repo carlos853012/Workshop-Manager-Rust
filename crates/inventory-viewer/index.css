@@ -94,6 +94,11 @@ body {
   font-size: var(--font-size-sm);
 }
 
+.btn-lg {
+  padding: var(--space-md) var(--space-lg);
+  font-size: var(--font-size-lg);
+}
+
 /* Atoms: Input */
 .input {
   width: 100%;
@@ -220,14 +225,6 @@ body {
 
 .modal-lg {
   min-width: 700px;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-md) var(--space-lg);
-  border-bottom: 1px solid var(--border);
 }
 
 .modal-body {
@@ -760,8 +757,15 @@ body {
 
 .form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: var(--space-md);
+}
+
+.form-row-parts {
+  display: grid;
+  grid-template-columns: 2fr 80px 100px auto;
+  gap: var(--space-md);
+  align-items: end;
 }
 
 /* Pagination */
@@ -811,7 +815,7 @@ body {
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--bg-card);
+  background: var(--surface);
 }
 
 .pos-empty {
@@ -848,8 +852,8 @@ body {
   font-weight: 500;
 }
 
-.pos-cart-price,
-.pos-cart-subtotal {
+.pos-cart-table .pos-cart-price,
+.pos-cart-table .pos-cart-subtotal {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -869,7 +873,7 @@ body {
 }
 
 .pos-qty-btn:hover {
-  background: var(--bg-hover);
+  background: var(--surface-hover);
 }
 
 .pos-qty-value {
@@ -1002,7 +1006,7 @@ body {
   color: var(--text);
 }
 .btn-icon.btn-danger:hover {
-  background: var(--danger-light);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
   color: var(--danger);
 }
 .btn-icon.btn-edit:hover {
