@@ -152,7 +152,7 @@ pub fn Products() -> Element {
                 if *loading.read() {
                     div { class: "empty-state", Spinner {} }
                 } else {
-                    div { class: "products-table",
+                    div { class: "data-table-wrapper",
                         table { class: "data-table",
                             thead {
                                 tr {

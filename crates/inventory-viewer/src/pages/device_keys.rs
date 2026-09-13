@@ -175,32 +175,34 @@ pub fn DeviceKeys() -> Element {
                 } else if keys_snapshot.is_empty() {
                     p { class: "text-muted", "No hay claves de dispositivo registradas." }
                 } else {
-                    table { class: "data-table",
-                        thead {
-                            tr {
-                                th { "ID" }
-                                th { "IP Vinculada" }
-                                th { "Estado" }
-                                th { "Creada" }
-                                th { "Último uso" }
-                                th { "Acciones" }
+                    div { class: "data-table-wrapper",
+                        table { class: "data-table",
+                            thead {
+                                tr {
+                                    th { "ID" }
+                                    th { "IP Vinculada" }
+                                    th { "Estado" }
+                                    th { "Creada" }
+                                    th { "Último uso" }
+                                    th { "Acciones" }
+                                }
                             }
-                        }
-                        tbody {
-                            for dk in keys_snapshot.iter() {
-                                KeyRow {
-                                    device_key: dk.clone(),
-                                    on_revoke: {
-                                        let key_id = dk.id;
-                                        move |_| {
-                                            revoking_key_id.set(Some(key_id));
-                                            show_revoke_modal.set(true);
-                                        }
-                                    },
-                                    on_unbind: {
-                                        let key_id = dk.id;
-                                        move |_| on_unbind(key_id)
-                                    },
+                            tbody {
+                                for dk in keys_snapshot.iter() {
+                                    KeyRow {
+                                        device_key: dk.clone(),
+                                        on_revoke: {
+                                            let key_id = dk.id;
+                                            move |_| {
+                                                revoking_key_id.set(Some(key_id));
+                                                show_revoke_modal.set(true);
+                                            }
+                                        },
+                                        on_unbind: {
+                                            let key_id = dk.id;
+                                            move |_| on_unbind(key_id)
+                                        },
+                                    }
                                 }
                             }
                         }

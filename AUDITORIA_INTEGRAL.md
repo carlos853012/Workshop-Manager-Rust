@@ -52,20 +52,20 @@
 
 ### 🟠 CSS / DESIGN SYSTEM ( Prioridad: MEDIA-ALTA )
 
-- [ ] **C1 — `.data-table-wrapper` sin CSS** — Clase usada en `data_table.rs:35` y `reports.rs:163` pero sin regla en `index.css`. **Fix:** agregar `overflow-x: auto`.
-- [ ] **C2 — Filas de tabla demasiado anchas** — `padding: var(--space-md)` (16px) en todas las celdas. **Fix:** reducir a `padding: var(--space-sm) 0.75rem`.
-- [ ] **C3 — 4 patrones de wrapping de tabla** — `DataTable` componente, `products-table`, bare `table`, `pos-cart-table`. **Fix:** estandarizar siempre `div.data-table-wrapper > table.data-table`.
-- [ ] **C4 — 19 clases CSS huérfanas** — Usadas en .rs pero no definidas en CSS: `clickable-row`, `text-mono`, `text-xs`, `text-sm`, `text-lg`, `grid-3`, `justify-end`, `gap-2`, `mb-4`, `ml-sm`, `form-grid`, `sale-detail`, `detail-value`, `detail-section-title`, `detail-total`, `pos-scan-section`, `pos-cart-row`, `tooltip`, `tooltip-text`.
-- [ ] **C5 — 18 reglas CSS muertas** — Definidas pero nunca referenciadas: `.container`, `.dashboard-toolbar`, `.pos-remove-btn`, `.flex-col`, `.justify-between`, `.h-full`, `.hidden`, `.alert-warning`, `.alert-info`, `.tabular-nums`, `.badge` + 5 variantes.
-- [ ] **C6 — 10 violaciones de font-size tokens** — Valores hardcodeados (`0.9rem`, `0.75rem`, `0.85rem`, etc.) en vez de `var(--font-size-sm)`.
-- [ ] **C7 — 7 colores hardcodeados** — `#ffffff`, `#000000`, `rgba(0,0,0,0.5)` en vez de CSS variables.
-- [ ] **C8 — 2 border-radius sin token** — `border-radius: 50%` en vez de `var(--radius-full)`.
-- [ ] **C9 — Focus ring duplicado 3 veces** — Mismo `box-shadow` copiado en 3 inputs. **Fix:** definir variable `--focus-shadow`.
-- [ ] **C10 — Tooltip roto** — `opacity: 0` inline sin regla `:hover`. Nunca se muestra.
-- [ ] **C11 — `ButtonVariant::Secondary` sin CSS** — Se renderiza como Ghost. **Fix:** agregar `.btn-secondary`.
-- [ ] **C12 — `btn-icon btn-primary` sin hover** — Sin feedback visual en hover.
-- [ ] **C13 — 8 elementos sin responsive** — `.pos-container`, `.pos-footer-row`, `.form-row-parts`, `.modal`, `.modal-lg`, `.header`, `.login-card`, `.sidebar-logo`.
-- [ ] **C14 — Login card double-padding** — `login-card` + `card-body` suman padding excesivo.
+- [x] **C1 — `.data-table-wrapper` sin CSS** — Clase usada en `data_table.rs:35` y `reports.rs:163` pero sin regla en `index.css`. **Fix:** agregar `overflow-x: auto`.
+- [x] **C2 — Filas de tabla demasiado anchas** — `padding: var(--space-md)` (16px) en todas las celdas. **Fix:** reducir a `padding: var(--space-sm) 0.75rem`.
+- [x] **C3 — 4 patrones de wrapping de tabla** — `DataTable` componente, `products-table`, bare `table`, `pos-cart-table`. **Fix:** estandarizar siempre `div.data-table-wrapper > table.data-table`.
+- [x] **C4 — 19 clases CSS huérfanas** — Usadas en .rs pero no definidas en CSS: `clickable-row`, `text-mono`, `text-xs`, `text-sm`, `text-lg`, `grid-3`, `justify-end`, `gap-2`, `mb-4`, `ml-sm`, `form-grid`, `sale-detail`, `detail-value`, `detail-section-title`, `detail-total`, `pos-scan-section`, `pos-cart-row`, `tooltip`, `tooltip-text`.
+- [x] **C5 — 18 reglas CSS muertas** — Definidas pero nunca referenciadas: `.container`, `.dashboard-toolbar`, `.pos-remove-btn`, `.flex-col`, `.justify-between`, `.h-full`, `.hidden`, `.alert-warning`, `.alert-info`, `.tabular-nums`, `.badge` + 5 variantes.
+- [x] **C6 — 10 violaciones de font-size tokens** — Valores hardcodeados (`0.9rem`, `0.75rem`, `0.85rem`, etc.) en vez de `var(--font-size-sm)`.
+- [x] **C7 — 7 colores hardcodeados** — `#ffffff`, `#000000`, `rgba(0,0,0,0.5)` en vez de CSS variables.
+- [x] **C8 — 2 border-radius sin token** — `border-radius: 50%` en vez de `var(--radius-full)`.
+- [x] **C9 — Focus ring duplicado 3 veces** — Mismo `box-shadow` copiado en 3 inputs. **Fix:** definir variable `--focus-shadow`.
+- [x] **C10 — Tooltip roto** — `opacity: 0` inline sin regla `:hover`. Nunca se muestra.
+- [x] **C11 — `ButtonVariant::Secondary` sin CSS** — Se renderiza como Ghost. **Fix:** agregar `.btn-secondary`.
+- [x] **C12 — `btn-icon btn-primary` sin hover** — Sin feedback visual en hover.
+- [x] **C13 — 8 elementos sin responsive** — `.pos-container`, `.pos-footer-row`, `.form-row-parts`, `.modal`, `.modal-lg`, `.header`, `.login-card`, `.sidebar-logo`.
+- [x] **C14 — Login card double-padding** — `login-card` + `card-body` suman padding excesivo.
 
 ### 🟠 ARQUITECTURA DE COMPONENTES ( Prioridad: MEDIA-ALTA )
 
@@ -112,18 +112,18 @@
 ### Fase 2 — CSS Design System
 | # | Tarea | Archivos | Estado |
 |---|-------|----------|--------|
-| 2.1 | Definir `.data-table-wrapper` + compactar filas (C1, C2) | `index.css` | ⬜ |
-| 2.2 | Unificar wrapping de tablas (C3) | `products.rs`, `device_keys.rs`, `sale_detail_modal.rs`, `parts_tab.rs`, `parts_tab_cert.rs` | ⬜ |
-| 2.3 | Agregar 19 clases CSS huérfanas (C4) | `index.css` | ⬜ |
-| 2.4 | Eliminar 18 reglas CSS muertas (C5) | `index.css` | ⬜ |
-| 2.5 | Reemplazar font-size hardcodeados por tokens (C6) | `index.css` | ⬜ |
-| 2.6 | Reemplazar colores hardcodeados por variables (C7) | `index.css` | ⬜ |
-| 2.7 | Fix border-radius tokens (C8) | `index.css` | ⬜ |
-| 2.8 | Tokenizar focus ring (C9) | `index.css` | ⬜ |
-| 2.9 | Fix tooltip (C10) | `tooltip.rs`, `index.css` | ⬜ |
-| 2.10 | Fix `btn-secondary` y `btn-icon btn-primary` (C11, C12) | `index.css` | ⬜ |
-| 2.11 | Agregar responsive a 8 elementos (C13) | `index.css` | ⬜ |
-| 2.12 | Fix login card padding (C14) | `index.css` | ⬜ |
+| 2.1 | Definir `.data-table-wrapper` + compactar filas (C1, C2) | `index.css` | ✅ |
+| 2.2 | Unificar wrapping de tablas (C3) | `products.rs`, `device_keys.rs`, `sale_detail_modal.rs`, `parts_tab.rs`, `parts_tab_cert.rs` | ✅ |
+| 2.3 | Agregar 19 clases CSS huérfanas (C4) | `index.css` | ✅ |
+| 2.4 | Eliminar 18 reglas CSS muertas (C5) | `index.css` | ✅ |
+| 2.5 | Reemplazar font-size hardcodeados por tokens (C6) | `index.css` | ✅ |
+| 2.6 | Reemplazar colores hardcodeados por variables (C7) | `index.css` | ✅ |
+| 2.7 | Fix border-radius tokens (C8) | `index.css` | ✅ |
+| 2.8 | Tokenizar focus ring (C9) | `index.css` | ✅ |
+| 2.9 | Fix tooltip (C10) | `tooltip.rs`, `index.css` | ✅ |
+| 2.10 | Fix `btn-secondary` y `btn-icon btn-primary` (C11, C12) | `index.css` | ✅ |
+| 2.11 | Agregar responsive a 8 elementos (C13) | `index.css` | ✅ |
+| 2.12 | Fix login card padding (C14) | `index.css` | ✅ |
 
 ### Fase 3 — Arquitectura de Componentes
 | # | Tarea | Archivos | Estado |

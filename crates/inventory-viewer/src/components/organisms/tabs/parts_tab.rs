@@ -40,32 +40,34 @@ pub fn PartsTab(
             if is_empty {
                 p { class: "text-muted", "Sin insumos registrados" }
             } else {
-                table { class: "data-table mt-md",
-                    thead {
-                        tr {
-                            th { "Nombre" }
-                            th { "Cant." }
-                            th { "Costo Unit." }
-                            th { "Total" }
-                            th { "" }
-                        }
-                    }
-                    tbody {
-                        for (pid, name, qty, unit, total) in parts_data.iter() {
+                div { class: "data-table-wrapper mt-md",
+                    table { class: "data-table",
+                        thead {
                             tr {
-                                td { "{name}" }
-                                td { "{qty}" }
-                                td { "{unit}" }
-                                td { "{total}" }
-                                td {
-                                    button {
-                                        class: "btn-icon btn-danger",
-                                        title: "Eliminar",
-                                        onclick: {
-                                            let part_id = *pid;
-                                            move |_| remove_part.call(part_id)
-                                        },
-                                        {IconName::Trash.render()}
+                                th { "Nombre" }
+                                th { "Cant." }
+                                th { "Costo Unit." }
+                                th { "Total" }
+                                th { "" }
+                            }
+                        }
+                        tbody {
+                            for (pid, name, qty, unit, total) in parts_data.iter() {
+                                tr {
+                                    td { "{name}" }
+                                    td { "{qty}" }
+                                    td { "{unit}" }
+                                    td { "{total}" }
+                                    td {
+                                        button {
+                                            class: "btn-icon btn-danger",
+                                            title: "Eliminar",
+                                            onclick: {
+                                                let part_id = *pid;
+                                                move |_| remove_part.call(part_id)
+                                            },
+                                            {IconName::Trash.render()}
+                                        }
                                     }
                                 }
                             }

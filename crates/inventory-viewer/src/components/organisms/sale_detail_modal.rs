@@ -140,17 +140,19 @@ fn SaleDetailBody(data: SaleDetailResponse) -> Element {
             if has_items {
                 div { class: "detail-section mt-md",
                     h4 { class: "detail-section-title", "Productos" }
-                    table { class: "data-table mt-sm",
-                        thead {
-                            tr {
-                                th { "Producto" }
-                                th { class: "text-right", "Cant." }
-                                th { class: "text-right", "P. Unitario" }
-                                th { class: "text-right", "Total" }
+                    div { class: "data-table-wrapper mt-sm",
+                        table { class: "data-table",
+                            thead {
+                                tr {
+                                    th { "Producto" }
+                                    th { class: "text-right", "Cant." }
+                                    th { class: "text-right", "P. Unitario" }
+                                    th { class: "text-right", "Total" }
+                                }
                             }
-                        }
-                        tbody {
-                            {rows.into_iter()}
+                            tbody {
+                                {rows.into_iter()}
+                            }
                         }
                     }
                 }

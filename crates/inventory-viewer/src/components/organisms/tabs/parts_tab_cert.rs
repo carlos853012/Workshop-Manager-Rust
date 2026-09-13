@@ -31,40 +31,42 @@ pub fn PartsTabCert(
             if parts.read().is_empty() {
                 p { class: "text-muted", "Sin insumos registrados" }
             } else {
-                table { class: "data-table mt-sm",
-                    thead {
-                        tr {
-                            th { "Nombre" }
-                            th { "Cant." }
-                            th { "Costo Unit." }
-                            th { "Total" }
-                            th { "" }
-                        }
-                    }
-                    tbody {
-                        for part in parts.read().iter() {
+                div { class: "data-table-wrapper mt-sm",
+                    table { class: "data-table",
+                        thead {
                             tr {
-                                td { "{part.name}" }
-                                td { "{part.quantity.normalize()}" }
-                                td {
-                                    { part.unit_cost
-                                        .map(format_clp)
-                                        .unwrap_or_else(|| "-".to_string()) }
-                                }
-                                td {
-                                    { part.total_cost
-                                        .map(format_clp)
-                                        .unwrap_or_else(|| "-".to_string()) }
-                                }
-                                td {
-                                    button {
-                                        class: "btn-icon btn-danger",
-                                        title: "Eliminar",
-                                        onclick: {
-                                            let part_id = part.id;
-                                            move |_| remove_part.call(part_id)
-                                        },
-                                        {IconName::Trash.render()}
+                                th { "Nombre" }
+                                th { "Cant." }
+                                th { "Costo Unit." }
+                                th { "Total" }
+                                th { "" }
+                            }
+                        }
+                        tbody {
+                            for part in parts.read().iter() {
+                                tr {
+                                    td { "{part.name}" }
+                                    td { "{part.quantity.normalize()}" }
+                                    td {
+                                        { part.unit_cost
+                                            .map(format_clp)
+                                            .unwrap_or_else(|| "-".to_string()) }
+                                    }
+                                    td {
+                                        { part.total_cost
+                                            .map(format_clp)
+                                            .unwrap_or_else(|| "-".to_string()) }
+                                    }
+                                    td {
+                                        button {
+                                            class: "btn-icon btn-danger",
+                                            title: "Eliminar",
+                                            onclick: {
+                                                let part_id = part.id;
+                                                move |_| remove_part.call(part_id)
+                                            },
+                                            {IconName::Trash.render()}
+                                        }
                                     }
                                 }
                             }
