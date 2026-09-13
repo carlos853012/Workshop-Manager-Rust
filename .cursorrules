@@ -14,6 +14,12 @@ Before editing files or analyzing bugs, you are required to load and review the 
 5. **Operational Safety:** This system manages workshop inventory and financial data. Any destructive operation must provide rollback steps.
 6. **No undocumented APIs:** Document public types and functions with markdown docstrings (`///`).
 7. **Write Tests:** Include unit tests to verify any added logic.
+8. **CSS Design Tokens:** Use CSS variables from `tokens-*.toml`. Never hardcode colors, sizes, or spacing.
+9. **Component Architecture:** Follow Atomic Design. Extract all modals as organisms. Never create inline modals in pages.
+10. **Table Wrapping:** All tables must use `div.data-table-wrapper > table.data-table`.
+11. **Error Handling (Frontend):** All API errors must surface to the user. Never silently discard Results.
+12. **Security Headers:** New endpoints must include security headers. CORS must be restricted.
+13. **IDOR Prevention:** All queries must filter by `workshop_id` from the authenticated user.
 
 ## Mandatory Step-by-Step Change Protocol
 1. **Step 1:** State your understanding of the user request.

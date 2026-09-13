@@ -2,6 +2,7 @@ mod api;
 mod app_state;
 mod components;
 mod config;
+mod i18n;
 mod icons;
 mod pages;
 mod routes;

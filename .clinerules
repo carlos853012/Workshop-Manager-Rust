@@ -14,6 +14,12 @@ Before proposing changes or writing code, you are required to read and apply the
 5. **No Production Interruption:** This system manages workshop inventory and financial data. Never propose service disruptions or data loss without risk mitigation plans.
 6. **API Documentation:** Ensure all public structs and methods are fully documented (`///`).
 7. **Testing:** Write unit/integration tests for code modifications.
+8. **CSS Design Tokens:** Use CSS variables from `tokens-*.toml`. Never hardcode colors, sizes, or spacing.
+9. **Component Architecture:** Follow Atomic Design. Extract all modals as organisms. Never create inline modals in pages.
+10. **Table Wrapping:** All tables must use `div.data-table-wrapper > table.data-table`.
+11. **Error Handling (Frontend):** All API errors must surface to the user. Never silently discard Results.
+12. **Security Headers:** New endpoints must include security headers. CORS must be restricted.
+13. **IDOR Prevention:** All queries must filter by `workshop_id` from the authenticated user.
 
 ## Execution Workflow (Mandatory)
 Before writing any file modifications, execute this 5-step process:

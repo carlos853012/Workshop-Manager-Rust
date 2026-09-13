@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 use inventory_common::money::format_clp;
+use crate::i18n;
 use inventory_common::Sale;
 
 use crate::api::ApiError;
@@ -8,6 +9,8 @@ use crate::app_state::use_auth;
 use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::organisms::data_table::{Column, DataTable};
+use crate::components::organisms::sale_detail_modal::SaleDetailModal;
+use crate::icons::IconName;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
 use std::rc::Rc;
@@ -26,6 +29,8 @@ pub fn Sales() -> Element {
     let loading = use_signal(|| false);
     let error = use_signal(|| None::<String>);
     let refresh = use_signal(|| 0);
+    let mut show_detail = use_signal(|| false);
+    let mut detail_sale_id = use_signal(|| None::<uuid::Uuid>);
 
     let load_data = move || {
         let client = auth.api_client();
@@ -78,7 +83,7 @@ pub fn Sales() -> Element {
         Column {
             key: "payment".to_string(),
             header: "Pago".to_string(),
-            render: Rc::new(|s: &Sale| rsx! { span { "{s.payment_method}" } }),
+            render: Rc::new(|s: &Sale| rsx! { span { "{i18n::translate_payment(&s.payment_method)}" } }),
         },
         Column {
             key: "total".to_string(),
@@ -90,7 +95,32 @@ pub fn Sales() -> Element {
         Column {
             key: "status".to_string(),
             header: "Estado".to_string(),
-            render: Rc::new(|s: &Sale| rsx! { span { "{s.status}" } }),
+            render: Rc::new(|s: &Sale| rsx! { span { "{i18n::translate_sale_status(&s.status)}" } }),
+        },
+        Column {
+            key: "actions".to_string(),
+            header: "".to_string(),
+            render: Rc::new({
+                let mut sale_id = detail_sale_id;
+                let mut show_detail = show_detail;
+                move |s: &Sale| {
+                    let sid = s.id;
+                    rsx! {
+                        div { class: "table-actions",
+                            button {
+                                class: "btn-icon btn-edit",
+                                title: "Ver detalle",
+                                onclick: move |e| {
+                                    e.stop_propagation();
+                                    sale_id.set(Some(sid));
+                                    show_detail.set(true);
+                                },
+                                {IconName::Eye.render()}
+                            }
+                        }
+                    }
+                }
+            }),
         },
     ];
 
@@ -120,6 +150,17 @@ pub fn Sales() -> Element {
                         total: *total.read(),
                         on_page_change: move |new_page: i32| page.set(new_page),
                     }
+                }
+            }
+            if let Some(sid) = *detail_sale_id.read() {
+                SaleDetailModal {
+                    key: "{sid}",
+                    show: *show_detail.read(),
+                    sale_id: sid,
+                    on_close: move |_| {
+                        show_detail.set(false);
+                        detail_sale_id.set(None);
+                    },
                 }
             }
         }

@@ -1006,11 +1006,11 @@ body {
   color: var(--text);
 }
 .btn-icon.btn-danger:hover {
-  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  background: color-mix(in srgb, var(--danger) 5%, transparent);
   color: var(--danger);
 }
 .btn-icon.btn-edit:hover {
-  background: transparent;
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
   color: var(--primary);
 }
 .btn-icon svg {

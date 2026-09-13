@@ -96,7 +96,7 @@ async fn create_supplier(
     sqlx::query(
         "INSERT INTO suppliers \
          (id, workshop_id, name, contact_person, email, phone, address, tax_id, payment_terms, status, created_at, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9, $10)"
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', $10, $11)"
     )
     .bind(id)
     .bind(user.workshop_id)

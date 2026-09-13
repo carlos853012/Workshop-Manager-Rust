@@ -95,6 +95,20 @@ pub fn Suppliers() -> Element {
                 |s: &Supplier| rsx! { span { "{s.phone.as_deref().unwrap_or(\"-\")}" } },
             ),
         },
+        Column {
+            key: "status".to_string(),
+            header: "Estado".to_string(),
+            render: Rc::new(
+                |s: &Supplier| rsx! { span { "{s.status}" } },
+            ),
+        },
+        Column {
+            key: "updated_at".to_string(),
+            header: "Actualizado".to_string(),
+            render: Rc::new(
+                |s: &Supplier| rsx! { span { "{s.updated_at}" } },
+            ),
+        },
     ];
 
     let rows = suppliers.read().clone();

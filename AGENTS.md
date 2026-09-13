@@ -60,6 +60,14 @@ License: `Feature` enum (15 features across 4 tiers), `License` struct with Ed25
 - API client: `api.rs` with typed methods for all server endpoints
 - 13 pages total in `pages/`
 
+## Frontend Architecture Rules
+- **CSS tokens:** Use CSS variables from `tokens-*.toml`. Never hardcode colors, sizes, or spacing.
+- **Atomic Design:** atoms/ → molecules/ → organisms/. Extract ALL modals as organisms.
+- **Table pattern:** Always `div.data-table-wrapper > table.data-table` for scrollable tables.
+- **Modal pattern:** Modal molecule + footer with Ghost cancel + Primary action.
+- **Error pattern:** All API errors must surface to user via alert. Never silently discard Results.
+- **i18n:** Display translations go in `i18n.rs`. Enum Display traits stay in English (technical values for JWT/DB/serde).
+
 ## Known issues
 - **Server unused deps:** `tracing-appender`, `obfstr` in Cargo.toml but never imported
 - **`.clinerules`/`.cursorrules`/`.geminirules`:** links and OT/SCADA references fixed
@@ -102,3 +110,15 @@ Aggressive size optimization in workspace `Cargo.toml`: `strip = true`, `lto = t
 ```powershell
 cargo test --workspace
 ```
+
+## Security Checklist (before production)
+- [ ] Argon2id params hardened (64MB+)
+- [ ] API key auto-generated (not default)
+- [ ] Body size limit configured (10MB)
+- [ ] CORS restricted to needed methods/headers
+- [ ] Security headers set (HSTS, X-Content-Type-Options, X-Frame-Options)
+- [ ] Rate limiting on all write endpoints
+- [ ] device_keys scoped to workshop_id
+- [ ] All secrets use DPAPI/Keychain (not plain files)
+- [ ] Token revocation mechanism in place
+- [ ] Email validation with regex

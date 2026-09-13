@@ -39,13 +39,13 @@ pub fn ProductFormModal(
     let mut price = use_signal(|| {
         edit_product
             .as_ref()
-            .map(|p| p.price.to_string())
+            .map(|p| p.price.trunc().to_string())
             .unwrap_or_default()
     });
     let mut cost = use_signal(|| {
         edit_product
             .as_ref()
-            .map(|p| p.cost.to_string())
+            .map(|p| p.cost.trunc().to_string())
             .unwrap_or_default()
     });
     let mut stock = use_signal(|| {

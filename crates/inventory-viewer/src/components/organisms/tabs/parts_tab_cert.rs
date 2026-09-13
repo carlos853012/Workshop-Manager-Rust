@@ -45,7 +45,7 @@ pub fn PartsTabCert(
                         for part in parts.read().iter() {
                             tr {
                                 td { "{part.name}" }
-                                td { "{part.quantity}" }
+                                td { "{part.quantity.normalize()}" }
                                 td {
                                     { part.unit_cost
                                         .map(format_clp)
@@ -92,7 +92,7 @@ pub fn PartsTabCert(
                                     selected_product_id.set(Some(id));
                                     if let Some(prod) = products.read().iter().find(|p| p.id == id) {
                                         new_part_name.set(prod.name.clone());
-                                        new_part_cost.set(prod.price.to_string());
+                                        new_part_cost.set(prod.price.trunc().to_string());
                                     }
                                 }
                             }

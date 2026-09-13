@@ -131,7 +131,7 @@ pub fn Sidebar(
                             span { class: "user-name", "{name}" }
                         }
                         if let Some(role) = user_role {
-                            span { class: "user-role", "{role}" }
+                            span { class: "user-role", "{crate::i18n::translate_role(&role)}" }
                         }
                     }
                 }

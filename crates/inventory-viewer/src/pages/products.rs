@@ -42,16 +42,6 @@ pub fn Products() -> Element {
     let mut show_delete_confirm = use_signal(|| false);
     let deleting_product = use_signal(|| None::<Product>);
 
-    let modal_key = if *show_edit_modal.read() {
-        let ep = editing_product.read();
-        match ep.as_ref() {
-            Some(p) => format!("edit-{}", p.id),
-            None => "edit-unknown".to_string(),
-        }
-    } else {
-        "create".to_string()
-    };
-
     let load_data = move || {
         let client = auth.api_client();
         let mut products_set = products;
@@ -250,22 +240,37 @@ pub fn Products() -> Element {
                     }
                 }
             }
-            ProductFormModal {
-                key: "{modal_key}",
-                show: *show_create_modal.read() || *show_edit_modal.read(),
-                edit_product: if *show_edit_modal.read() { editing_product.read().clone() } else { None },
-                on_close: move |_| {
-                    show_create_modal.set(false);
-                    show_edit_modal.set(false);
-                    editing_product.set(None);
-                },
-                on_saved: move |_| {
-                    show_create_modal.set(false);
-                    show_edit_modal.set(false);
-                    editing_product.set(None);
-                    let current = *refresh.read();
-                    refresh.set(current + 1);
-                },
+            if *show_create_modal.read() {
+                ProductFormModal {
+                    show: true,
+                    edit_product: None,
+                    on_close: move |_| {
+                        show_create_modal.set(false);
+                    },
+                    on_saved: move |_| {
+                        show_create_modal.set(false);
+                        let current = *refresh.read();
+                        refresh.set(current + 1);
+                    },
+                }
+            }
+            if *show_edit_modal.read() {
+                if let Some(ep) = editing_product.read().clone() {
+                    ProductFormModal {
+                        show: true,
+                        edit_product: Some(ep),
+                        on_close: move |_| {
+                            show_edit_modal.set(false);
+                            editing_product.set(None);
+                        },
+                        on_saved: move |_| {
+                            show_edit_modal.set(false);
+                            editing_product.set(None);
+                            let current = *refresh.read();
+                            refresh.set(current + 1);
+                        },
+                    }
+                }
             }
             StockEntryModal {
                 show: *show_stock_modal.read(),

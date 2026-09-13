@@ -29,7 +29,7 @@ pub fn PartsTab(
                 .total_cost
                 .map(inventory_common::money::format_clp)
                 .unwrap_or_else(|| "-".to_string());
-            (p.id, p.name.clone(), p.quantity.to_string(), unit, total)
+            (p.id, p.name.clone(), p.quantity.normalize().to_string(), unit, total)
         })
         .collect();
     let is_empty = parts_data.is_empty();
@@ -93,7 +93,7 @@ pub fn PartsTab(
                                     selected_product_id.set(Some(id));
                                     if let Some(prod) = products.read().iter().find(|p| p.id == id) {
                                         new_part_name.set(prod.name.clone());
-                                        new_part_cost.set(prod.price.to_string());
+                                        new_part_cost.set(prod.price.trunc().to_string());
                                     }
                                 }
                             }

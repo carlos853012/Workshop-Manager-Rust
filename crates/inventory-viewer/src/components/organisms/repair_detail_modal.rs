@@ -91,7 +91,7 @@ pub fn RepairDetailModal(
                     let mechs: Vec<User> = u
                         .items
                         .into_iter()
-                        .filter(|u| format!("{}", u.role) == "mechanic")
+                        .filter(|u| matches!(u.role, inventory_common::UserRole::Mechanic))
                         .collect();
                     mechanics_set.set(mechs);
                 }

@@ -3,7 +3,7 @@ use inventory_common::dto::{
     CreateProductRequest, CreateRepairRequest, CreateSaleRequest, CreateSupplierRequest,
     CreateUserRequest, DashboardResponse, DeviceKeySummary, KpisResponse, LoginRequest,
     LoginResponse, PaginatedResponse, PosProductResponse, RegisterRequest, RepairDetail,
-    RepairPartResponse, UpdateRepairRequest, UpdateUserRequest,
+    RepairPartResponse, SaleDetailResponse, UpdateRepairRequest, UpdateUserRequest,
 };
 use inventory_common::{Product, Repair, Sale, Supplier, User};
 use serde::{Deserialize, Serialize};
@@ -172,6 +172,11 @@ impl ApiClient {
             ],
         )
         .await
+    }
+
+    /// GET /api/sales/:id
+    pub async fn get_sale(&self, id: uuid::Uuid) -> Result<SaleDetailResponse, ApiError> {
+        self.get(&format!("/api/sales/{}", id)).await
     }
 
     /// GET /api/repairs

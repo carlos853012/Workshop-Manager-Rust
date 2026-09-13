@@ -54,6 +54,13 @@ pub struct SaleItemRequest {
     pub discount: Option<Decimal>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SaleDetailResponse {
+    #[serde(flatten)]
+    pub sale: crate::Sale,
+    pub items: Vec<crate::SaleItem>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PosLookupRequest {
     pub barcode: String,

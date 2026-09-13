@@ -468,3 +468,81 @@ El asistente debe detenerse, informar la incertidumbre y solicitar más informac
 Ninguna mejora funcional, arquitectónica o de rendimiento justifica poner en riesgo la integridad de los datos financieros, la disponibilidad del sistema o la seguridad de credenciales.
 
 Si existe conflicto entre eficiencia y seguridad de datos, siempre prevalecerá la seguridad de datos.
+
+---
+
+## 17. Frontend Design System
+
+### 17.1 Uso de Design Tokens
+
+- Usar SIEMPRE CSS variables definidas en `tokens-*.toml` para colores, espaciado, tipografía, bordes y sombras.
+- Nunca hardcodear colores, font-sizes, border-radius, o shadows en CSS.
+- Excepción: valores temporales en features experimentales, con `/* TODO: migrar a token */` documentado.
+
+### 17.2 Atomic Design
+
+- **Atomos:** componentes UI básicos (`Button`, `Input`, `Badge`, `Icon`, `Spinner`).
+- **Moléculas:** combinaciones de atomos (`Card`, `Modal`, `ConfirmModal`, `FormGroup`, `Tooltip`).
+- **Organismos:** secciones completas con lógica (`DataTable`, `Header`, form modals).
+- Cada modal de formulario DEBE extraerse como organismo independiente en `organisms/`.
+- Nunca crear modals inline en páginas.
+
+### 17.3 Consistencia de Componentes
+
+- Todas las tablas DEBEN envolverse en `div.data-table-wrapper`.
+- Todos los modals DEBEN usar el molécula `Modal`.
+- Todos los botones cancel DEBEN usar `class: "cancel-button"` + `ButtonVariant::Ghost`.
+- Todos los estados de carga DEBEN usar `div { class: "empty-state", Spinner {} }`.
+- Todos los errores DEBEN mostrarse al usuario via alert, nunca tragarse silenciosamente.
+
+### 17.4 Responsive Design
+
+- Todos los layouts DEBEN tener reglas responsive para `@media (max-width: 768px)`.
+- Los modals DEBEN tener `min-width` reducido en mobile.
+- Las tablas DEBEN ser scroleables horizontalmente (`overflow-x: auto` en el wrapper).
+
+---
+
+## 18. Seguridad Avanzada
+
+### 18.1 Autenticación
+
+- Argon2id DEBE usar parámetros explícitos: memoria >= 64MB, iteraciones >= 3, paralelismo >= 4.
+- JWT secrets DEBEN generarse con `OsRng` (no `thread_rng`).
+- DEBE existir mecanismo de token revocation (versión en tabla `users`).
+
+### 18.2 Headers de Seguridad
+
+- Todos los endpoints DEBEN incluir: `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`.
+- CORS DEBE restringir methods y headers a los específicamente necesarios.
+
+### 18.3 Rate Limiting
+
+- Login, register, y endpoints de escritura DEBEN tener rate limiting.
+- Rate limiter DEBE incluir IP en la key, no solo email.
+- Rate limiter DEBE tener cleanup periódico para evitar crecimiento sin fin.
+
+### 18.4 Body Size Limit
+
+- Axum router DEBE configurar `DefaultBodyLimitLayer` (máximo 10MB recomendado).
+
+### 18.5 IDOR Prevention
+
+- Todas las queries DEBEN filtrar por `workshop_id` del usuario autenticado.
+- Tablas nuevas DEBEN incluir `workshop_id` desde su creación.
+- Nunca confiar en el client para determinar el `workshop_id`.
+
+---
+
+## 19. Multi-tenancy
+
+### 19.1 Aislamiento de Datos
+
+- Cada query DEBE incluir `AND workshop_id = $N` con el ID del usuario autenticado.
+- Nunca confiar en el client para determinar el workshop_id.
+- Endpoint de status DEBE usar `Extension<AuthenticatedUser>`, no re-parsear JWT.
+
+### 19.2 Consistencia de Tablas
+
+- Todas las tablas nuevas DEBEN incluir `workshop_id UUID NOT NULL` como columna.
+- Las migraciones que agreguen tablas DEBEN incluir la FK a `workshops`.
