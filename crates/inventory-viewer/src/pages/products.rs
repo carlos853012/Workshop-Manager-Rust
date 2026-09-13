@@ -142,7 +142,7 @@ pub fn Products() -> Element {
             }
             Card {
                 title: "Listado de productos".to_string(),
-                footer: rsx! {
+                header_action: rsx! {
                     Button {
                         variant: ButtonVariant::Primary,
                         onclick: move |_| show_create_modal.set(true),

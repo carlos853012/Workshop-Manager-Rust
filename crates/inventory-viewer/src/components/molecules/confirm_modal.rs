@@ -7,6 +7,7 @@ pub fn ConfirmModal(
     title: String,
     message: String,
     #[props(default = true)] show: bool,
+    variant: Option<ButtonVariant>,
     confirm_text: Option<String>,
     cancel_text: Option<String>,
     on_confirm: EventHandler<()>,
@@ -18,6 +19,7 @@ pub fn ConfirmModal(
 
     let confirm = confirm_text.unwrap_or_else(|| "Confirmar".to_string());
     let cancel = cancel_text.unwrap_or_else(|| "Cancelar".to_string());
+    let btn_variant = variant.unwrap_or(ButtonVariant::Danger);
 
     rsx! {
         div {
@@ -37,7 +39,7 @@ pub fn ConfirmModal(
                         "{cancel}"
                     }
                     Button {
-                        variant: ButtonVariant::Danger,
+                        variant: btn_variant,
                         onclick: move |_evt| on_confirm.call(()),
                         "{confirm}"
                     }

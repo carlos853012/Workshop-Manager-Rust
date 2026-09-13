@@ -4,6 +4,7 @@ use inventory_common::money::format_clp;
 use rust_decimal::Decimal;
 
 use crate::app_state::use_auth;
+use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::modal::Modal;
 
@@ -61,10 +62,18 @@ pub fn SaleDetailModal(
             show: true,
             title: "Detalle de venta".to_string(),
             on_close: on_close,
+            footer: rsx! {
+                Button {
+                    class: Some("cancel-button".to_string()),
+                    variant: ButtonVariant::Ghost,
+                    onclick: move |_| on_close.call(()),
+                    "Cerrar"
+                }
+            },
             if loading_val {
                 div { class: "empty-state", Spinner {} }
             } else if let Some(ref err) = error_val {
-                div { class: "alert alert-danger", "{err}" }
+                div { class: "alert alert-danger mb-md", "{err}" }
             } else if let Some(d) = detail_val {
                 SaleDetailBody { data: d }
             } else {

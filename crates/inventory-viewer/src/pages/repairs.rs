@@ -1,5 +1,4 @@
 use dioxus::prelude::*;
-
 use crate::api::ApiError;
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
@@ -135,7 +134,7 @@ pub fn Repairs() -> Element {
             }
             Card {
                 title: "Listado de reparaciones".to_string(),
-                footer: rsx! {
+                header_action: rsx! {
                     Button {
                         variant: ButtonVariant::Primary,
                         onclick: move |_| show_create_modal.set(true),

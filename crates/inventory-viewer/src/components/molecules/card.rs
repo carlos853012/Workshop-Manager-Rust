@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 pub fn Card(
     children: Element,
     title: Option<String>,
+    header_action: Option<Element>,
     footer: Option<Element>,
     class: Option<String>,
 ) -> Element {
@@ -11,7 +12,12 @@ pub fn Card(
     rsx! {
         div { class: "{class_str}",
             if let Some(title_text) = title {
-                div { class: "card-header", "{title_text}" }
+                div { class: "card-header",
+                    span { class: "header-title", "{title_text}" }
+                    if let Some(action) = header_action {
+                        {action}
+                    }
+                }
             }
             div { class: "card-body", {children} }
             if let Some(footer_content) = footer {

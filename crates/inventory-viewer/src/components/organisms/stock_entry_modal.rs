@@ -100,7 +100,7 @@ pub fn StockEntryModal(
 
     rsx! {
         Modal {
-            show: show,
+            show: true,
             title: "Ingreso de stock".to_string(),
             on_close: move |_| on_close.call(()),
             footer: rsx! {

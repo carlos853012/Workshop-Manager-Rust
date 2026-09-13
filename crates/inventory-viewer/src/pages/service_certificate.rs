@@ -258,6 +258,7 @@ pub fn ServiceCertificatePage() -> Element {
                                         }
                                         Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
                                             auth.logout();
+                                            navigator.push(Route::Login {});
                                         }
                                         Err(e) => {
                                             error_set.set(Some(e.user_message().to_string()));

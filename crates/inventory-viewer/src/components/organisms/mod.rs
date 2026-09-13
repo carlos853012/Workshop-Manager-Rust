@@ -8,4 +8,5 @@ pub mod stock_entry_modal;
 pub mod supplier_form_modal;
 pub mod certificate_detail_modal;
 pub mod sale_detail_modal;
+pub mod user_form_modal;
 pub mod tabs;

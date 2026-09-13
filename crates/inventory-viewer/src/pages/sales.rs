@@ -3,7 +3,6 @@ use dioxus_router::prelude::*;
 use inventory_common::money::format_clp;
 use crate::i18n;
 use inventory_common::Sale;
-
 use crate::api::ApiError;
 use crate::app_state::use_auth;
 use crate::components::atoms::spinner::Spinner;
@@ -133,7 +132,7 @@ pub fn Sales() -> Element {
             }
             Card {
                 title: "Historial de ventas".to_string(),
-                footer: rsx! {
+                header_action: rsx! {
                     Link {
                         to: Route::Pos {},
                         class: "btn btn-primary",

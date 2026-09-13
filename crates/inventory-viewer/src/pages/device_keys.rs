@@ -155,7 +155,7 @@ pub fn DeviceKeys() -> Element {
             active_route: Route::DeviceKeys {},
 
             if err_snapshot.is_some() {
-                div { class: "alert alert-error", "{err_snapshot.as_deref().unwrap_or_default()}" }
+                div { class: "alert alert-danger mb-md", "{err_snapshot.as_deref().unwrap_or_default()}" }
             }
             if success_snapshot.is_some() {
                 div { class: "alert alert-success", "{success_snapshot.as_deref().unwrap_or_default()}" }
@@ -171,9 +171,9 @@ pub fn DeviceKeys() -> Element {
 
             Card {
                 if is_loading {
-                    Spinner {}
+                    div { class: "empty-state", Spinner {} }
                 } else if keys_snapshot.is_empty() {
-                    p { class: "text-muted", "No hay claves de dispositivo registradas." }
+                    div { class: "empty-state", "No hay claves de dispositivo registradas" }
                 } else {
                     div { class: "data-table-wrapper",
                         table { class: "data-table",

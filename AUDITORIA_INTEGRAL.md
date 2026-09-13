@@ -69,18 +69,18 @@
 
 ### 🟠 ARQUITECTURA DE COMPONENTES ( Prioridad: MEDIA-ALTA )
 
-- [ ] **A1 — `users.rs` modals inline** — Crea y edita usuarios con modals inline en la página. Todos los demás extraen a organisms. **Fix:** extraer a `user_form_modal.rs`.
-- [ ] **A2 — `users.rs` sin validación** — Create modal envía sin verificar email/password. **Fix:** agregar `form_error` + validación antes de submit.
-- [ ] **A3 — `repair_detail_modal.rs` traga errores** — 4 closures ignoran resultados de API. **Fix:** agregar error signal + mostrar al usuario.
-- [ ] **A4 — `sale_detail_modal.rs` sin footer** — No hay botón "Cerrar". **Fix:** agregar `footer: rsx! { Button { variant: Ghost, "Cerrar" } }`.
-- [ ] **A5 — `device_keys.rs` sin Card title** — Botón fuera del Card, empty state inconsistente. **Fix:** mover botón al `footer` del Card.
-- [ ] **A6 — `service_certificate.rs` sin redirect en auth failure** — `on_download` no redirige a Login. **Fix:** agregar `navigator.push(Route::Login {})`.
-- [ ] **A7 — Modals sin check `show` antes de fetch** — `repair_detail_modal.rs:62` y `certificate_detail_modal.rs:35` fetchan datos innecesariamente.
-- [ ] **A8 — `stock_entry_modal.rs` guard redundante** — Verifica `show` antes y después del Modal.
-- [ ] **A9 — `ConfirmModal` sin variant prop** — Siempre usa Danger, incluso para acciones no destructivas. **Fix:** agregar prop `variant`.
-- [ ] **A10 — Cancel buttons inconsistentes** — `users.rs` no usa `class: "cancel-button"` como los demás.
-- [ ] **A11 — Alert CSS class inconsistente** — `device_keys.rs` usa `alert-error` en vez de `alert-danger`.
-- [ ] **A12 — Empty states inconsistentes** — 6 textos diferentes, 3 patrones CSS diferentes.
+- [x] **A1 — `users.rs` modals inline** — Crea y edita usuarios con modals inline en la página. Todos los demás extraen a organisms. **Fix:** extraer a `user_form_modal.rs`.
+- [x] **A2 — `users.rs` sin validación** — Create modal envía sin verificar email/password. **Fix:** agregar `form_error` + validación antes de submit.
+- [x] **A3 — `repair_detail_modal.rs` traga errores** — 4 closures ignoran resultados de API. **Fix:** agregar error signal + mostrar al usuario.
+- [x] **A4 — `sale_detail_modal.rs` sin footer** — No hay botón "Cerrar". **Fix:** agregar `footer: rsx! { Button { variant: Ghost, "Cerrar" } }`.
+- [x] **A5 — `device_keys.rs` sin Card title** — Botón fuera del Card, empty state inconsistente. **Fix:** mover botón al `footer` del Card.
+- [x] **A6 — `service_certificate.rs` sin redirect en auth failure** — `on_download` no redirige a Login. **Fix:** agregar `navigator.push(Route::Login {})`.
+- [x] **A7 — Modals sin check `show` antes de fetch** — `repair_detail_modal.rs:62` y `certificate_detail_modal.rs:35` fetchan datos innecesariamente.
+- [x] **A8 — `stock_entry_modal.rs` guard redundante** — Verifica `show` antes y después del Modal.
+- [x] **A9 — `ConfirmModal` sin variant prop** — Siempre usa Danger, incluso para acciones no destructivas. **Fix:** agregar prop `variant`.
+- [x] **A10 — Cancel buttons inconsistentes** — `users.rs` no usa `class: "cancel-button"` como los demás.
+- [x] **A11 — Alert CSS class inconsistente** — `device_keys.rs` usa `alert-error` en vez de `alert-danger`.
+- [x] **A12 — Empty states inconsistentes** — 6 textos diferentes, 3 patrones CSS diferentes.
 
 ### 🟡 CALIDAD ( Prioridad: BAJA )
 
@@ -128,18 +128,18 @@
 ### Fase 3 — Arquitectura de Componentes
 | # | Tarea | Archivos | Estado |
 |---|-------|----------|--------|
-| 3.1 | Extraer `users.rs` modals (A1) | `users.rs`, nuevo `user_form_modal.rs` | ⬜ |
-| 3.2 | Agregar validación a `users.rs` (A2) | `users.rs` o `user_form_modal.rs` | ⬜ |
-| 3.3 | Fix error handling en `repair_detail_modal` (A3) | `repair_detail_modal.rs` | ⬜ |
-| 3.4 | Agregar footer a `sale_detail_modal` (A4) | `sale_detail_modal.rs` | ⬜ |
-| 3.5 | Fix `device_keys.rs` layout (A5) | `device_keys.rs` | ⬜ |
-| 3.6 | Fix auth redirect en `service_certificate` (A6) | `service_certificate.rs` | ⬜ |
-| 3.7 | Agregar check `show` antes de fetch (A7) | `repair_detail_modal.rs`, `certificate_detail_modal.rs` | ⬜ |
-| 3.8 | Limpiar guard redundante (A8) | `stock_entry_modal.rs` | ⬜ |
-| 3.9 | Agregar variant a `ConfirmModal` (A9) | `confirm_modal.rs` | ⬜ |
-| 3.10 | Unificar cancel buttons (A10) | `users.rs` | ⬜ |
-| 3.11 | Unificar alert classes (A11) | `device_keys.rs`, `pos.rs`, `sale_detail_modal.rs` | ⬜ |
-| 3.12 | Unificar empty states (A12) | Varios | ⬜ |
+| 3.1 | Extraer `users.rs` modals (A1) | `users.rs`, nuevo `user_form_modal.rs` | ✅ |
+| 3.2 | Agregar validación a `users.rs` (A2) | `user_form_modal.rs` | ✅ |
+| 3.3 | Fix error handling en `repair_detail_modal` (A3) | `repair_detail_modal.rs` | ✅ |
+| 3.4 | Agregar footer a `sale_detail_modal` (A4) | `sale_detail_modal.rs` | ✅ |
+| 3.5 | Fix `device_keys.rs` layout (A5) | `device_keys.rs` | ✅ |
+| 3.6 | Fix auth redirect en `service_certificate` (A6) | `service_certificate.rs` | ✅ |
+| 3.7 | Agregar check `show` antes de fetch (A7) | `repair_detail_modal.rs`, `certificate_detail_modal.rs` | ✅ |
+| 3.8 | Limpiar guard redundante (A8) | `stock_entry_modal.rs` | ✅ |
+| 3.9 | Agregar variant a `ConfirmModal` (A9) | `confirm_modal.rs` | ✅ |
+| 3.10 | Unificar cancel buttons (A10) | `users.rs` | ✅ |
+| 3.11 | Unificar alert classes (A11) | `device_keys.rs`, `pos.rs`, `sale_detail_modal.rs` | ✅ |
+| 3.12 | Unificar empty states (A12) | Varios | ✅ |
 
 ### Fase 4 — Limpieza
 | # | Tarea | Archivos | Estado |

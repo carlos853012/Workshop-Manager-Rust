@@ -43,7 +43,7 @@ pub fn RepairDetailModal(
 ) -> Element {
     let auth = use_auth();
     let loading = use_signal(|| true);
-    let error = use_signal(|| None::<String>);
+    let mut error = use_signal(|| None::<String>);
     let mut detail = use_signal(|| None::<RepairDetail>);
     let mut parts = use_signal(Vec::<RepairPartResponse>::new);
     let mechanics = use_signal(Vec::<User>::new);
@@ -60,6 +60,9 @@ pub fn RepairDetailModal(
     let pending_status = use_signal(|| None::<RepairStatus>);
 
     use_effect(move || {
+        if !show {
+            return;
+        }
         let client = auth.api_client();
         let mut loading_set = loading;
         let mut error_set = error;
@@ -84,21 +87,24 @@ pub fn RepairDetailModal(
                         return;
                     }
                 }
-                if let Ok(p) = client.list_repair_parts(repair_id).await {
-                    parts_set.set(p);
+                match client.list_repair_parts(repair_id).await {
+                    Ok(p) => { parts_set.set(p); }
+                    Err(e) => { error_set.set(Some(e.user_message().to_string())); }
                 }
-                if let Ok(u) = client.list_users(1, 50).await {
-                    let mechs: Vec<User> = u
-                        .items
-                        .into_iter()
-                        .filter(|u| matches!(u.role, inventory_common::UserRole::Mechanic))
-                        .collect();
-                    mechanics_set.set(mechs);
+                match client.list_users(1, 50).await {
+                    Ok(u) => {
+                        let mechs: Vec<User> = u
+                            .items
+                            .into_iter()
+                            .filter(|u| matches!(u.role, inventory_common::UserRole::Mechanic))
+                            .collect();
+                        mechanics_set.set(mechs);
+                    }
+                    Err(e) => { error_set.set(Some(e.user_message().to_string())); }
                 }
-                if let Ok(prod_page) = client.list_products(1, 100).await {
-                    products_set.set(prod_page.items);
-                } else {
-                    eprintln!("[repairs] Failed to load products for dropdown");
+                match client.list_products(1, 100).await {
+                    Ok(prod_page) => { products_set.set(prod_page.items); }
+                    Err(e) => { error_set.set(Some(e.user_message().to_string())); }
                 }
             }
             loading_set.set(false);
@@ -120,9 +126,12 @@ pub fn RepairDetailModal(
                     labor_cost: None,
                     estimated_delivery: None,
                 };
-                if let Ok(updated) = client.update_repair(repair_id, &req).await {
-                    detail.set(Some(updated));
-                    on_saved2.call(());
+                match client.update_repair(repair_id, &req).await {
+                    Ok(updated) => {
+                        detail.set(Some(updated));
+                        on_saved2.call(());
+                    }
+                    Err(e) => { error.set(Some(e.user_message().to_string())); }
                 }
             }
         });
@@ -148,9 +157,12 @@ pub fn RepairDetailModal(
                     labor_cost: None,
                     estimated_delivery: None,
                 };
-                if let Ok(updated) = client.update_repair(repair_id, &req).await {
-                    detail.set(Some(updated));
-                    on_saved2.call(());
+                match client.update_repair(repair_id, &req).await {
+                    Ok(updated) => {
+                        detail.set(Some(updated));
+                        on_saved2.call(());
+                    }
+                    Err(e) => { error.set(Some(e.user_message().to_string())); }
                 }
             }
         });
@@ -173,14 +185,17 @@ pub fn RepairDetailModal(
                     unit_cost: cost,
                     product_id,
                 };
-                if let Ok(part) = client.add_repair_part(repair_id, &req).await {
-                    let mut current = parts.read().clone();
-                    current.push(part);
-                    parts.set(current);
-                    new_part_name.set(String::new());
-                    new_part_qty.set("1".to_string());
-                    new_part_cost.set(String::new());
-                    selected_product_id.set(None);
+                match client.add_repair_part(repair_id, &req).await {
+                    Ok(part) => {
+                        let mut current = parts.read().clone();
+                        current.push(part);
+                        parts.set(current);
+                        new_part_name.set(String::new());
+                        new_part_qty.set("1".to_string());
+                        new_part_cost.set(String::new());
+                        selected_product_id.set(None);
+                    }
+                    Err(e) => { error.set(Some(e.user_message().to_string())); }
                 }
             }
         });
@@ -190,11 +205,14 @@ pub fn RepairDetailModal(
         let client = auth.api_client();
         spawn(async move {
             if let Some(client) = client {
-                if client.remove_repair_part(repair_id, part_id).await.is_ok() {
-                    let current = parts.read().clone();
-                    let filtered: Vec<RepairPartResponse> =
-                        current.into_iter().filter(|x| x.id != part_id).collect();
-                    parts.set(filtered);
+                match client.remove_repair_part(repair_id, part_id).await {
+                    Ok(()) => {
+                        let current = parts.read().clone();
+                        let filtered: Vec<RepairPartResponse> =
+                            current.into_iter().filter(|x| x.id != part_id).collect();
+                        parts.set(filtered);
+                    }
+                    Err(e) => { error.set(Some(e.user_message().to_string())); }
                 }
             }
         });
@@ -307,9 +325,12 @@ pub fn RepairDetailModal(
                             labor_cost: None,
                             estimated_delivery: None,
                         };
-                        if let Ok(updated) = client.update_repair(repair_id, &req).await {
-                            detail.set(Some(updated));
-                            on_saved2.call(());
+                        match client.update_repair(repair_id, &req).await {
+                            Ok(updated) => {
+                                detail.set(Some(updated));
+                                on_saved2.call(());
+                            }
+                            Err(e) => { error.set(Some(e.user_message().to_string())); }
                         }
                     }
                 });
