@@ -1,5 +1,5 @@
 use argon2::password_hash::{PasswordHash, PasswordHasher, SaltString};
-use argon2::{Argon2, PasswordVerifier};
+use argon2::{Algorithm, Argon2, Params, PasswordVerifier, Version};
 use chrono::{Duration, Utc};
 use inventory_common::UserRole;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -8,6 +8,12 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 const TOKEN_DURATION_HOURS: i64 = 8;
+
+/// Parámetros Argon2id hardening (OWASP: 64MB+ memoria, 3 iteraciones, 4 paralelismo).
+fn argon2_params() -> Argon2<'static> {
+    let params = Params::new(65536, 3, 4, None).expect("valid argon2 params");
+    Argon2::new(Algorithm::Argon2id, Version::V0x13, params)
+}
 
 /// Claims incluidos en el JWT.
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -24,10 +30,10 @@ pub struct Claims {
     pub exp: usize,
 }
 
-/// Hashea una contraseña usando Argon2id.
+/// Hashea una contraseña usando Argon2id (64MB, 3 iteraciones, 4 paralelismo).
 pub fn hash_password(password: &str) -> anyhow::Result<String> {
     let salt = SaltString::generate(&mut OsRng);
-    let argon2 = Argon2::default();
+    let argon2 = argon2_params();
     let hash = argon2
         .hash_password(password.as_bytes(), &salt)
         .map_err(|e| anyhow::anyhow!("Failed to hash password: {}", e))?
@@ -41,7 +47,8 @@ pub fn verify_password(hash: &str, password: &str) -> anyhow::Result<bool> {
     let parsed_hash =
         PasswordHash::new(hash).map_err(|e| anyhow::anyhow!("Failed to parse hash: {}", e))?;
 
-    let result = Argon2::default().verify_password(password.as_bytes(), &parsed_hash);
+    let argon2 = argon2_params();
+    let result = argon2.verify_password(password.as_bytes(), &parsed_hash);
 
     Ok(result.is_ok())
 }

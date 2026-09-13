@@ -26,7 +26,12 @@ fn default_port() -> u16 {
 }
 
 fn default_api_key() -> String {
-    "dev-key-change-in-production".to_string()
+    // Auto-generate a random API key on first run
+    use rand::rngs::OsRng;
+    use rand::Fill;
+    let mut bytes = [0u8; 32];
+    bytes.try_fill(&mut OsRng).expect("OsRng should not fail");
+    bytes.iter().map(|b| format!("{:02x}", b)).collect()
 }
 
 impl Default for Config {

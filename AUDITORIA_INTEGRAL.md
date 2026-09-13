@@ -36,19 +36,19 @@
 
 ### 🔴 SEGURIDAD ( Prioridad: ALTA )
 
-- [ ] **S1 — Argon2id parameters** — `auth.rs:30` usa `Argon2::default()` (19MB memoria). OWASP recomienda 64MB mínimo para resistir ataques GPU. **Fix:** configurar `Params::new(65536, 3, 4, None)` explícitamente.
+- [x] **S1 — Argon2id parameters** — `auth.rs:30` usa `Argon2::default()` (19MB memoria). OWASP recomienda 64MB mínimo para resistir ataques GPU. **Fix:** configurar `Params::new(65536, 3, 4, None)` explícitamente.
 - [ ] **S2 — Secretos en disco sin protección real** — `secrets.rs:50-55` usa `attrib +H` en Windows (cualquiera los lee). **Fix:** usar DPAPI o Windows Credential Manager.
-- [ ] **S3 — API key default hardcodeada** — `config.rs:29` `"dev-key-change-in-production"` en 4 ubicaciones. **Fix:** auto-generar en primer arranque y persistir.
-- [ ] **S4 — Sin body size limit** — `main.rs:117` no configura `DefaultBodyLimitLayer`. Un atacante puede enviar payloads gigantes. **Fix:** agregar `.layer(DefaultBodyLimitLayer::new(10 * 1024 * 1024))`.
+- [x] **S3 — API key default hardcodeada** — `config.rs:29` `"dev-key-change-in-production"` en 4 ubicaciones. **Fix:** auto-generar en primer arranque y persistir.
+- [x] **S4 — Sin body size limit** — `main.rs:117` no configura `DefaultBodyLimitLayer`. Un atacante puede enviar payloads gigantes. **Fix:** agregar `.layer(DefaultBodyLimitLayer::new(10 * 1024 * 1024))`.
 - [ ] **S5 — Device keys sin workshop_id** — `migrations/0004_device_keys.sql` no tiene `workshop_id`. IDOR entre talleres. **Fix:** agregar columna + filtrar queries.
-- [ ] **S6 — CORS excesivamente permisivo** — `main.rs:121-130` permite `Any` methods/headers. **Fix:** restringir a GET, POST, PUT, DELETE + headers específicos.
+- [x] **S6 — CORS excesivamente permisivo** — `main.rs:121-130` permite `Any` methods/headers. **Fix:** restringir a GET, POST, PUT, DELETE + headers específicos.
 - [ ] **S7 — Rate limiting solo en login** — `auth.rs:34` protege solo login. Falta en register y otros endpoints. **Fix:** agregar rate limiting por IP a nivel middleware.
-- [ ] **S8 — status endpoint re-parsea JWT** — `auth.rs:199` duplica validación JWT. **Fix:** usar `Extension<AuthenticatedUser>` como otros endpoints.
-- [ ] **S9 — Sin security headers** — Falta HSTS, X-Content-Type-Options, X-Frame-Options. **Fix:** agregar `SetResponseHeaderLayer`.
+- [x] **S8 — status endpoint re-parsea JWT** — `auth.rs:199` duplica validación JWT. **Fix:** usar `Extension<AuthenticatedUser>` como otros endpoints.
+- [x] **S9 — Sin security headers** — Falta HSTS, X-Content-Type-Options, X-Frame-Options. **Fix:** agregar `SetResponseHeaderLayer`.
 - [ ] **S10 — Sin token refresh/revocation** — JWT de 8 horas sin forma de invalidar. **Fix:** agregar token version en tabla users.
-- [ ] **S11 — Email validation débil** — `auth.rs:264` solo verifica `@` y `.`. **Fix:** usar regex `^[^\s@]+@[^\s@]+\.[^\s@]+$`.
+- [x] **S11 — Email validation débil** — `auth.rs:264` solo verifica `@` y `.`. **Fix:** usar regex `^[^\s@]+@[^\s@]+\.[^\s@]+$`.
 - [ ] **S12 — TLS key sin protección Windows** — `tls.rs:90-98` mismo issue que S2. **Fix:** DPAPI.
-- [ ] **S13 — JWT secret entropy** — `secrets.rs:25` usa `thread_rng()` en vez de `OsRng`. **Fix:** generar 32 bytes con `OsRng` + hex encode.
+- [x] **S13 — JWT secret entropy** — `secrets.rs:25` usa `thread_rng()` en vez de `OsRng`. **Fix:** generar 32 bytes con `OsRng` + hex encode.
 
 ### 🟠 CSS / DESIGN SYSTEM ( Prioridad: MEDIA-ALTA )
 
@@ -100,14 +100,16 @@
 ### Fase 1 — Seguridad (antes de producción)
 | # | Tarea | Archivos | Estado |
 |---|-------|----------|--------|
-| 1.1 | Hardening Argon2id (S1) | `auth.rs` | ⬜ |
-| 1.2 | Auto-generar API key (S3) | `config.rs`, `secrets.rs` | ⬜ |
-| 1.3 | DefaultBodyLimitLayer (S4) | `main.rs` | ⬜ |
+| 1.1 | Hardening Argon2id (S1) | `auth.rs` | ✅ |
+| 1.2 | Auto-generar API key (S3) | `config.rs` | ✅ |
+| 1.3 | DefaultBodyLimitLayer (S4) | `main.rs` | ✅ |
 | 1.4 | workshop_id en device_keys (S5) | `migrations/`, `device_key.rs`, `routes/device_keys.rs` | ⬜ |
-| 1.5 | Restringir CORS (S6) | `main.rs` | ⬜ |
-| 1.6 | Security headers (S9) | `main.rs` | ⬜ |
+| 1.5 | Restringir CORS (S6) | `main.rs` | ✅ |
+| 1.6 | Security headers (S9) | `main.rs` | ✅ |
 | 1.7 | Rate limiting extendido (S7) | `main.rs`, `middleware.rs` | ⬜ |
-| 1.8 | Refactor status endpoint (S8) | `routes/auth.rs` | ⬜ |
+| 1.8 | Refactor status endpoint (S8) | `routes/auth.rs` | ✅ |
+| 1.9 | Email validation regex (S11) | `routes/auth.rs` | ✅ |
+| 1.10 | JWT secret entropy (S13) | `secrets.rs` | ✅ |
 
 ### Fase 2 — CSS Design System
 | # | Tarea | Archivos | Estado |

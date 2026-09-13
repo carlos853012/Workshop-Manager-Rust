@@ -1,7 +1,10 @@
 use axum::{middleware as axum_middleware, routing::get, Router};
+use axum::http::{Method, header};
 use std::net::SocketAddr;
 use tokio::sync::oneshot;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowHeaders, CorsLayer};
+use tower_http::limit::RequestBodyLimitLayer;
+use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
 
 mod audit;
@@ -117,6 +120,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/health", get(health))
         .nest("/api", api)
+        .layer(RequestBodyLimitLayer::new(10 * 1024 * 1024)) // 10MB max body
         .layer(
             CorsLayer::new()
                 .allow_origin(tower_http::cors::AllowOrigin::list(vec![
@@ -125,9 +129,29 @@ async fn main() -> anyhow::Result<()> {
                     "http://127.0.0.1".parse().expect("valid CORS origin"),
                     "https://127.0.0.1".parse().expect("valid CORS origin"),
                 ]))
-                .allow_methods(tower_http::cors::Any)
-                .allow_headers(tower_http::cors::Any),
+                .allow_methods([
+                    Method::GET,
+                    Method::POST,
+                    Method::PUT,
+                    Method::DELETE,
+                ])
+                .allow_headers(AllowHeaders::list([
+                    header::AUTHORIZATION,
+                    header::CONTENT_TYPE,
+                ])),
         )
+        .layer(SetResponseHeaderLayer::overriding(
+            header::STRICT_TRANSPORT_SECURITY,
+            axum::http::HeaderValue::from_static("max-age=31536000; includeSubDomains"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            header::X_CONTENT_TYPE_OPTIONS,
+            axum::http::HeaderValue::from_static("nosniff"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            header::X_FRAME_OPTIONS,
+            axum::http::HeaderValue::from_static("DENY"),
+        ))
         .layer(TraceLayer::new_for_http())
         .with_state(state.clone());
 

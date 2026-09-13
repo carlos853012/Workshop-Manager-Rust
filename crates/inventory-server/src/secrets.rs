@@ -1,4 +1,5 @@
 use rand::Rng;
+use rand::rngs::OsRng;
 use std::path::Path;
 
 use super::state::Secrets;
@@ -21,18 +22,11 @@ fn load_or_generate_jwt_secret(data_dir: &Path) -> anyhow::Result<String> {
         return Ok(secret.trim().to_string());
     }
 
-    // Generar nuevo secreto
-    let mut rng = rand::thread_rng();
-    let secret: String = (0..64)
-        .map(|_| {
-            let idx = rng.gen_range(0..36);
-            if idx < 10 {
-                (b'0' + idx) as char
-            } else {
-                (b'a' + idx - 10) as char
-            }
-        })
-        .collect();
+    // Generar nuevo secreto con OsRng (CSPRNG) — 32 bytes hex = 64 chars
+    use rand::Fill;
+    let mut bytes = [0u8; 32];
+    bytes.try_fill(&mut OsRng).expect("OsRng should not fail");
+    let secret: String = bytes.iter().map(|b| format!("{:02x}", b)).collect();
 
     std::fs::write(&secret_path, &secret)?;
 
@@ -67,9 +61,9 @@ fn load_or_generate_crypto_key(data_dir: &Path) -> anyhow::Result<Vec<u8>> {
         }
     }
 
-    // Generar nueva clave
+    // Generar nueva clave con OsRng (CSPRNG)
     let mut key = vec![0u8; 32];
-    rand::thread_rng().fill(&mut key[..]);
+    OsRng.fill(&mut key[..]);
     std::fs::write(&key_path, &key)?;
 
     // Restringir permisos en Unix

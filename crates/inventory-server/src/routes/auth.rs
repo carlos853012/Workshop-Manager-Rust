@@ -1,6 +1,5 @@
 use axum::{
-    extract::State,
-    http::HeaderMap,
+    extract::{Extension, State},
     routing::{get, post},
     Json, Router,
 };
@@ -9,7 +8,7 @@ use inventory_common::UserRole;
 use inventory_common::{User, Workshop};
 use uuid::Uuid;
 
-use crate::auth::{self, Claims};
+use crate::auth;
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -198,17 +197,13 @@ async fn register(
 
 async fn status(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    Extension(auth_user): Extension<crate::middleware::AuthenticatedUser>,
 ) -> Result<Json<ApiResponse<User>>, AppError> {
-    let claims = extract_claims(&headers, &state.secrets.jwt_secret)?;
-
-    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| AppError::Unauthorized)?;
-
     let user: Option<User> = sqlx::query_as(
         "SELECT id, workshop_id, email, display_name, password_hash, role, status, created_at \
          FROM users WHERE id = $1 AND status = 'active'",
     )
-    .bind(user_id)
+    .bind(auth_user.id)
     .fetch_optional(&state.pool)
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
@@ -241,21 +236,6 @@ fn validate_workshop_field(value: &str, field: &str, max_length: usize) -> Resul
     Ok(())
 }
 
-fn extract_claims(headers: &HeaderMap, secret: &str) -> Result<Claims, AppError> {
-    let auth_header = headers
-        .get(axum::http::header::AUTHORIZATION)
-        .ok_or(AppError::Unauthorized)?;
-
-    let auth_value = auth_header.to_str().map_err(|_| AppError::Unauthorized)?;
-
-    if !auth_value.starts_with("Bearer ") {
-        return Err(AppError::Unauthorized);
-    }
-
-    let token = &auth_value[7..];
-    auth::validate_token(token, secret).map_err(|_| AppError::Unauthorized)
-}
-
 fn hide_password_hash(mut user: User) -> User {
     user.password_hash = String::new();
     user
@@ -266,6 +246,12 @@ fn validate_email(email: &str) -> Result<(), AppError> {
         return Err(AppError::Validation("Invalid email length".to_string()));
     }
     if !email.contains('@') || !email.contains('.') {
+        return Err(AppError::Validation("Invalid email format".to_string()));
+    }
+    // Basic regex: something@something.something
+    let re = regex::Regex::new(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+        .map_err(|e| AppError::Internal(format!("Regex error: {}", e)))?;
+    if !re.is_match(email) {
         return Err(AppError::Validation("Invalid email format".to_string()));
     }
     Ok(())
