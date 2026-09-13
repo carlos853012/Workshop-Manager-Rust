@@ -1,4 +1,4 @@
-pub mod connection_settings;
+pub mod server_settings;
 pub mod data_table;
 pub mod header;
 pub mod repair_form_modal;

@@ -23,7 +23,7 @@ pub fn DeviceKeys() -> Element {
     let loading = use_signal(|| false);
     let error = use_signal(|| None::<String>);
     let success = use_signal(|| None::<String>);
-    let mut refresh_token = use_signal(|| 0u32);
+    let mut refresh = use_signal(|| 0u32);
 
     let mut show_revoke_modal = use_signal(|| false);
     let mut revoking_key_id = use_signal(|| None::<uuid::Uuid>);
@@ -62,7 +62,7 @@ pub fn DeviceKeys() -> Element {
     };
 
     use_effect(move || {
-        let _ = refresh_token.read();
+        let _ = refresh.read();
         load_data();
     });
 
@@ -80,8 +80,8 @@ pub fn DeviceKeys() -> Element {
                         new_key_value_set.set(Some(key));
                         show_new_key_modal_set.set(true);
                         success_set.set(Some("Clave generada correctamente".to_string()));
-                        let current = *refresh_token.read();
-                        refresh_token.set(current + 1);
+                        let current = *refresh.read();
+                        refresh.set(current + 1);
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));
@@ -105,8 +105,8 @@ pub fn DeviceKeys() -> Element {
                         Ok(()) => {
                             success_set.set(Some("Clave revocada".to_string()));
                             show_revoke_modal_set.set(false);
-                            let current = *refresh_token.read();
-                            refresh_token.set(current + 1);
+                            let current = *refresh.read();
+                            refresh.set(current + 1);
                         }
                         Err(e) => {
                             error_set.set(Some(e.user_message().to_string()));
@@ -129,8 +129,8 @@ pub fn DeviceKeys() -> Element {
                 match client.unbind_device_key(key_id).await {
                     Ok(()) => {
                         success_set.set(Some("Clave desvinculada".to_string()));
-                        let current = *refresh_token.read();
-                        refresh_token.set(current + 1);
+                        let current = *refresh.read();
+                        refresh.set(current + 1);
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));

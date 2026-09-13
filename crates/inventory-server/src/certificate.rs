@@ -48,11 +48,11 @@ pub fn generate_certificate_pdf(cert: &ServiceCertificateResponse) -> Result<Vec
     let vehicle_desc = cert.vehicle.description.as_deref().unwrap_or("-");
     let plate = cert.vehicle.license_plate.as_deref().unwrap_or("-");
 
-    add_labeled_row(&mut info_table, "Cliente:", client_name);
-    add_labeled_row(&mut info_table, "Email:", client_email);
-    add_labeled_row(&mut info_table, "Telefono:", client_phone);
-    add_labeled_row(&mut info_table, "Vehiculo:", vehicle_desc);
-    add_labeled_row(&mut info_table, "Patente:", plate);
+    add_labeled_row(&mut info_table, "Cliente:", client_name)?;
+    add_labeled_row(&mut info_table, "Email:", client_email)?;
+    add_labeled_row(&mut info_table, "Telefono:", client_phone)?;
+    add_labeled_row(&mut info_table, "Vehiculo:", vehicle_desc)?;
+    add_labeled_row(&mut info_table, "Patente:", plate)?;
 
     doc.push(info_table);
 
@@ -65,7 +65,7 @@ pub fn generate_certificate_pdf(cert: &ServiceCertificateResponse) -> Result<Vec
         let mut svc_table = TableLayout::new(vec![3, 7]);
         svc_table.set_cell_decorator(FrameCellDecorator::new(true, true, false));
 
-        add_header_row(&mut svc_table, &["Fecha", "Descripcion / Diagnostico"]);
+        add_header_row(&mut svc_table, &["Fecha", "Descripcion / Diagnostico"])?;
 
         for svc in &cert.services {
             let date_str = svc.date.format("%d/%m/%Y").to_string();
@@ -75,7 +75,7 @@ pub fn generate_certificate_pdf(cert: &ServiceCertificateResponse) -> Result<Vec
                 (None, Some(diag)) => format!("Diagnostico: {}", diag),
                 (None, None) => "-".to_string(),
             };
-            add_data_row(&mut svc_table, &[&date_str, &desc]);
+            add_data_row(&mut svc_table, &[&date_str, &desc])?;
         }
 
         doc.push(svc_table);
@@ -92,7 +92,7 @@ pub fn generate_certificate_pdf(cert: &ServiceCertificateResponse) -> Result<Vec
         let mut parts_table = TableLayout::new(vec![4, 1, 5]);
         parts_table.set_cell_decorator(FrameCellDecorator::new(true, true, false));
 
-        add_header_row(&mut parts_table, &["Repuesto", "Cant.", "Observacion"]);
+        add_header_row(&mut parts_table, &["Repuesto", "Cant.", "Observacion"])?;
 
         for part in &cert.parts_used {
             let observation = match (&part.product_brand, &part.product_model, &part.product_sku) {
@@ -106,7 +106,7 @@ pub fn generate_certificate_pdf(cert: &ServiceCertificateResponse) -> Result<Vec
             };
 
             let qty_str = part.quantity.to_string();
-            add_data_row(&mut parts_table, &[&part.name, &qty_str, &observation]);
+            add_data_row(&mut parts_table, &[&part.name, &qty_str, &observation])?;
         }
 
         doc.push(parts_table);
@@ -131,27 +131,27 @@ pub fn generate_certificate_pdf(cert: &ServiceCertificateResponse) -> Result<Vec
     Ok(buf)
 }
 
-fn add_labeled_row(table: &mut TableLayout, label: &str, value: &str) {
+fn add_labeled_row(table: &mut TableLayout, label: &str, value: &str) -> Result<(), String> {
     table
         .row()
         .element(Paragraph::new(label).styled(Style::new().bold()))
         .element(Paragraph::new(value))
         .push()
-        .expect("Invalid table row");
+        .map_err(|e| format!("Table row error: {}", e))
 }
 
-fn add_header_row(table: &mut TableLayout, headers: &[&str]) {
+fn add_header_row(table: &mut TableLayout, headers: &[&str]) -> Result<(), String> {
     let mut row = table.row();
     for h in headers {
         row = row.element(Paragraph::new(*h).styled(Style::new().bold()));
     }
-    row.push().expect("Invalid table row");
+    row.push().map_err(|e| format!("Table row error: {}", e))
 }
 
-fn add_data_row(table: &mut TableLayout, values: &[&str]) {
+fn add_data_row(table: &mut TableLayout, values: &[&str]) -> Result<(), String> {
     let mut row = table.row();
     for v in values {
         row = row.element(Paragraph::new(*v).styled(Style::new().with_font_size(9)));
     }
-    row.push().expect("Invalid table row");
+    row.push().map_err(|e| format!("Table row error: {}", e))
 }

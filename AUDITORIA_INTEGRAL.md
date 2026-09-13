@@ -146,14 +146,14 @@
 ### Fase 4 — Limpieza
 | # | Tarea | Archivos | Estado |
 |---|-------|----------|--------|
-| 4.1 | Eliminar componentes muertos (Q1) | `badge.rs`, `tooltip.rs`, `form_group.rs` | ⬜ |
-| 4.2 | Eliminar `eprintln!` (Q2) | `repair_detail_modal.rs` | ⬜ |
+| 4.1 | Eliminar componentes muertos (Q1) | `badge.rs`, `tooltip.rs`, `form_group.rs` | ✅ |
+| 4.2 | Eliminar `eprintln!` (Q2) | `repair_detail_modal.rs` | ✅ |
 | 4.3 | Unificar signal mutabilidad (Q3) | 16 archivos | ⬜ |
-| 4.4 | Unificar refresh naming (Q4) | `device_keys.rs` | ⬜ |
+| 4.4 | Unificar refresh naming (Q4) | `device_keys.rs` | ✅ |
 | 4.5 | Unificar naming conventions (Q5) | Varios | ⬜ |
-| 4.6 | Renombrar archivos (Q6) | `connection_settings.rs` | ⬜ |
-| 4.7 | Eliminar dependencias sin usar (Q7) | `Cargo.toml` | ⬜ |
-| 4.8 | Reemplazar `expect()` en producción (Q8) | `certificate.rs` | ⬜ |
+| 4.6 | Renombrar archivos (Q6) | `connection_settings.rs` → `server_settings.rs` | ✅ |
+| 4.7 | Eliminar dependencias sin usar (Q7) | `Cargo.toml` | ✅ |
+| 4.8 | Reemplazar `expect()` en producción (Q8) | `certificate.rs` | ✅ |
 
 ---
 

@@ -5,7 +5,7 @@ use crate::api::ApiError;
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::components::atoms::input::Input;
-use crate::components::organisms::connection_settings::ConnectionSettingsButton;
+use crate::components::organisms::server_settings::ConnectionSettingsButton;
 use crate::routes::Route;
 
 #[component]
