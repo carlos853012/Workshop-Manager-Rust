@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub server: ServerSection,
+    #[serde(default)]
+    pub tax: TaxSection,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,12 +19,23 @@ pub struct ServerSection {
     pub require_device_key: bool,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TaxSection {
+    /// IVA rate as decimal fraction (e.g., 0.19 for 19%).
+    #[serde(default = "default_iva_rate")]
+    pub iva_rate: f64,
+}
+
 fn default_host() -> String {
     "127.0.0.1".to_string()
 }
 
 fn default_port() -> u16 {
     8443
+}
+
+fn default_iva_rate() -> f64 {
+    0.19
 }
 
 fn default_api_key() -> String {
@@ -43,6 +56,9 @@ impl Default for Config {
                 api_key: default_api_key(),
                 require_device_key: false,
             },
+            tax: TaxSection {
+                iva_rate: default_iva_rate(),
+            },
         }
     }
 }
@@ -58,6 +74,7 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
             port: config.server.port,
             api_key: config.server.api_key,
             require_device_key: config.server.require_device_key,
+            iva_rate: config.tax.iva_rate,
         }
     } else {
         let default_config = Config::default();
@@ -70,6 +87,7 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
             port: default_config.server.port,
             api_key: default_config.server.api_key,
             require_device_key: default_config.server.require_device_key,
+            iva_rate: default_config.tax.iva_rate,
         }
     };
 

@@ -24,6 +24,7 @@ pub struct ServerConfig {
     pub port: u16,
     pub api_key: String,
     pub require_device_key: bool,
+    pub iva_rate: f64,
 }
 
 impl FromRef<AppState> for Secrets {

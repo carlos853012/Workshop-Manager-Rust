@@ -1,9 +1,22 @@
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
+use std::sync::OnceLock;
 
-/// Tasa de IVA chilena vigente (19%).
+/// Default IVA rate: 19% (Chilean tax rate).
+const DEFAULT_IVA_RATE: (i64, u32) = (19, 2);
+
+static IVA_RATE: OnceLock<Decimal> = OnceLock::new();
+
+/// Returns the configured IVA rate. Defaults to 19% if not set.
+/// Call `set_iva_rate()` at application startup to override.
 pub fn iva_rate() -> Decimal {
-    Decimal::new(19, 2)
+    *IVA_RATE.get_or_init(|| Decimal::new(DEFAULT_IVA_RATE.0, DEFAULT_IVA_RATE.1))
+}
+
+/// Set the IVA rate at startup. Must be called before any IVA calculations.
+/// Rate is expressed as a decimal fraction (e.g., 0.19 for 19%).
+pub fn set_iva_rate(rate: Decimal) {
+    let _ = IVA_RATE.set(rate);
 }
 
 /// Calcula el IVA de un monto (monto * tasa IVA), redondeado a múltiplo de 10.
@@ -71,7 +84,18 @@ mod tests {
 
     #[test]
     fn test_iva_rate() {
-        assert_eq!(iva_rate(), Decimal::new(19, 2));
+        // Default rate should be 19%
+        let rate = iva_rate();
+        assert_eq!(rate, Decimal::new(19, 2));
+    }
+
+    #[test]
+    fn test_set_iva_rate_before_first_access() {
+        // OnceLock can only be set once per process; test that set_iva_rate
+        // is a no-op after the first access (iva_rate() already initialized it).
+        let before = iva_rate();
+        set_iva_rate(Decimal::new(21, 2)); // should be ignored
+        assert_eq!(iva_rate(), before); // still 19%
     }
 
     #[test]

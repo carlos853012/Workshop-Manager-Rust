@@ -38,10 +38,10 @@
 - [ ] **M-2** No hay DOWN migrations
 - [x] **M-3** Deadlock por orden de locks en ventas concurrentes
 - [ ] **M-4** Barcode con sufijo aleatorio — colisión ~40% con 1000 productos
-- [ ] **M-5** repair_parts no descuenta stock de products
+- [x] **M-5** repair_parts no descuenta stock de products
 - [x] **M-6** `create_repair` sin transacción
 - [x] **M-7** Viewer no hace logout en 401
-- [ ] **M-8** Enums decodificados como String en reports
+- [x] **M-8** Enums decodificados como String en reports
 - [x] **M-9** Descuentos sin validar rango — totales negativos posibles
 - [x] **M-10** Permisos archivos sensibles en Windows
 - [x] **M-11** `unwrap()`/`expect()` en producción
@@ -58,7 +58,7 @@
 - [ ] **B-3** Reescribir AGENTS.md al estado real
 - [ ] **B-4** Crear README.md
 - [ ] **B-5** Crear script de restore para backups
-- [ ] **B-6** Unificar IVA como config centralizada
+- [x] **B-6** Unificar IVA como config centralizada
 - [ ] **B-7** refresh token o TTL corto para JWT
 - [ ] **B-8** Anulación/devolución de ventas
 - [ ] **B-9** repair_parts vinculados a products

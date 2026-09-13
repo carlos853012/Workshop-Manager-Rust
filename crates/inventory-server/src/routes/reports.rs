@@ -6,6 +6,7 @@ use axum::{
     Extension, Json, Router,
 };
 use inventory_common::dto::ApiResponse;
+use inventory_common::{PaymentMethod, RepairStatus};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -78,7 +79,7 @@ struct ClientHistoryQuery {
 struct ClientSaleRecord {
     id: uuid::Uuid,
     total: Decimal,
-    payment_method: String,
+    payment_method: PaymentMethod,
     created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -86,7 +87,7 @@ struct ClientSaleRecord {
 struct ClientRepairRecord {
     id: uuid::Uuid,
     description: Option<String>,
-    status: String,
+    status: RepairStatus,
     total: Option<Decimal>,
     created_at: chrono::DateTime<chrono::Utc>,
 }
@@ -314,7 +315,7 @@ pub struct ServiceEntry {
     pub date: chrono::DateTime<chrono::Utc>,
     pub description: Option<String>,
     pub diagnosis: Option<String>,
-    pub status: String,
+    pub status: RepairStatus,
 }
 
 #[derive(Debug, Serialize)]

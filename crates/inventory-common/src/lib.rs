@@ -172,9 +172,10 @@ pub struct AuditLog {
 
 // ==================== ENUMS ====================
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, sqlx::Type)]
 #[sqlx(type_name = "payment_method", rename_all = "snake_case")]
 pub enum PaymentMethod {
+    #[default]
     Cash,
     Card,
     Transfer,
@@ -190,9 +191,10 @@ impl std::fmt::Display for PaymentMethod {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, sqlx::Type)]
 #[sqlx(type_name = "repair_status", rename_all = "snake_case")]
 pub enum RepairStatus {
+    #[default]
     Pending,
     InProgress,
     Completed,

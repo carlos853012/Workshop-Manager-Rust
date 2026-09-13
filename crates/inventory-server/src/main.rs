@@ -44,6 +44,12 @@ async fn main() -> anyhow::Result<()> {
     let config = config::load_config()?;
     tracing::info!("Config loaded");
 
+    // 2.1. Configure IVA rate from config
+    inventory_common::money::set_iva_rate(
+        rust_decimal::Decimal::try_from(config.iva_rate).unwrap_or(rust_decimal::Decimal::new(19, 2)),
+    );
+    tracing::info!("IVA rate configured: {}", config.iva_rate);
+
     // 3. Init secrets
     let data_dir = dirs::data_local_dir()
         .unwrap_or_else(|| {
