@@ -1,23 +1,34 @@
 //! Generador de icono RGBA para la aplicación WorkshopManager.
-//! Rasteriza el SVG del wrench (Heroicons) usando resvg sobre fondo azul redondeado.
+//! Rasteriza el SVG del wrench (Heroicons) usando resvg sobre fondo redondeado.
 
 use resvg::tiny_skia::Pixmap;
 use resvg::usvg;
 
-/// SVG del wrench (Heroicons outline, 24×24) con fill blanco.
-const WRENCH_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFFFFF">
+/// Genera un SVG string del wrench con el color de foreground dado.
+fn wrench_svg_with_color(fg: [u8; 3]) -> String {
+    format!(
+        r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#{:02X}{:02X}{:02X}">
   <path d="M14.7 6.3a4.5 4.5 0 0 0-5.9 5.9l-5.2 5.2a2.1 2.1 0 1 0 3 3l5.2-5.2a4.5 4.5 0 0 0 5.9-5.9l-2.8 2.8-2.1-.7-.7-2.1 2.6-3z"/>
-</svg>"##;
+</svg>"##,
+        fg[0], fg[1], fg[2]
+    )
+}
 
 /// Genera un icono RGBA de tamaño `size`×`size` píxeles.
-/// Fondo azul (#2563EB) con bordes redondeados y wrench blanco rasterizado desde el SVG.
-pub fn generate_wrench_icon(size: u32) -> Vec<u8> {
+/// Fondo con bordes redondeados y wrench rasterizado desde el SVG.
+pub fn generate_wrench_icon(size: u32, bg_color: [u8; 3], fg_color: [u8; 3]) -> Vec<u8> {
     let s = size as f64;
 
-    // 1. Renderizar el SVG del wrench a un pixmap del tamaño deseado
-    let wrench_pixels = render_svg_to_rgba(WRENCH_SVG, size, size);
+    let svg = wrench_svg_with_color(fg_color);
 
-    // 2. Construir el icono final: fondo azul + wrench encima
+    // 1. Renderizar el SVG del wrench a un pixmap del tamaño deseado
+    let wrench_pixels = render_svg_to_rgba(&svg, size, size);
+
+    let bg_r = bg_color[0] as f64;
+    let bg_g = bg_color[1] as f64;
+    let bg_b = bg_color[2] as f64;
+
+    // 2. Construir el icono final: fondo + wrench encima
     let mut pixels = Vec::with_capacity((size * size * 4) as usize);
 
     for y in 0..size {
@@ -38,13 +49,13 @@ pub fn generate_wrench_icon(size: u32) -> Vec<u8> {
                 if w_a > 0 {
                     // Wrench encima del fondo: mezclar
                     let alpha = w_a as f64 / 255.0;
-                    let r = (37.0 * (1.0 - alpha) + w_r as f64 * alpha) as u8;
-                    let g = (99.0 * (1.0 - alpha) + w_g as f64 * alpha) as u8;
-                    let b = (235.0 * (1.0 - alpha) + w_b as f64 * alpha) as u8;
+                    let r = (bg_r * (1.0 - alpha) + w_r as f64 * alpha) as u8;
+                    let g = (bg_g * (1.0 - alpha) + w_g as f64 * alpha) as u8;
+                    let b = (bg_b * (1.0 - alpha) + w_b as f64 * alpha) as u8;
                     pixels.extend_from_slice(&[r, g, b, 255]);
                 } else {
-                    // Solo fondo azul
-                    pixels.extend_from_slice(&[37, 99, 235, 255]);
+                    // Solo fondo
+                    pixels.extend_from_slice(&[bg_color[0], bg_color[1], bg_color[2], 255]);
                 }
             } else if w_a > 0 {
                 // Wrench fuera del fondo (no debería pasar, pero por si acaso)
@@ -56,6 +67,11 @@ pub fn generate_wrench_icon(size: u32) -> Vec<u8> {
         }
     }
     pixels
+}
+
+/// Genera el icono con los colores por defecto (fondo azul #2563EB, wrench blanco).
+pub fn generate_wrench_icon_default(size: u32) -> Vec<u8> {
+    generate_wrench_icon(size, [37, 99, 235], [255, 255, 255])
 }
 
 /// Rasteriza un SVG string a RGBA pixels en el tamaño dado.
@@ -94,25 +110,25 @@ mod tests {
 
     #[test]
     fn test_generate_icon_32() {
-        let pixels = generate_wrench_icon(32);
+        let pixels = generate_wrench_icon_default(32);
         assert_eq!(pixels.len(), 32 * 32 * 4);
     }
 
     #[test]
     fn test_generate_icon_16() {
-        let pixels = generate_wrench_icon(16);
+        let pixels = generate_wrench_icon_default(16);
         assert_eq!(pixels.len(), 16 * 16 * 4);
     }
 
     #[test]
     fn test_generate_icon_256() {
-        let pixels = generate_wrench_icon(256);
+        let pixels = generate_wrench_icon_default(256);
         assert_eq!(pixels.len(), 256 * 256 * 4);
     }
 
     #[test]
     fn test_background_corners_are_transparent() {
-        let pixels = generate_wrench_icon(32);
+        let pixels = generate_wrench_icon_default(32);
         let idx = ((1 * 32 + 1) * 4) as usize;
         assert_eq!(
             pixels[idx + 3],
@@ -123,7 +139,7 @@ mod tests {
 
     #[test]
     fn test_background_is_blue() {
-        let pixels = generate_wrench_icon(32);
+        let pixels = generate_wrench_icon_default(32);
         // Pixel (2,28) should be blue background (far from wrench, inside rounded rect)
         let idx = ((28 * 32 + 2) * 4) as usize;
         assert_eq!(pixels[idx], 37, "background R should be 37");
@@ -134,7 +150,7 @@ mod tests {
 
     #[test]
     fn test_wrench_pixels_are_not_all_transparent() {
-        let pixels = generate_wrench_icon(64);
+        let pixels = generate_wrench_icon_default(64);
         // At least some pixels should have alpha > 0 (wrench or background)
         let has_content = pixels.chunks(4).any(|p| p[3] > 0);
         assert!(has_content, "Icon should have some visible pixels");
@@ -142,7 +158,7 @@ mod tests {
 
     #[test]
     fn test_wrench_has_white_pixels() {
-        let pixels = generate_wrench_icon(64);
+        let pixels = generate_wrench_icon_default(64);
         // Some pixels should be white (the wrench itself)
         let has_white = pixels
             .chunks(4)
@@ -152,7 +168,19 @@ mod tests {
 
     #[test]
     fn test_render_svg_to_rgba_dimensions() {
-        let pixels = render_svg_to_rgba(WRENCH_SVG, 48, 48);
+        let svg = wrench_svg_with_color([255, 255, 255]);
+        let pixels = render_svg_to_rgba(&svg, 48, 48);
         assert_eq!(pixels.len(), 48 * 48 * 4);
+    }
+
+    #[test]
+    fn test_custom_colors() {
+        let pixels = generate_wrench_icon(32, [245, 158, 11], [30, 33, 38]);
+        // Pixel (2,28) should be the custom amber background
+        let idx = ((28 * 32 + 2) * 4) as usize;
+        assert_eq!(pixels[idx], 245, "background R should be 245 (amber)");
+        assert_eq!(pixels[idx + 1], 158, "background G should be 158");
+        assert_eq!(pixels[idx + 2], 11, "background B should be 11");
+        assert_eq!(pixels[idx + 3], 255, "background A should be 255");
     }
 }

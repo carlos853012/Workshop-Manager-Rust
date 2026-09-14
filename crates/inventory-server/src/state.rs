@@ -25,6 +25,8 @@ pub struct ServerConfig {
     pub api_key: String,
     pub require_device_key: bool,
     pub iva_rate: f64,
+    pub icon_bg: [u8; 3],
+    pub icon_fg: [u8; 3],
 }
 
 impl FromRef<AppState> for Secrets {

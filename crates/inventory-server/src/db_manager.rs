@@ -67,7 +67,7 @@ impl DbManager {
     }
 
     /// Retorna el connection string si el servidor ya fue iniciado.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub fn database_url(&self) -> Option<&str> {
         self.database_url.as_deref()
     }
@@ -78,7 +78,7 @@ impl DbManager {
     }
 
     /// Retorna el nombre de la base de datos gestionada.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub fn database_name(&self) -> &str {
         &self.database_name
     }

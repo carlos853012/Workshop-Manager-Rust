@@ -5,6 +5,8 @@ pub struct Config {
     pub server: ServerSection,
     #[serde(default)]
     pub tax: TaxSection,
+    #[serde(default)]
+    pub icon: IconSection,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,6 +28,25 @@ pub struct TaxSection {
     pub iva_rate: f64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IconSection {
+    /// Background color as hex string (e.g., "#F59E0B").
+    #[serde(default = "default_icon_bg")]
+    pub bg: String,
+    /// Foreground (wrench) color as hex string (e.g., "#FFFFFF").
+    #[serde(default = "default_icon_fg")]
+    pub fg: String,
+}
+
+impl Default for IconSection {
+    fn default() -> Self {
+        Self {
+            bg: default_icon_bg(),
+            fg: default_icon_fg(),
+        }
+    }
+}
+
 fn default_host() -> String {
     "127.0.0.1".to_string()
 }
@@ -36,6 +57,14 @@ fn default_port() -> u16 {
 
 fn default_iva_rate() -> f64 {
     0.19
+}
+
+fn default_icon_bg() -> String {
+    "#F59E0B".to_string()
+}
+
+fn default_icon_fg() -> String {
+    "#FFFFFF".to_string()
 }
 
 fn default_api_key() -> String {
@@ -59,6 +88,7 @@ impl Default for Config {
             tax: TaxSection {
                 iva_rate: default_iva_rate(),
             },
+            icon: IconSection::default(),
         }
     }
 }
@@ -75,6 +105,8 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
             api_key: config.server.api_key,
             require_device_key: config.server.require_device_key,
             iva_rate: config.tax.iva_rate,
+            icon_bg: parse_hex_color(&config.icon.bg),
+            icon_fg: parse_hex_color(&config.icon.fg),
         }
     } else {
         let default_config = Config::default();
@@ -88,6 +120,8 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
             api_key: default_config.server.api_key,
             require_device_key: default_config.server.require_device_key,
             iva_rate: default_config.tax.iva_rate,
+            icon_bg: parse_hex_color(&default_config.icon.bg),
+            icon_fg: parse_hex_color(&default_config.icon.fg),
         }
     };
 
@@ -99,4 +133,25 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
     }
 
     Ok(server_config)
+}
+
+/// Parse a hex color string like "#F59E0B" or "#fff" into [u8; 3] RGB.
+/// Falls back to defaults on invalid input.
+fn parse_hex_color(hex: &str) -> [u8; 3] {
+    let hex = hex.trim_start_matches('#');
+    match hex.len() {
+        6 => {
+            let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0xF5);
+            let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0x9E);
+            let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0x0B);
+            [r, g, b]
+        }
+        3 => {
+            let r = u8::from_str_radix(&hex[0..1], 16).unwrap_or(0xF);
+            let g = u8::from_str_radix(&hex[1..2], 16).unwrap_or(0x9);
+            let b = u8::from_str_radix(&hex[2..3], 16).unwrap_or(0xB);
+            [r * 17, g * 17, b * 17]
+        }
+        _ => [0xF5, 0x9E, 0x0B],
+    }
 }

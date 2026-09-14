@@ -237,7 +237,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: var(--space-md) var(--space-lg);
-  background-color: var(--surface);
+  background-color: var(--nav-bg);
   border-bottom: 1px solid var(--border);
 }
 
@@ -251,12 +251,14 @@ body {
 .header-title {
   font-size: var(--font-size-xl);
   font-weight: 600;
+  color: var(--nav-text);
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  color: var(--nav-text);
 }
 
 .tabs {
@@ -385,7 +387,7 @@ body {
 .sidebar {
   width: 220px;
   flex-shrink: 0;
-  background-color: var(--surface);
+  background-color: var(--nav-bg);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -441,6 +443,7 @@ body {
   border-bottom: 1px solid var(--border);
   font-size: var(--font-size-lg);
   font-weight: 600;
+  color: var(--nav-text);
 }
 
 .sidebar-user {
@@ -483,13 +486,13 @@ body {
 .workshop-city,
 .user-name,
 .user-role {
-  color: var(--text-muted);
+  color: var(--nav-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 400;
 }
 
 .user-email {
-  color: var(--text-muted);
+  color: var(--nav-text-muted);
   font-size: var(--font-size-xs);
   font-weight: 400;
 }
@@ -504,7 +507,7 @@ body {
   display: block;
   margin-top: var(--space-xs);
   text-align: center;
-  color: var(--text-muted);
+  color: var(--nav-text-muted);
   font-size: var(--font-size-xs);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -585,14 +588,14 @@ body {
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);
-  color: var(--text);
+  color: var(--nav-text);
   text-decoration: none;
   transition: background-color 0.15s ease;
 }
 
 .sidebar-link:hover,
 .sidebar-link.active {
-  background-color: var(--surface-hover);
+  background-color: var(--nav-hover);
   color: var(--primary);
 }
 

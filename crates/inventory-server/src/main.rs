@@ -180,7 +180,8 @@ async fn main() -> anyhow::Result<()> {
     {
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
         let tray_pool = state.pool.clone();
-        std::thread::spawn(move || tray::run(shutdown_tx, tray_pool));
+        let tray_config = state.config.clone();
+        std::thread::spawn(move || tray::run(shutdown_tx, tray_pool, tray_config));
         let ctrl_c = tokio::signal::ctrl_c();
         tokio::select! {
             _ = shutdown_rx => {}

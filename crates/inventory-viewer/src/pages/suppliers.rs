@@ -120,7 +120,7 @@ pub fn Suppliers() -> Element {
             }
             Card {
                 title: "Listado de proveedores".to_string(),
-                footer: rsx! {
+                header_action: rsx! {
                     Button {
                         variant: ButtonVariant::Primary,
                         onclick: move |_| show_modal.set(true),

@@ -14,11 +14,34 @@ use dioxus_router::prelude::*;
 
 use crate::app_state::{AuthProvider, TabsProvider};
 use crate::routes::Route;
-use crate::theme::ThemeProvider;
+use crate::theme::{DesignTokens, ThemeProvider};
+
+/// Parsea un hex color "#RRGGBB" a [u8; 3].
+fn parse_hex_to_rgb(hex: &str) -> [u8; 3] {
+    let hex = hex.trim_start_matches('#');
+    match hex.len() {
+        6 => {
+            let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
+            let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
+            let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
+            [r, g, b]
+        }
+        3 => {
+            let r = u8::from_str_radix(&hex[0..1], 16).unwrap_or(0);
+            let g = u8::from_str_radix(&hex[1..2], 16).unwrap_or(0);
+            let b = u8::from_str_radix(&hex[2..3], 16).unwrap_or(0);
+            [r * 17, g * 17, b * 17]
+        }
+        _ => [0xF5, 0x9E, 0x0B],
+    }
+}
 
 fn main() {
     let icon = {
-        let pixels = inventory_common::icon_data::generate_wrench_icon(32);
+        let tokens = DesignTokens::light();
+        let bg = parse_hex_to_rgb(&tokens.colors.icon_bg);
+        let fg = parse_hex_to_rgb(&tokens.colors.icon_fg);
+        let pixels = inventory_common::icon_data::generate_wrench_icon(32, bg, fg);
         dioxus_desktop::tao::window::Icon::from_rgba(pixels, 32, 32)
             .expect("Failed to create window icon")
     };

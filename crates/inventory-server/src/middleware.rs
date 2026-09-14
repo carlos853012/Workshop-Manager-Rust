@@ -2,7 +2,7 @@ use axum::{
     extract::{Request, State},
     http::StatusCode,
     middleware::Next,
-    response::{IntoResponse, Response},
+    response::Response,
 };
 use inventory_common::UserRole;
 
@@ -105,23 +105,6 @@ fn extract_bearer_token(request: &Request) -> Result<&str, StatusCode> {
     auth_value
         .strip_prefix("Bearer ")
         .ok_or(StatusCode::UNAUTHORIZED)
-}
-
-/// Respuesta de error para middleware.
-#[allow(dead_code)]
-struct AuthError {
-    status: StatusCode,
-    message: &'static str,
-}
-
-impl IntoResponse for AuthError {
-    fn into_response(self) -> Response {
-        let body = serde_json::json!({
-            "success": false,
-            "error": self.message,
-        });
-        (self.status, axum::Json(body)).into_response()
-    }
 }
 
 #[cfg(test)]

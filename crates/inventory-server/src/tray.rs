@@ -69,13 +69,14 @@ fn set_autostart(enabled: bool) -> Result<(), String> {
 }
 
 #[allow(dead_code)]
-fn tray_icon() -> Result<Icon, String> {
-    let pixels = inventory_common::icon_data::generate_wrench_icon(32);
+fn tray_icon(config: &super::state::ServerConfig) -> Result<Icon, String> {
+    let pixels =
+        inventory_common::icon_data::generate_wrench_icon(32, config.icon_bg, config.icon_fg);
     Icon::from_rgba(pixels, 32, 32).map_err(|error| format!("No se pudo crear el icono: {error}"))
 }
 
 #[allow(dead_code)]
-pub fn run(shutdown_tx: Sender<()>, pool: PgPool) {
+pub fn run(shutdown_tx: Sender<()>, pool: PgPool, config: super::state::ServerConfig) {
     let mut event_loop_builder = EventLoopBuilder::<TrayEvent>::with_user_event();
     event_loop_builder.with_any_thread(true);
     let event_loop = event_loop_builder.build();
@@ -105,7 +106,7 @@ pub fn run(shutdown_tx: Sender<()>, pool: PgPool) {
         return;
     }
 
-    let icon = match tray_icon() {
+    let icon = match tray_icon(&config) {
         Ok(icon) => icon,
         Err(error) => {
             tracing::error!(%error, "No se pudo crear el icono del tray");
