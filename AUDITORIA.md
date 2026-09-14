@@ -67,5 +67,5 @@
 ## 📦 DEPENDENCIAS
 
 - [ ] **D-1** Upgrade sqlx 0.7.4 → 0.8.1+ (RUSTSEC-2024-0363)
-- [ ] **D-2** Evaluar webbrowser 0.8.15 → 1.2.2+ (RUSTSEC-2026-0257)
+- [x] **D-2** Evaluar webbrowser 0.8.15 → 1.2.2+ (RUSTSEC-2026-0257) — **N/A**: dependencia transitiva de `dioxus-desktop`, no controlada por el proyecto
 - [ ] **D-3** Evaluar rsa 0.9.10 (sin fix disponible)
