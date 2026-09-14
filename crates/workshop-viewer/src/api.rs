@@ -5,7 +5,7 @@ use workshop_common::dto::{
     LoginResponse, PaginatedResponse, PosProductResponse, RegisterRequest, RepairDetail,
     RepairPartResponse, SaleDetailResponse, UpdateRepairRequest, UpdateUserRequest,
 };
-use workshop_common::{Product, Repair, Sale, Supplier, User};
+use workshop_common::{AuditLog, Product, Repair, Sale, Supplier, User};
 use serde::{Deserialize, Serialize};
 
 const DEFAULT_TIMEOUT_SECONDS: u64 = 60;
@@ -238,6 +238,11 @@ impl ApiClient {
         self.post("/api/sales", request).await
     }
 
+    /// POST /api/sales/:id/cancel
+    pub async fn cancel_sale(&self, id: uuid::Uuid) -> Result<Sale, ApiError> {
+        self.post(&format!("/api/sales/{}/cancel", id), &()).await
+    }
+
     /// POST /api/repairs
     pub async fn create_repair(&self, request: &CreateRepairRequest) -> Result<Repair, ApiError> {
         self.post("/api/repairs", request).await
@@ -464,6 +469,22 @@ impl ApiClient {
         self.post(
             &format!("/api/device-keys/{}/unbind", id),
             &serde_json::json!({}),
+        )
+        .await
+    }
+
+    /// GET /api/audit
+    pub async fn list_audit_logs(
+        &self,
+        page: i32,
+        per_page: i32,
+    ) -> Result<PaginatedResponse<AuditLog>, ApiError> {
+        self.get_with_query(
+            "/api/audit",
+            &[
+                ("page", page.to_string()),
+                ("per_page", per_page.to_string()),
+            ],
         )
         .await
     }

@@ -1,6 +1,6 @@
 use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair};
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
 const CERT_FILE: &str = "server.crt";
@@ -122,12 +122,6 @@ pub fn create_axum_rustls_config(
     Ok(axum_server::tls_rustls::RustlsConfig::from_config(
         rustls_config,
     ))
-}
-
-/// Retorna la ruta del certificado TLS para que el viewer pueda validarla.
-#[allow(dead_code)]
-pub fn cert_path(data_dir: &Path) -> PathBuf {
-    data_dir.join(CERT_FILE)
 }
 
 #[cfg(test)]

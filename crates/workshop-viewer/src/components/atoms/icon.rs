@@ -17,11 +17,4 @@ pub fn Icon(
     }
 }
 
-/// Helper para envolver paths SVG heroicons.
-#[allow(dead_code)]
-pub fn svg_wrapper(paths: &str) -> String {
-    format!(
-        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="100%" height="100%">{}</svg>"#,
-        paths
-    )
-}
+

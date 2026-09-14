@@ -8,8 +8,11 @@ use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::molecules::confirm_modal::ConfirmModal;
 use crate::components::molecules::modal::Modal;
+use crate::components::organisms::data_table::{Column, DataTable};
+use crate::icons::IconName;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
+use std::rc::Rc;
 
 #[component]
 pub fn DeviceKeys() -> Element {
@@ -22,7 +25,6 @@ pub fn DeviceKeys() -> Element {
     let keys = use_signal(Vec::<DeviceKeySummary>::new);
     let loading = use_signal(|| false);
     let error = use_signal(|| None::<String>);
-    let success = use_signal(|| None::<String>);
     let mut refresh = use_signal(|| 0u32);
 
     let mut show_revoke_modal = use_signal(|| false);
@@ -69,7 +71,6 @@ pub fn DeviceKeys() -> Element {
     let on_generate = move |_| {
         let client = auth.api_client();
         let mut error_set = error;
-        let mut success_set = success;
         let mut new_key_value_set = new_key_value;
         let mut show_new_key_modal_set = show_new_key_modal;
 
@@ -79,7 +80,6 @@ pub fn DeviceKeys() -> Element {
                     Ok(key) => {
                         new_key_value_set.set(Some(key));
                         show_new_key_modal_set.set(true);
-                        success_set.set(Some("Clave generada correctamente".to_string()));
                         let current = *refresh.read();
                         refresh.set(current + 1);
                     }
@@ -95,7 +95,6 @@ pub fn DeviceKeys() -> Element {
         let client = auth.api_client();
         let key_id = *revoking_key_id.read();
         let mut error_set = error;
-        let mut success_set = success;
         let mut show_revoke_modal_set = show_revoke_modal;
 
         if let Some(id) = key_id {
@@ -103,7 +102,6 @@ pub fn DeviceKeys() -> Element {
                 if let Some(client) = client {
                     match client.revoke_device_key(id).await {
                         Ok(()) => {
-                            success_set.set(Some("Clave revocada".to_string()));
                             show_revoke_modal_set.set(false);
                             let current = *refresh.read();
                             refresh.set(current + 1);
@@ -122,13 +120,11 @@ pub fn DeviceKeys() -> Element {
     let on_unbind = move |key_id: uuid::Uuid| {
         let client = auth.api_client();
         let mut error_set = error;
-        let mut success_set = success;
 
         spawn(async move {
             if let Some(client) = client {
                 match client.unbind_device_key(key_id).await {
                     Ok(()) => {
-                        success_set.set(Some("Clave desvinculada".to_string()));
                         let current = *refresh.read();
                         refresh.set(current + 1);
                     }
@@ -140,10 +136,94 @@ pub fn DeviceKeys() -> Element {
         });
     };
 
-    let keys_snapshot = keys.read().clone();
-    let is_loading = *loading.read();
+    let columns: Vec<Column<DeviceKeySummary>> = vec![
+        Column {
+            key: "id".to_string(),
+            header: "ID".to_string(),
+            render: Rc::new(|dk: &DeviceKeySummary| {
+                let id_str = dk.id.to_string();
+                rsx! { span { class: "text-mono text-xs", "{id_str}" } }
+            }),
+        },
+        Column {
+            key: "ip".to_string(),
+            header: "IP Vinculada".to_string(),
+            render: Rc::new(|dk: &DeviceKeySummary| {
+                let ip = dk.bound_ip.as_deref().unwrap_or("—");
+                rsx! { span { class: "text-muted", "{ip}" } }
+            }),
+        },
+        Column {
+            key: "status".to_string(),
+            header: "Estado".to_string(),
+            render: Rc::new(|dk: &DeviceKeySummary| {
+                if dk.active {
+                    rsx! { span { class: "text-success", "Activa" } }
+                } else {
+                    rsx! { span { class: "text-danger", "Revocada" } }
+                }
+            }),
+        },
+        Column {
+            key: "created".to_string(),
+            header: "Creada".to_string(),
+            render: Rc::new(|dk: &DeviceKeySummary| {
+                let ts = dk.created_at.format("%d/%m/%Y %H:%M").to_string();
+                rsx! { span { class: "text-muted", "{ts}" } }
+            }),
+        },
+        Column {
+            key: "last_seen".to_string(),
+            header: "Último uso".to_string(),
+            render: Rc::new(|dk: &DeviceKeySummary| {
+                let ts = match dk.last_seen_at {
+                    Some(dt) => dt.format("%d/%m/%Y %H:%M").to_string(),
+                    None => "—".to_string(),
+                };
+                rsx! { span { class: "text-muted", "{ts}" } }
+            }),
+        },
+        Column {
+            key: "actions".to_string(),
+            header: String::new(),
+            render: {
+                Rc::new(move |dk: &DeviceKeySummary| {
+                    rsx! {
+                        div { class: "table-actions",
+                            if dk.active {
+                                button {
+                                    class: "btn-icon btn-danger",
+                                    title: "Revocar",
+                                    onclick: {
+                                        let key_id = dk.id;
+                                        move |_| {
+                                            revoking_key_id.set(Some(key_id));
+                                            show_revoke_modal.set(true);
+                                        }
+                                    },
+                                    {IconName::Ban.render()}
+                                }
+                            }
+                            if dk.active && dk.bound_ip.is_some() {
+                                button {
+                                    class: "btn-icon btn-edit",
+                                    title: "Desvincular",
+                                    onclick: {
+                                        let key_id = dk.id;
+                                        move |_| on_unbind(key_id)
+                                    },
+                                    {IconName::Unlink.render()}
+                                }
+                            }
+                        }
+                    }
+                })
+            },
+        },
+    ];
+
+    let rows = keys.read().clone();
     let err_snapshot = error.read().clone();
-    let success_snapshot = success.read().clone();
     let show_revoke = *show_revoke_modal.read();
     let show_new_key = *show_new_key_modal.read();
     let new_key_snapshot = new_key_value.read().clone();
@@ -157,55 +237,22 @@ pub fn DeviceKeys() -> Element {
             if err_snapshot.is_some() {
                 div { class: "alert alert-danger mb-md", "{err_snapshot.as_deref().unwrap_or_default()}" }
             }
-            if success_snapshot.is_some() {
-                div { class: "alert alert-success", "{success_snapshot.as_deref().unwrap_or_default()}" }
-            }
-
-            div { class: "flex justify-end mb-4",
-                Button {
-                    variant: ButtonVariant::Primary,
-                    onclick: on_generate,
-                    "Generar Clave"
-                }
-            }
 
             Card {
-                if is_loading {
+                title: "Claves de Dispositivo".to_string(),
+                header_action: rsx! {
+                    Button {
+                        variant: ButtonVariant::Primary,
+                        onclick: on_generate,
+                        "Generar Clave"
+                    }
+                },
+                if *loading.read() {
                     div { class: "empty-state", Spinner {} }
-                } else if keys_snapshot.is_empty() {
-                    div { class: "empty-state", "No hay claves de dispositivo registradas" }
                 } else {
-                    div { class: "data-table-wrapper",
-                        table { class: "data-table",
-                            thead {
-                                tr {
-                                    th { "ID" }
-                                    th { "IP Vinculada" }
-                                    th { "Estado" }
-                                    th { "Creada" }
-                                    th { "Último uso" }
-                                    th { "Acciones" }
-                                }
-                            }
-                            tbody {
-                                for dk in keys_snapshot.iter() {
-                                    KeyRow {
-                                        device_key: dk.clone(),
-                                        on_revoke: {
-                                            let key_id = dk.id;
-                                            move |_| {
-                                                revoking_key_id.set(Some(key_id));
-                                                show_revoke_modal.set(true);
-                                            }
-                                        },
-                                        on_unbind: {
-                                            let key_id = dk.id;
-                                            move |_| on_unbind(key_id)
-                                        },
-                                    }
-                                }
-                            }
-                        }
+                    DataTable {
+                        columns: columns.clone(),
+                        rows: rows.clone(),
                     }
                 }
             }
@@ -244,49 +291,6 @@ pub fn DeviceKeys() -> Element {
                         class: "input",
                         value: "{new_key_display}",
                         readonly: true,
-                    }
-                }
-            }
-        }
-    }
-}
-
-#[component]
-fn KeyRow(
-    device_key: DeviceKeySummary,
-    on_revoke: EventHandler<MouseEvent>,
-    on_unbind: EventHandler<MouseEvent>,
-) -> Element {
-    let id_str = device_key.id.to_string();
-    let is_active = device_key.active;
-    let has_ip = device_key.bound_ip.is_some();
-    let created_str = device_key.created_at.format("%d/%m/%Y %H:%M").to_string();
-    let last_seen_str = match device_key.last_seen_at {
-        Some(dt) => dt.format("%d/%m/%Y %H:%M").to_string(),
-        None => "—".to_string(),
-    };
-    let ip_str = device_key.bound_ip.unwrap_or_else(|| "—".to_string());
-
-    rsx! {
-        tr {
-            td { span { class: "text-mono text-xs", "{id_str}" } }
-            td { span { class: "text-muted", "{ip_str}" } }
-            td {
-                if is_active {
-                    span { class: "text-success", "Activa" }
-                } else {
-                    span { class: "text-danger", "Revocada" }
-                }
-            }
-            td { span { class: "text-muted", "{created_str}" } }
-            td { span { class: "text-muted", "{last_seen_str}" } }
-            td {
-                div { class: "flex gap-2",
-                    if is_active {
-                        Button { variant: ButtonVariant::Danger, onclick: on_revoke, "Revocar" }
-                    }
-                    if has_ip && is_active {
-                        Button { variant: ButtonVariant::Secondary, onclick: on_unbind, "Desvincular" }
                     }
                 }
             }

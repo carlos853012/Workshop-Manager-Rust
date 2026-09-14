@@ -100,7 +100,7 @@ workshop-manager/
 │   │       ├── money.rs           # Lógica monetaria
 │   │       └── patente.rs         # Validación patentes
 │   ├── workshop-server/          # Backend
-│   │   ├── migrations/            # Migraciones SQL (8 archivos)
+│   │   ├── migrations/            # Migraciones SQL (10 archivos)
 │   │   └── src/
 │   │       ├── main.rs
 │   │       ├── auth.rs            # JWT + Argon2id
@@ -118,9 +118,9 @@ workshop-manager/
 │           ├── api.rs             # Cliente HTTP
 │           ├── pages/             # 13 páginas
 │           └── components/        # Atomic Design
-│               ├── atoms/         # Button, Input, Badge, Icon, Spinner
-│               ├── molecules/     # Card, Modal, FormGroup, Tooltip
-│               └── organisms/     # Header, DataTable, ConnectionSettings
+│               ├── atoms/         # Button, Input, Icon, Spinner
+│               ├── molecules/     # Card, Modal, ConfirmModal
+│               └── organisms/     # Header, DataTable, ServerSettings
 ├── scripts/
 │   └── bump.ps1                   # Versionado semántico
 └── .github/workflows/

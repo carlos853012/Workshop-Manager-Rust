@@ -1,4 +1,4 @@
-use workshop_common::{PaymentMethod, RepairStatus, UserRole};
+use workshop_common::{PaymentMethod, UserRole};
 
 pub fn translate_payment(method: &PaymentMethod) -> &'static str {
     match method {
@@ -15,26 +15,6 @@ pub fn translate_sale_status(status: &str) -> String {
         "cancelled" => "Cancelada".to_string(),
         "refunded" => "Reembolsada".to_string(),
         other => other.to_string(),
-    }
-}
-
-#[allow(dead_code)]
-pub fn translate_repair_status(status: &RepairStatus) -> &'static str {
-    match status {
-        RepairStatus::Pending => "Pendiente",
-        RepairStatus::InProgress => "En Progreso",
-        RepairStatus::Completed => "Completado",
-        RepairStatus::Cancelled => "Cancelado",
-        RepairStatus::Deleted => "Eliminado",
-    }
-}
-
-#[allow(dead_code)]
-pub fn translate_priority(priority: &workshop_common::Priority) -> &'static str {
-    match priority {
-        workshop_common::Priority::High => "Alta",
-        workshop_common::Priority::Medium => "Media",
-        workshop_common::Priority::Low => "Baja",
     }
 }
 

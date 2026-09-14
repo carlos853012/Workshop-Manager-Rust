@@ -7,7 +7,7 @@ use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-const TOKEN_DURATION_HOURS: i64 = 8;
+const TOKEN_DURATION_HOURS: i64 = 24;
 
 /// Parámetros Argon2id hardening (OWASP: 64MB+ memoria, 3 iteraciones, 4 paralelismo).
 fn argon2_params() -> Argon2<'static> {

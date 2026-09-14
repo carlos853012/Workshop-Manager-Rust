@@ -3,6 +3,7 @@ use axum::Router;
 use crate::state::AppState;
 
 mod analytics;
+mod audit;
 mod auth;
 mod device_keys;
 pub(crate) mod pagination;
@@ -35,4 +36,5 @@ pub fn admin_routes() -> Router<AppState> {
     Router::new()
         .nest("/users", users::routes())
         .nest("/device-keys", device_keys::routes())
+        .nest("/audit", audit::routes())
 }

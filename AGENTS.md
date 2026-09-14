@@ -1,11 +1,11 @@
 # AGENTS.md — WorkshopManager
 
 ## Project status
-**Version 0.1.0** — Phases 1-4 of audit complete. All critical/high items resolved. 83 tests passing, clippy clean. Domain: motorcycle workshop (products, sales, repairs, suppliers).
+**Version 0.1.0** — All critical/high audit items resolved. 84 tests passing, clippy clean. Domain: motorcycle workshop (products, sales, repairs, suppliers).
 
 ## Workspace structure
 3 crates in a Cargo workspace:
-- `crates/workshop-common` — shared types (Product, Sale, SaleItem, Repair, Supplier, User, AuditLog, Workshop), enums (PaymentMethod, RepairStatus, Priority, UserRole), DTOs, licensing (Ed25519 hardware-bound), money logic (IVA configurable), patent validation
+- `crates/workshop-common` — shared types (Product, Sale, SaleItem, Repair, Supplier, User, AuditLog, Workshop), enums (PaymentMethod, RepairStatus, Priority, UserRole), DTOs, licensing (Ed25519 hardware-bound), money logic (IVA configurable), patent validation, configurable icon generation
 - `crates/workshop-server` — Axum 0.7 backend on `:8443`, full DB (PostgreSQL embedded + 10 migrations), TLS, JWT auth, audit, backup, rate limiter, device keys, barcode generation
 - `crates/workshop-viewer` — Dioxus 0.6 Desktop, 13 pages, routing, Atomic Design components (atoms/molecules/organisms), theme system, API client
 
@@ -19,7 +19,7 @@ cargo build -p workshop-viewer            # viewer only
 cargo check -p workshop-viewer            # fast verify
 cargo clippy --workspace -- -D warnings    # linter
 cargo fmt --all --check                    # format check
-cargo test --workspace                     # tests (83 total)
+cargo test --workspace                     # tests (84 total)
 ```
 
 ## Version bump
@@ -36,7 +36,7 @@ License: `Feature` enum (16 features across 4 tiers), `License` struct with Ed25
 
 ## Server architecture
 - Entrypoint: `crates/workshop-server/src/main.rs`
-- Config: `config/server.toml` (TOML, host/port/api_key/require_device_key/tax.iva_rate)
+- Config: `config/server.toml` (TOML, host/port/api_key/require_device_key/tax.iva_rate/icon.bg/icon.fg)
 - Secrets: generated/persisted at `dirs::data_local_dir()/WorkshopManager/data/` (.jwt_secret, .crypto_key, .postgres_password)
 - Crypto: AES-256-GCM via `crypto::init()` with `OnceLock` (no `unsafe`)
 - Auth: JWT HS256 (8h) + Argon2id (64MB, 3 iter, 4 parallelism); middleware `api_key` → `device_key` → `authenticate` → `require_admin`
@@ -48,6 +48,7 @@ License: `Feature` enum (16 features across 4 tiers), `License` struct with Ed25
 - CORS: localhost only, GET/POST/PUT/DELETE, Authorization + Content-Type headers
 - Body limit: 10MB via `RequestBodyLimitLayer`
 - IVA: configurable via `[tax] iva_rate` in server.toml (default 0.19)
+- Icon colors: configurable via `[icon] bg` and `[icon] fg` in server.toml (hex strings)
 - Audit: `audit::log_change()` inserta en `audit_log` con redacción de credenciales
 - Backup: scheduler automático cada 24h vía `pg_dump` + gzip, retención de 7 días
 - Rate limiter: 5 attempts / 300s per email on login
@@ -60,7 +61,8 @@ License: `Feature` enum (16 features across 4 tiers), `License` struct with Ed25
 - CSS inlined at compile time via `include_str!("../index.css")` — **rebuild to see CSS changes**
 - Routing: `dioxus-router` with 13 pages (Root, Login, Setup, Dashboard, Products, POS, Sales, Repairs, Suppliers, Reports, ServiceCertificate, Users, DeviceKeys)
 - Components: Atomic Design — atoms (Button, Icon, Input, Spinner), molecules (Card, ConfirmModal, Modal), organisms (ServerSettings, DataTable, Header, UserFormModal, SaleDetailModal, RepairDetailModal, StockEntryModal, PartsTab, PartsTabCert)
-- Theme system: light/dark tokens via TOML files in `assets/`
+- Theme system: light/dark tokens via TOML files in `assets/` (tokens-light.toml, tokens-dark.toml + v1 backups)
+- Icon colors: read from TOML tokens (`icon_bg`, `icon_fg`) — `generate_wrench_icon(size, bg, fg)` in workshop-common
 - API client: `api.rs` with typed methods for all server endpoints
 - Card component: supports `header_action` prop for action buttons next to title
 - ConfirmModal: supports `variant` prop (default Danger)
@@ -92,6 +94,16 @@ All code MUST comply. Key rules:
 ## Release profile
 Aggressive size optimization in workspace `Cargo.toml`: `strip = true`, `lto = true`, `codegen-units = 1`, `panic = "abort"`, `opt-level = "z"`
 
+## Packaging
+- **Windows MSI:** WiX configs in `crates/workshop-server/wix/main.wxs` and `crates/workshop-viewer/wix/main.wxs`; `[package.metadata.wix]` in both Cargo.toml
+- **Linux .deb:** `[package.metadata.deb]` in server Cargo.toml; `debian/workshop-server.service` (systemd); `debian/postinst` (user creation, data dir, service enable)
+- **Tray icon:** unified at tray-icon 0.19 (all features disabled to avoid GTK/Linux init)
+
+## CI/CD
+- **ci.yml:** check-windows-x64, check-linux-x64 (ubuntu-22.04), check-linux-arm64 (ubuntu-22.04-arm), clippy, fmt, test
+- **release.yml:** build for Windows x64 + Linux x86_64 + Linux ARM64; smoke test; GitHub Release with assets
+- Smoke test binary: `workshop-server` (not `server`)
+
 ## Key dependencies
 - Server: axum 0.7, tokio (full), sqlx 0.7 (postgres), argon2 0.5, aes-gcm 0.10, tower-http 0.6 (cors, limit, trace, set-header)
 - Viewer: dioxus 0.6 (desktop)
@@ -110,14 +122,27 @@ Full professional documentation in `docs/` (53 files):
 - `docs/07-developer-guide/` — setup, project structure, conventions, testing, component library, contributing
 - `docs/08-compliance/` — OWASP Top 10, data protection, coding standards
 - `docs/09-operations/` — monitoring, incident response, maintenance
-- `CHANGELOG.md`, `GLOSSARY.md`, `ACRONYMS.md`
+- `GLOSSARY.md`, `ACRONYMS.md`
+
+## Skills
+Available in `.opencode/skills/`:
+- `business-analyst-senior` — requirements, user stories, BRD, prioritization
+- `database-specialist-senior` — schema design, query optimization, migrations
+- `devops-sre-senior` — CI/CD, infrastructure, deployment, observability
+- `devsecops-senior` — security review, threat modeling, OWASP
+- `production-maintenance-senior` — SLOs, postmortems, on-call, maintenance
+- `project-manager-senior` — sprint planning, estimation, roadmaps
+- `qa-senior` — test design, automation, pre-release checklists
+- `senior-developer-code-review` — code review, refactoring, clean code
+- `software-architect-senior` — system design, ADRs, tech stack evaluation
+- `ux-ui-design-senior` — UX evaluation, user flows, accessibility, design systems, microcopy
 
 ## Audit status
 See `AUDITORIA.md` for full tracking. Summary:
 - **Critical (9/9):** All resolved
 - **High (12/12):** All resolved
 - **Medium:** 12/16 resolved (M-2, M-4, M-16 pending)
-- **Low:** 5/10 resolved (B-1 to B-4, B-5, B-7 to B-10 pending)
+- **Low:** 7/10 resolved (B-1, B-2, B-3, B-4 done; B-5, B-7 to B-10 pending)
 - **Dependencies:** D-1 pending (sqlx upgrade), D-2/D-3 not applicable
 
 ## Known security improvements (backlog)

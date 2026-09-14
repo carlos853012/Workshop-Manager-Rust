@@ -22,6 +22,7 @@ pub fn routes() -> Router<AppState> {
         .route("/", get(list_sales))
         .route("/", post(create_sale))
         .route("/:id", get(get_sale))
+        .route("/:id/cancel", post(cancel_sale))
 }
 
 async fn list_sales(
@@ -97,6 +98,99 @@ struct SaleDetail {
     #[serde(flatten)]
     sale: Sale,
     items: Vec<SaleItem>,
+}
+
+async fn cancel_sale(
+    State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<Sale>>, AppError> {
+    if !matches!(user.role, UserRole::Admin | UserRole::Seller) {
+        return Err(AppError::Forbidden);
+    }
+
+    let mut tx = state
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    let sale: Option<Sale> = sqlx::query_as(
+        "SELECT id, workshop_id, customer_name, customer_email, customer_phone, subtotal, discount_amount, taxable_amount, tax_amount, total, payment_method, status, created_at \
+         FROM sales WHERE id = $1 AND workshop_id = $2 FOR UPDATE"
+    )
+    .bind(id)
+    .bind(user.workshop_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    let sale = sale.ok_or(AppError::NotFound("Sale not found".to_string()))?;
+
+    if sale.status == "cancelled" {
+        return Err(AppError::Conflict("Sale is already cancelled".to_string()));
+    }
+
+    // Restore stock for each item
+    let items: Vec<SaleItem> = sqlx::query_as(
+        "SELECT id, sale_id, product_id, product_name, quantity, unit_price, total \
+         FROM sale_items WHERE sale_id = $1",
+    )
+    .bind(id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    let now = Utc::now();
+    for item in &items {
+        sqlx::query(
+            "UPDATE products SET stock = stock + $2, updated_at = $3 \
+             WHERE id = $1 AND workshop_id = $4"
+        )
+        .bind(item.product_id)
+        .bind(item.quantity)
+        .bind(now)
+        .bind(user.workshop_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+    }
+
+    sqlx::query("UPDATE sales SET status = 'cancelled' WHERE id = $1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::Internal(format!("Transaction commit error: {}", e)))?;
+
+    let mut old_values = serde_json::to_value(&sale).unwrap_or_default();
+    redact_sensitive(&mut old_values);
+
+    if let Err(e) = audit::log_change(
+        &state.pool,
+        Some(user.id),
+        "cancel",
+        "sale",
+        id,
+        Some(old_values),
+        None,
+        None,
+        None,
+    )
+    .await
+    {
+        tracing::warn!("Audit log failed for sale cancel {}: {}", id, e);
+    }
+
+    let cancelled = Sale {
+        status: "cancelled".to_string(),
+        ..sale
+    };
+
+    Ok(Json(ApiResponse::success(cancelled)))
 }
 
 async fn create_sale(

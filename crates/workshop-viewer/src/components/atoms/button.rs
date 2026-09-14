@@ -2,24 +2,19 @@ use dioxus::prelude::*;
 
 /// Variantes visuales de un botón.
 #[derive(Clone, PartialEq, Default)]
-#[allow(dead_code)]
 pub enum ButtonVariant {
     #[default]
     Primary,
     Secondary,
     Danger,
     Ghost,
-    Link,
 }
 
 /// Tamaños de botón.
 #[derive(Clone, PartialEq, Default)]
-#[allow(dead_code)]
 pub enum ButtonSize {
     #[default]
     Md,
-    Sm,
-    Lg,
 }
 
 #[component]
@@ -40,13 +35,6 @@ pub fn Button(
         ButtonVariant::Secondary => {}
         ButtonVariant::Danger => classes.push("btn-danger".to_string()),
         ButtonVariant::Ghost => classes.push("btn-ghost".to_string()),
-        ButtonVariant::Link => classes.push("btn-ghost".to_string()),
-    }
-
-    match size {
-        ButtonSize::Sm => classes.push("btn-sm".to_string()),
-        ButtonSize::Md => {}
-        ButtonSize::Lg => classes.push("btn-lg".to_string()),
     }
 
     if let Some(extra) = class {

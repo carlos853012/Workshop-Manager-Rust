@@ -43,7 +43,6 @@ impl AuthState {
         self.workshop.set(None);
     }
 
-    #[allow(dead_code)]
     pub fn api_client(&self) -> Option<ApiClient> {
         let cfg = config();
         self.token.read().as_ref().and_then(|t| {
