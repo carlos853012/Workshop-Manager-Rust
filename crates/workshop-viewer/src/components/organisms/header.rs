@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 use workshop_common::UserRole;
 
-use crate::app_state::use_tabs;
+use crate::app_state::{use_auth, use_tabs};
 use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::icons::IconName;
 use crate::routes::Route;
@@ -11,11 +11,15 @@ use crate::theme::use_theme;
 #[component]
 pub fn Header(title: String, active_route: Route) -> Element {
     let mut theme = use_theme();
+    let auth = use_auth();
 
     rsx! {
         header { class: "header",
             div { class: "header-navigation",
                 h1 { class: "header-title", "{title}" }
+                if auth.is_trial() {
+                    span { class: "trial-badge", "TRIAL" }
+                }
                 Tabs { active_route: active_route }
             }
             div { class: "header-actions",

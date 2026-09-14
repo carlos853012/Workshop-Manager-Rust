@@ -8,6 +8,7 @@ use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::organisms::data_table::{Column, DataTable};
 use crate::components::organisms::supplier_form_modal::SupplierFormModal;
+use crate::i18n;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
 use std::rc::Rc;
@@ -99,7 +100,7 @@ pub fn Suppliers() -> Element {
             key: "status".to_string(),
             header: "Estado".to_string(),
             render: Rc::new(
-                |s: &Supplier| rsx! { span { "{s.status}" } },
+                |s: &Supplier| rsx! { span { "{i18n::translate_supplier_status(&s.status)}" } },
             ),
         },
         Column {

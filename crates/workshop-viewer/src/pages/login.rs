@@ -41,13 +41,33 @@ pub fn Login() -> Element {
 
             match client.login(&email_value, &password_value).await {
                 Ok(response) => {
+                    let token = response.token.clone();
+                    let email = response.user.email.clone();
+                    let display_name = response.user.display_name.clone();
+                    let role = response.user.role.clone();
+                    let workshop = response.workshop.clone();
+
                     auth.login(
-                        response.token.clone(),
-                        response.user.email.clone(),
-                        response.user.display_name.clone(),
-                        response.user.role.clone(),
-                        response.workshop.clone(),
+                        token.clone(),
+                        email,
+                        display_name,
+                        role,
+                        workshop,
                     );
+
+                    let client_with_token = client.with_token(token);
+                    match client_with_token.license_status().await {
+                        Ok(license_info) => {
+                            auth.license_info.set(Some(license_info));
+                        }
+                        Err(_) => {
+                            auth.license_info.set(Some(crate::api::LicenseInfo {
+                                is_trial: true,
+                                tier: "Trial".to_string(),
+                            }));
+                        }
+                    }
+
                     navigator.push(Route::Dashboard {});
                 }
                 Err(ApiError::Unauthorized) => {
@@ -89,7 +109,7 @@ pub fn Login() -> Element {
                         r#type: "password".to_string(),
                         value: password.read().clone(),
                         oninput: move |evt: FormEvent| password.set(evt.value().clone()),
-                        placeholder: Some("••••••••".to_string()),
+                        placeholder: Some("*******".to_string()),
                         required: true,
                     }
                     div { class: "mt-lg" }

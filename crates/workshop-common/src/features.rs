@@ -139,6 +139,10 @@ impl License {
         !self.license_key.is_empty() && !self.hardware_hash.is_empty()
     }
 
+    pub fn is_trial(&self) -> bool {
+        matches!(self.tier, LicenseTier::Trial)
+    }
+
     pub fn can_transfer(&self) -> bool {
         self.transfer_count < self.max_transfers
     }

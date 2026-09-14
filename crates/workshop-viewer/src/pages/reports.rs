@@ -8,6 +8,7 @@ use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::icons::IconName;
+use crate::i18n;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
 
@@ -131,7 +132,7 @@ pub fn Reports() -> Element {
                                 for repair in history.repairs.iter() {
                                     tr {
                                         td { class: "text-muted", "{repair.created_at.format(\"%d-%m-%Y\")}" }
-                                        td { "{repair.status}" }
+                                         td { "{i18n::translate_repair_status_str(&repair.status)}" }
                                         td { class: "text-muted", "{repair.description.as_deref().unwrap_or(\"-\")}" }
                                         td { class: "text-right",
                                             if let Some(total) = repair.total {

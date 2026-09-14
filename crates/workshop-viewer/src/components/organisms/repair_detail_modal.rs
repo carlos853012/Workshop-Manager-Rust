@@ -13,16 +13,7 @@ use crate::components::molecules::modal::Modal;
 use crate::components::organisms::tabs::general_tab::GeneralTab;
 use crate::components::organisms::tabs::parts_tab::PartsTab;
 use crate::components::organisms::tabs::status_tab::StatusTab;
-
-pub fn status_label(s: &RepairStatus) -> &'static str {
-    match s {
-        RepairStatus::Pending => "Pendiente",
-        RepairStatus::InProgress => "En Progreso",
-        RepairStatus::Completed => "Completada",
-        RepairStatus::Cancelled => "Cancelada",
-        RepairStatus::Deleted => "Eliminada",
-    }
-}
+use crate::i18n;
 
 pub fn can_transition(current: &RepairStatus, target: &RepairStatus) -> bool {
     matches!(
@@ -303,7 +294,7 @@ pub fn RepairDetailModal(
             title: "Confirmar cambio de estado".to_string(),
             message: format!(
                 "¿Cambiar estado a \"{}\"?",
-                pending_status.read().as_ref().map(|s| status_label(s)).unwrap_or("")
+                pending_status.read().as_ref().map(|s| i18n::translate_repair_status(s)).unwrap_or("")
             ),
             confirm_text: Some("Confirmar".to_string()),
             on_confirm: move |_| {

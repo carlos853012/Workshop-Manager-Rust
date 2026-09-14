@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use workshop_common::dto::RepairDetail;
 
+use crate::i18n;
+
 #[component]
 pub fn InfoTab(detail: RepairDetail) -> Element {
     let rep = &detail.repair;
@@ -34,7 +36,7 @@ pub fn InfoTab(detail: RepairDetail) -> Element {
             }
             div { class: "detail-row",
                 span { class: "detail-label", "Estado" }
-                span { "{rep.status}" }
+                span { "{i18n::translate_repair_status(&rep.status)}" }
             }
             if let Some(ref desc) = rep.description {
                 if !desc.is_empty() {

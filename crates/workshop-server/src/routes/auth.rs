@@ -19,9 +19,11 @@ pub fn public_routes() -> Router<AppState> {
         .route("/register", post(register))
 }
 
-/// Rutas protegidas de autenticación: estado del usuario autenticado.
+/// Rutas protegidas de autenticación: estado del usuario autenticado y licencia.
 pub fn protected_routes() -> Router<AppState> {
-    Router::new().route("/status", get(status))
+    Router::new()
+        .route("/status", get(status))
+        .route("/license", get(license_status))
 }
 
 async fn login(
@@ -210,6 +212,28 @@ async fn status(
 
     let user = user.ok_or(AppError::Unauthorized)?;
     Ok(Json(ApiResponse::success(hide_password_hash(user))))
+}
+
+#[derive(serde::Serialize)]
+pub struct LicenseInfo {
+    pub is_trial: bool,
+    pub tier: String,
+}
+
+async fn license_status(
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<LicenseInfo>>, AppError> {
+    let info = match &state.license {
+        Some(lic) => LicenseInfo {
+            is_trial: lic.is_trial(),
+            tier: lic.tier.to_string(),
+        },
+        None => LicenseInfo {
+            is_trial: true,
+            tier: "Trial".to_string(),
+        },
+    };
+    Ok(Json(ApiResponse::success(info)))
 }
 
 async fn find_workshop(

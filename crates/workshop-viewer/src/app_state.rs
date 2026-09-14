@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::api::ApiClient;
+use crate::api::{ApiClient, LicenseInfo};
 use crate::config::config;
 use crate::routes::Route;
 use workshop_common::{UserRole, Workshop};
@@ -13,11 +13,20 @@ pub struct AuthState {
     pub user_display_name: Signal<Option<String>>,
     pub user_role: Signal<Option<UserRole>>,
     pub workshop: Signal<Option<Workshop>>,
+    pub license_info: Signal<Option<LicenseInfo>>,
 }
 
 impl AuthState {
     pub fn is_authenticated(&self) -> bool {
         self.token.read().as_ref().is_some()
+    }
+
+    pub fn is_trial(&self) -> bool {
+        self.license_info
+            .read()
+            .as_ref()
+            .map(|l| l.is_trial)
+            .unwrap_or(true)
     }
 
     pub fn login(
@@ -41,6 +50,7 @@ impl AuthState {
         self.user_display_name.set(None);
         self.user_role.set(None);
         self.workshop.set(None);
+        self.license_info.set(None);
     }
 
     pub fn api_client(&self) -> Option<ApiClient> {
@@ -64,12 +74,14 @@ pub fn AuthProvider(children: Element) -> Element {
     let user_display_name = use_signal(|| None::<String>);
     let user_role = use_signal(|| None::<UserRole>);
     let workshop = use_signal(|| None::<Workshop>);
+    let license_info = use_signal(|| None::<LicenseInfo>);
     let auth = AuthState {
         token,
         user_email,
         user_display_name,
         user_role,
         workshop,
+        license_info,
     };
 
     use_context_provider(|| auth);

@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use workshop_common::dto::RepairDetail;
 
 use crate::components::atoms::button::{Button, ButtonVariant};
+use crate::i18n;
 
 #[component]
 pub fn GeneralTab(
@@ -29,8 +30,8 @@ pub fn GeneralTab(
         .license_plate
         .clone()
         .unwrap_or_else(|| "-".to_string());
-    let priority_str = format!("{}", detail.repair.priority);
-    let status_text = super::super::repair_detail_modal::status_label(&detail.repair.status);
+    let priority_str = i18n::translate_priority(&detail.repair.priority).to_string();
+    let status_text = i18n::translate_repair_status(&detail.repair.status);
     let estimated_cost_str = detail
         .repair
         .estimated_cost

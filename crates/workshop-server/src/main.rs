@@ -122,7 +122,7 @@ async fn main() -> anyhow::Result<()> {
     tokio::spawn(backup_scheduler(pg_dump_path, database_url, backups_dir));
 
     // 8. Create AppState
-    let state = state::AppState::new(secrets, config, pool);
+    let state = state::AppState::new(secrets, config, pool, license.clone());
 
     // 9. Build router
     let protected_api = routes::protected_routes()

@@ -3,6 +3,7 @@ use workshop_common::dto::RepairDetail;
 use workshop_common::{RepairStatus, User};
 
 use crate::components::atoms::button::{Button, ButtonVariant};
+use crate::i18n;
 
 #[component]
 pub fn StatusTab(
@@ -35,7 +36,7 @@ pub fn StatusTab(
             let status = u
                 .status
                 .as_ref()
-                .map(|s| super::super::repair_detail_modal::status_label(s))
+                .map(|s| i18n::translate_repair_status(s))
                 .unwrap_or("")
                 .to_string();
             let desc = u.description.clone().unwrap_or_default();

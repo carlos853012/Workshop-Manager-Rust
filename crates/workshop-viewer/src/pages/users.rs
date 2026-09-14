@@ -10,6 +10,7 @@ use crate::components::molecules::confirm_modal::ConfirmModal;
 use crate::components::organisms::data_table::{Column, DataTable};
 use crate::components::organisms::user_form_modal::UserFormModal;
 use crate::icons::IconName;
+use crate::i18n;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
 use std::rc::Rc;
@@ -109,8 +110,7 @@ pub fn Users() -> Element {
             key: "status".to_string(),
             header: "Estado".to_string(),
             render: Rc::new(|u: &User| {
-                let text = if u.status == "active" { "Activo" } else { "Inactivo" };
-                rsx! { span { "{text}" } }
+                rsx! { span { "{i18n::translate_user_status(&u.status)}" } }
             }),
         },
         Column {

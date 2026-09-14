@@ -52,6 +52,12 @@ impl ApiError {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LicenseInfo {
+    pub is_trial: bool,
+    pub tier: String,
+}
+
 /// Cliente HTTP centralizado para comunicarse con el servidor.
 #[derive(Clone)]
 pub struct ApiClient {
@@ -140,6 +146,10 @@ impl ApiClient {
     /// GET /api/auth/status
     pub async fn status(&self) -> Result<User, ApiError> {
         self.get("/api/auth/status").await
+    }
+
+    pub async fn license_status(&self) -> Result<LicenseInfo, ApiError> {
+        self.get("/api/auth/license").await
     }
 
     /// GET /api/products

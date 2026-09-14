@@ -261,6 +261,19 @@ body {
   color: var(--nav-text);
 }
 
+.trial-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-xs) var(--space-sm);
+  background-color: var(--warning);
+  color: var(--text-on-warning, #000);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .tabs {
   display: flex;
   align-items: center;

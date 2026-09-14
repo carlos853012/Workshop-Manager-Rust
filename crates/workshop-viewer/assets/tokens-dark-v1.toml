@@ -13,6 +13,12 @@ danger_hover = "#dc2626"
 warning = "#f59e0b"
 success = "#22c55e"
 info = "#06b6d4"
+nav_bg = "#1E2126"
+nav_text = "#e5e7eb"
+nav_text_muted = "#94a3b8"
+nav_hover = "#1e293b"
+icon_bg = "#3b82f6"
+icon_fg = "#1E2126"
 
 [typography]
 font_family = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"

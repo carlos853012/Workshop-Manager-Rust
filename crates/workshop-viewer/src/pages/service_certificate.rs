@@ -7,6 +7,7 @@ use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::organisms::certificate_detail_modal::CertificateDetailModal;
 use crate::icons::IconName;
+use crate::i18n;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
 
@@ -173,9 +174,9 @@ pub fn ServiceCertificatePage() -> Element {
                                                     "-"
                                                 }
                                             }
-                                            td {
-                                                "{r.status}"
-                                            }
+                                             td {
+                                                 "{i18n::translate_repair_status(&r.status)}"
+                                             }
                                             td { class: "text-muted",
                                                 "{r.created_at.format(\"%d-%m-%Y\").to_string()}"
                                             }

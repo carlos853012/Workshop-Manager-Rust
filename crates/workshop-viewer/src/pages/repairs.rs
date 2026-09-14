@@ -8,6 +8,7 @@ use crate::components::organisms::data_table::{Column, DataTable};
 use crate::components::organisms::repair_detail_modal::RepairDetailModal;
 use crate::components::organisms::repair_form_modal::RepairFormModal;
 use crate::icons::IconName;
+use crate::i18n;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
 use std::rc::Rc;
@@ -89,14 +90,16 @@ pub fn Repairs() -> Element {
             header: "Estado".to_string(),
             render: Rc::new(|r: &workshop_common::Repair| {
                 rsx! {
-                    span { "{r.status}" }
+                    span { "{i18n::translate_repair_status(&r.status)}" }
                 }
             }),
         },
         Column {
             key: "priority".to_string(),
             header: "Prioridad".to_string(),
-            render: Rc::new(|r: &workshop_common::Repair| rsx! { span { "{r.priority}" } }),
+            render: Rc::new(|r: &workshop_common::Repair| {
+                rsx! { span { "{i18n::translate_priority(&r.priority)}" } }
+            }),
         },
         Column {
             key: "actions".to_string(),
