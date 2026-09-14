@@ -1,0 +1,31 @@
+[Unit]
+Description=WorkshopManager Server
+Documentation=https://workshopmanager.com/docs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=workshopmanager
+Group=workshopmanager
+ExecStart=/usr/bin/inventory-server
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/inventory-server
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+
+# Environment
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=multi-user.target

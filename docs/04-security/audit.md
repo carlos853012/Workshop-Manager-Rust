@@ -70,7 +70,7 @@ CREATE TABLE audit_log (
 
 ### 2.3 Audit Function Signature
 
-**Source:** `crates/inventory-server/src/audit.rs:7-44`
+**Source:** `crates/workshop-server/src/audit.rs:7-44`
 
 ```rust
 pub async fn log_change(
@@ -92,7 +92,7 @@ pub async fn log_change(
 
 ### 3.1 Redaction Rules
 
-**Source:** `crates/inventory-server/src/audit.rs:47-55`
+**Source:** `crates/workshop-server/src/audit.rs:47-55`
 
 | Field Name | Redacted Value | Reason |
 |-----------|---------------|--------|

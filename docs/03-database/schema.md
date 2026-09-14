@@ -23,7 +23,7 @@
 
 ## 2. Custom Enum Types
 
-PostgreSQL enum types enforce valid values at the database level. They are defined as `sqlx::Type` in `inventory-common` and shared across server/viewer.
+PostgreSQL enum types enforce valid values at the database level. They are defined as `sqlx::Type` in `workshop-common` and shared across server/viewer.
 
 ### 2.1 `payment_method`
 

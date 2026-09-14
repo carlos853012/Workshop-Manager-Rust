@@ -54,7 +54,7 @@ WorkshopManager is a **desktop-native, integrated management system** designed f
 │                           HOST MACHINE (Windows/macOS/Linux)                │
 │                                                                             │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │                    inventory-viewer (Dioxus 0.6 Desktop)            │   │
+│  │                    workshop-viewer (Dioxus 0.6 Desktop)            │   │
 │  │                                                                      │   │
 │  │  ┌─────────┐ ┌──────────┐ ┌─────────┐ ┌──────────┐ ┌───────────┐  │   │
 │  │  │  Pages   │ │Components│ │  Theme  │ │   API    │ │  Router   │  │   │
@@ -70,7 +70,7 @@ WorkshopManager is a **desktop-native, integrated management system** designed f
 │                                            :8443 │                          │
 │                                                 │                           │
 │  ┌──────────────────────────────────────────────┼──────────────────────┐   │
-│  │                inventory-server (Axum 0.7)    │                      │   │
+│  │                workshop-server (Axum 0.7)    │                      │   │
 │  │                                              ▼                      │   │
 │  │  ┌────────────────────────────────────────────────────────────────┐ │   │
 │  │  │                      MIDDLEWARE STACK                          │ │   │
@@ -128,7 +128,7 @@ WorkshopManager is a **desktop-native, integrated management system** designed f
 
 ## 3. Component Descriptions
 
-### 3.1 inventory-common (Shared Types Library)
+### 3.1 workshop-common (Shared Types Library)
 
 **Purpose:** Single source of truth for domain types, DTOs, enums, and business logic shared between server and viewer.
 
@@ -142,7 +142,7 @@ WorkshopManager is a **desktop-native, integrated management system** designed f
 | `features.rs` | Feature flag system with 4 license tiers: Base, Reports, Advanced, API |
 | `icon_data.rs` | Procedurally generated application icon (wrench) |
 
-### 3.2 inventory-server (Backend)
+### 3.2 workshop-server (Backend)
 
 **Purpose:** HTTPS API server providing all business logic, data persistence, and security services.
 
@@ -167,7 +167,7 @@ WorkshopManager is a **desktop-native, integrated management system** designed f
 | `tls.rs` | Self-signed TLS certificate generation via `rcgen`, rustls configuration |
 | `db_manager.rs` | Embedded PostgreSQL lifecycle management via `postgresql_embedded` |
 
-### 3.3 inventory-viewer (Desktop Client)
+### 3.3 workshop-viewer (Desktop Client)
 
 **Purpose:** Native desktop UI built with Dioxus 0.6, providing the user interface for all operations.
 
@@ -281,7 +281,7 @@ WorkshopManager is a **desktop-native, integrated management system** designed f
 | Criterion | Assessment |
 |-----------|-----------|
 | Native Performance | Renders via system WebView (no Electron bloat) |
-| Rust-native | Shared types with server via `inventory-common` |
+| Rust-native | Shared types with server via `workshop-common` |
 | Desktop-first | Full OS integration (tray icon, window management) |
 | Component Model | RSX syntax similar to JSX, familiar to web developers |
 

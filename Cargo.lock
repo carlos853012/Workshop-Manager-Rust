@@ -3128,78 +3128,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "inventory-common"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "resvg",
- "rust_decimal",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sqlx 0.7.4",
- "uuid",
-]
-
-[[package]]
-name = "inventory-server"
-version = "0.1.0"
-dependencies = [
- "aes-gcm",
- "anyhow",
- "argon2",
- "axum",
- "axum-server",
- "base64 0.22.1",
- "chrono",
- "clipboard-win",
- "dirs 5.0.1",
- "flate2",
- "genpdf",
- "inventory-common",
- "jsonwebtoken",
- "postgresql_embedded",
- "rand 0.8.8",
- "rcgen",
- "regex",
- "rust_decimal",
- "rustls",
- "rustls-pemfile",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sqlx 0.7.4",
- "tao",
- "thiserror 1.0.69",
- "tokio",
- "toml",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "tray-icon",
- "uuid",
- "winreg",
-]
-
-[[package]]
-name = "inventory-viewer"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "dioxus",
- "dioxus-desktop",
- "dioxus-router",
- "inventory-common",
- "reqwest 0.12.28",
- "rust_decimal",
- "serde",
- "serde_json",
- "tokio",
- "toml",
- "uuid",
-]
-
-[[package]]
 name = "ipnet"
 version = "2.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8083,6 +8011,78 @@ name = "wit-bindgen"
 version = "0.57.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
+
+[[package]]
+name = "workshop-common"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "resvg",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx 0.7.4",
+ "uuid",
+]
+
+[[package]]
+name = "workshop-server"
+version = "0.1.0"
+dependencies = [
+ "aes-gcm",
+ "anyhow",
+ "argon2",
+ "axum",
+ "axum-server",
+ "base64 0.22.1",
+ "chrono",
+ "clipboard-win",
+ "dirs 5.0.1",
+ "flate2",
+ "genpdf",
+ "jsonwebtoken",
+ "postgresql_embedded",
+ "rand 0.8.8",
+ "rcgen",
+ "regex",
+ "rust_decimal",
+ "rustls",
+ "rustls-pemfile",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx 0.7.4",
+ "tao",
+ "thiserror 1.0.69",
+ "tokio",
+ "toml",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "tray-icon",
+ "uuid",
+ "winreg",
+ "workshop-common",
+]
+
+[[package]]
+name = "workshop-viewer"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "dioxus",
+ "dioxus-desktop",
+ "dioxus-router",
+ "reqwest 0.12.28",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "tokio",
+ "toml",
+ "uuid",
+ "workshop-common",
+]
 
 [[package]]
 name = "writeable"

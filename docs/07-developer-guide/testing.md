@@ -26,9 +26,9 @@ mod tests {
 
 | Crate | Focus Areas |
 |-------|------------|
-| `inventory-common` | Money calculations, patent validation, DTO serialization, license verification |
-| `inventory-server` | Auth, crypto, error handling, middleware, route logic |
-| `inventory-viewer` | Component rendering, state management (planned) |
+| `workshop-common` | Money calculations, patent validation, DTO serialization, license verification |
+| `workshop-server` | Auth, crypto, error handling, middleware, route logic |
+| `workshop-viewer` | Component rendering, state management (planned) |
 
 ---
 
@@ -39,8 +39,8 @@ mod tests {
 cargo test --workspace
 
 # Run specific crate tests
-cargo test -p inventory-server
-cargo test -p inventory-common
+cargo test -p workshop-server
+cargo test -p workshop-common
 
 # Run specific test
 cargo test test_name

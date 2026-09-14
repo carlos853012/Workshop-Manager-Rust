@@ -61,7 +61,7 @@ The first build may take several minutes as dependencies are compiled.
 
 ```powershell
 # Start the backend server (runs on :8443)
-cargo run -p inventory-server
+cargo run -p workshop-server
 ```
 
 The server automatically:
@@ -74,7 +74,7 @@ The server automatically:
 
 ```powershell
 # Start the Dioxus desktop app
-cargo run -p inventory-viewer
+cargo run -p workshop-viewer
 ```
 
 ### Both Simultaneously
@@ -83,10 +83,10 @@ Open two terminals:
 
 ```powershell
 # Terminal 1 - Server
-cargo run -p inventory-server
+cargo run -p workshop-server
 
 # Terminal 2 - Viewer
-cargo run -p inventory-viewer
+cargo run -p workshop-viewer
 ```
 
 ---
@@ -113,9 +113,9 @@ Data directory locations:
 
 ```powershell
 cargo build --workspace                    # Build all crates
-cargo build -p inventory-server            # Build server only
-cargo build -p inventory-viewer            # Build viewer only
-cargo check -p inventory-viewer            # Fast type-check (no codegen)
+cargo build -p workshop-server            # Build server only
+cargo build -p workshop-viewer            # Build viewer only
+cargo check -p workshop-viewer            # Fast type-check (no codegen)
 ```
 
 ### Quality Commands
@@ -130,8 +130,8 @@ cargo fmt --all                            # Auto-format code
 
 ```powershell
 cargo test --workspace                     # Run all tests
-cargo test -p inventory-server             # Server tests only
-cargo test -p inventory-common             # Common tests only
+cargo test -p workshop-server             # Server tests only
+cargo test -p workshop-common             # Common tests only
 ```
 
 ### Version Management
@@ -174,10 +174,10 @@ Install the `rust-analyzer` extension. Recommended `settings.json`:
 
 ```powershell
 # Run with debug logging
-RUST_LOG=debug cargo run -p inventory-server
+RUST_LOG=debug cargo run -p workshop-server
 
 # Run with SQL query logging
-RUST_LOG=sqlx=debug cargo run -p inventory-server
+RUST_LOG=sqlx=debug cargo run -p workshop-server
 ```
 
 ### Viewer Debugging
@@ -194,7 +194,7 @@ The Dioxus viewer opens a webview. Use browser DevTools:
 | Port 8443 in use | Change port in `config/server.toml` |
 | Build fails on TLS | Ensure `ring` and `rcgen` compile (needs C toolchain on Windows) |
 | DB lock error | Kill any existing server process |
-| CSS not updating | Rebuild viewer (`cargo build -p inventory-viewer`) |
+| CSS not updating | Rebuild viewer (`cargo build -p workshop-viewer`) |
 
 ---
 

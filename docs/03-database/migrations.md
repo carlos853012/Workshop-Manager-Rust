@@ -12,7 +12,7 @@
 | Property | Value |
 |----------|-------|
 | Tool | SQLx `migrate!()` macro |
-| Location | `crates/inventory-server/migrations/` |
+| Location | `crates/workshop-server/migrations/` |
 | Execution | Embedded in server binary, runs automatically at startup |
 | Naming | Sequential numeric prefix: `0001_description.sql` |
 | Order | Lexicographic (numeric prefix ensures correct order) |
@@ -207,7 +207,7 @@ Before applying any migration in production:
 
 ```powershell
 # Create pre-migration backup
-cargo build -p inventory-server
+cargo build -p workshop-server
 # Server auto-backups run daily; manual backup via pg_dump:
 pg_dump -h 127.0.0.1 -p 5432 workshop_manager > pre_migration_backup.sql
 ```

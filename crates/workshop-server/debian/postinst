@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+# WorkshopManager Server — postinst script
+# Called after package files are installed.
+
+PACKAGE_NAME="inventory-server"
+DATA_DIR="/var/lib/${PACKAGE_NAME}"
+
+# Create system user if it doesn't exist
+if ! getent group "${PACKAGE_NAME}" > /dev/null 2>&1; then
+    addgroup --system "${PACKAGE_NAME}"
+fi
+
+if ! getent passwd "${PACKAGE_NAME}" > /dev/null 2>&1; then
+    adduser --system \
+        --ingroup "${PACKAGE_NAME}" \
+        --home "${DATA_DIR}" \
+        --no-create-home \
+        --shell /usr/sbin/nologin \
+        --gecos "WorkshopManager Server" \
+        "${PACKAGE_NAME}"
+fi
+
+# Create data directory
+mkdir -p "${DATA_DIR}"
+chown -R "${PACKAGE_NAME}:${PACKAGE_NAME}" "${DATA_DIR}"
+chmod 700 "${DATA_DIR}"
+
+# Enable and start service
+if command -v systemctl > /dev/null 2>&1; then
+    systemctl daemon-reload
+    systemctl enable "${PACKAGE_NAME}.service"
+    systemctl start "${PACKAGE_NAME}.service" || true
+fi
+
+echo ""
+echo "WorkshopManager Server installed successfully."
+echo "  Data directory: ${DATA_DIR}"
+echo "  Service:        systemctl status ${PACKAGE_NAME}"
+echo "  Logs:           journalctl -u ${PACKAGE_NAME} -f"
+echo ""

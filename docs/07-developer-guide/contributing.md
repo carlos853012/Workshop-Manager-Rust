@@ -43,13 +43,13 @@ release/v0.2.0              # Release branches
 
 | Scope | Crate/Module |
 |-------|-------------|
-| `auth` | `inventory-server/src/auth.rs` |
-| `products` | `inventory-server/src/routes/products.rs` |
-| `sales` | `inventory-server/src/routes/sales.rs` |
-| `repairs` | `inventory-server/src/routes/repairs.rs` |
-| `common` | `inventory-common` |
-| `viewer` | `inventory-viewer` |
-| `api` | `inventory-viewer/src/api.rs` |
+| `auth` | `workshop-server/src/auth.rs` |
+| `products` | `workshop-server/src/routes/products.rs` |
+| `sales` | `workshop-server/src/routes/sales.rs` |
+| `repairs` | `workshop-server/src/routes/repairs.rs` |
+| `common` | `workshop-common` |
+| `viewer` | `workshop-viewer` |
+| `api` | `workshop-viewer/src/api.rs` |
 
 ### Examples
 

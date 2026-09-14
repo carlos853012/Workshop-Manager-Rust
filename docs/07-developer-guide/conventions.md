@@ -214,12 +214,12 @@ fn MyComponent(props: MyProps) -> Element {
 
 | Context | Language | Location |
 |---------|----------|----------|
-| Enum `Display` traits | English | `inventory-common` |
+| Enum `Display` traits | English | `workshop-common` |
 | API responses / DB values | English | Server-side |
 | UI labels | Spanish | `i18n.rs` |
 
 ```rust
-// inventory-common: Display in English
+// workshop-common: Display in English
 impl fmt::Display for RepairStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -230,7 +230,7 @@ impl fmt::Display for RepairStatus {
     }
 }
 
-// inventory-viewer: UI translations in i18n.rs
+// workshop-viewer: UI translations in i18n.rs
 pub fn translate_repair_status(status: &RepairStatus) -> &'static str {
     match status {
         RepairStatus::Pending => "Pendiente",

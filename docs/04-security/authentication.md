@@ -25,7 +25,7 @@ WorkshopManager uses Argon2id, the OWASP-recommended password hashing algorithm,
 | Salt length | 16 bytes (default) | 16 bytes | Yes |
 | Hash length | 32 bytes (default) | 32 bytes | Yes |
 
-**Source:** `crates/inventory-server/src/auth.rs:13-16`
+**Source:** `crates/workshop-server/src/auth.rs:13-16`
 
 ### 1.2 Hash Format
 
@@ -49,7 +49,7 @@ $argon2id$v=19$m=65536,t=3,p=4$YWJjZGVmZ2hpams$abcdef1234567890...
 └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-**Source:** `crates/inventory-server/src/auth.rs:34-43`
+**Source:** `crates/workshop-server/src/auth.rs:34-43`
 
 ### 1.4 Verification Flow
 
@@ -60,7 +60,7 @@ $argon2id$v=19$m=65536,t=3,p=4$YWJjZGVmZ2hpams$abcdef1234567890...
 └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-**Source:** `crates/inventory-server/src/auth.rs:46-54`
+**Source:** `crates/workshop-server/src/auth.rs:46-54`
 
 ---
 
@@ -86,7 +86,7 @@ $argon2id$v=19$m=65536,t=3,p=4$YWJjZGVmZ2hpams$abcdef1234567890...
 | `workshop_id` | string (UUID) | Workshop ID | `users.workshop_id` |
 | `exp` | number (UTC timestamp) | Expiration time | `now + 8 hours` |
 
-**Source:** `crates/inventory-server/src/auth.rs:19-31`
+**Source:** `crates/workshop-server/src/auth.rs:19-31`
 
 ### 2.2 Token Properties
 
@@ -98,7 +98,7 @@ $argon2id$v=19$m=65536,t=3,p=4$YWJjZGVmZ2hpams$abcdef1234567890...
 | Revocation | Not supported | Stateless design |
 | Header | Default (`{"alg":"HS256","typ":"JWT"}`) | Standard header |
 
-**Source:** `crates/inventory-server/src/auth.rs:10`
+**Source:** `crates/workshop-server/src/auth.rs:10`
 
 ---
 
@@ -122,7 +122,7 @@ $argon2id$v=19$m=65536,t=3,p=4$YWJjZGVmZ2hpams$abcdef1234567890...
 
 ### 3.1 Token Creation
 
-**Source:** `crates/inventory-server/src/auth.rs:57-83`
+**Source:** `crates/workshop-server/src/auth.rs:57-83`
 
 ```
 Input: user_id, email, role, workshop_id, jwt_secret
@@ -135,7 +135,7 @@ Input: user_id, email, role, workshop_id, jwt_secret
 
 ### 3.2 Token Validation
 
-**Source:** `crates/inventory-server/src/auth.rs:86-96`
+**Source:** `crates/workshop-server/src/auth.rs:86-96`
 
 ```
 Input: jwt_string, jwt_secret
@@ -162,7 +162,7 @@ Input: jwt_string, jwt_secret
 | Key format | `login:{email}` | `routes/auth.rs:33` |
 | Storage | In-memory (`RwLock<HashMap>`) | `rate_limiter.rs:7` |
 
-**Source:** `crates/inventory-server/src/rate_limiter.rs:6-10`
+**Source:** `crates/workshop-server/src/rate_limiter.rs:6-10`
 
 ### 4.2 Rate Limiting Flow
 
@@ -182,7 +182,7 @@ Input: jwt_string, jwt_secret
                                      └──────────┘ └──────────┘
 ```
 
-**Source:** `crates/inventory-server/src/routes/auth.rs:33-39`
+**Source:** `crates/workshop-server/src/routes/auth.rs:33-39`
 
 ### 4.3 Key Behaviors
 
@@ -260,7 +260,7 @@ Input: jwt_string, jwt_secret
 4. JWT token is returned immediately (no separate login needed)
 5. Password is hashed with Argon2id before storage
 
-**Source:** `crates/inventory-server/src/routes/auth.rs:84-196`
+**Source:** `crates/workshop-server/src/routes/auth.rs:84-196`
 
 ---
 
@@ -306,7 +306,7 @@ Input: jwt_string, jwt_secret
 | 422 | Validation error | Invalid email format |
 | 429 | Too many requests | >5 attempts in 300s window |
 
-**Source:** `crates/inventory-server/src/routes/auth.rs:27-82`
+**Source:** `crates/workshop-server/src/routes/auth.rs:27-82`
 
 ---
 
@@ -371,7 +371,7 @@ A shared secret (`api_key`) is configured in `config/server.toml` and sent via t
 | Default value | `dev-key-change-in-production` |
 | Validation | Exact string match |
 
-**Source:** `crates/inventory-server/src/middleware.rs:48-62`
+**Source:** `crates/workshop-server/src/middleware.rs:48-62`
 
 ### 9.2 Purpose
 
@@ -394,7 +394,7 @@ Device keys bind the application to specific hardware using SHA-256 hashed keys.
 | Storage | SHA-256 hash in `device_keys` table |
 | Validation | Hash lookup + active status check |
 
-**Source:** `crates/inventory-server/src/device_key.rs:14-58`
+**Source:** `crates/workshop-server/src/device_key.rs:14-58`
 
 ### 10.2 Device Key Lifecycle
 

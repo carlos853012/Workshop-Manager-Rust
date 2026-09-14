@@ -25,7 +25,7 @@ OK
 ### 1.2 Implementation
 
 ```rust
-// crates/inventory-server/src/main.rs
+// crates/workshop-server/src/main.rs
 async fn health_check() -> &'static str {
     "OK"
 }
@@ -62,7 +62,7 @@ WorkshopManager uses `tracing-subscriber` for structured logging.
 ### 2.3 Log Configuration
 
 ```rust
-// crates/inventory-server/src/main.rs
+// crates/workshop-server/src/main.rs
 tracing_subscriber::fmt()
     .with_max_level(Level::INFO)
     .with_target(false)
@@ -192,10 +192,10 @@ tracing_subscriber::fmt()
 
 ```bash
 # Enable debug logging for profiling
-RUST_LOG=debug cargo run -p inventory-server
+RUST_LOG=debug cargo run -p workshop-server
 
 # Trace specific module
-RUST_LOG=inventory_server::routes::auth=trace cargo run -p inventory-server
+RUST_LOG=inventory_server::routes::auth=trace cargo run -p workshop-server
 ```
 
 ---
@@ -222,10 +222,10 @@ tracing::info!(
 
 ```rust
 // Enable SQL logging
-RUST_LOG=sqlx=trace cargo run -p inventory-server
+RUST_LOG=sqlx=trace cargo run -p workshop-server
 
 // Monitor slow queries
-RUST_LOG=sqlx::query=trace cargo run -p inventory-server
+RUST_LOG=sqlx::query=trace cargo run -p workshop-server
 ```
 
 ### 7.3 Database Health Checks

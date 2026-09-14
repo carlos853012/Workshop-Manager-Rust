@@ -1,0 +1,28 @@
+[package]
+name = "workshop-viewer"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "workshop-viewer"
+path = "src/main.rs"
+
+[dependencies]
+workshop-common = { path = "../workshop-common" }
+dioxus = { version = "0.6", features = ["desktop"] }
+dioxus-desktop = "0.6"
+dioxus-router = "0.6"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["serde"] }
+toml = "0.8"
+rust_decimal = "1.35"
+
+[package.metadata.wix]
+name = "WorkshopManagerViewer"
+upgrade-guid = "D0C4E6F8-A3B5-7C9D-1E2F-4A6B8C0D2E4F"
+path-guid = "E1D5F7A9-B4C6-8D0E-2F3A-5B7C9D1E3F5A"
+eula = false

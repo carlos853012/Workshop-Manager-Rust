@@ -1,8 +1,8 @@
 [workspace]
 members = [
-    "crates/inventory-common",
-    "crates/inventory-server",
-    "crates/inventory-viewer"
+    "crates/workshop-common",
+    "crates/workshop-server",
+    "crates/workshop-viewer"
 ]
 resolver = "2"
 
@@ -22,4 +22,4 @@ opt-level = "z"
 # Forzamos la configuración global de tray-icon para que en este workspace
 # no busque bajo ningún concepto inicializar cosas de GTK/Linux.
 [workspace.dependencies]
-tray-icon = { version = "0.14", default-features = false, features = [] }
+tray-icon = { version = "0.19", default-features = false, features = [] }

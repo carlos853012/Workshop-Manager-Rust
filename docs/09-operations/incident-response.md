@@ -126,7 +126,7 @@ We will provide updates every [timeframe] until resolution.
 curl -k https://localhost:8443/health
 
 # Check process
-tasklist | findstr inventory-server
+tasklist | findstr workshop-server
 
 # Restart server (if needed)
 # Windows: Restart service or run executable
@@ -379,7 +379,7 @@ SELECT count(*) FROM pg_stat_activity;
 
 ```bash
 # System status
-tasklist | findstr inventory-server
+tasklist | findstr workshop-server
 systeminfo | findstr /C:"Total Physical Memory"
 
 # Network status
@@ -401,7 +401,7 @@ grep -i "panic" /path/to/logs/*.log
 # incident-check.sh - Quick incident assessment
 
 echo "=== System Status ==="
-tasklist | findstr inventory-server
+tasklist | findstr workshop-server
 
 echo "=== Health Check ==="
 curl -k https://localhost:8443/health

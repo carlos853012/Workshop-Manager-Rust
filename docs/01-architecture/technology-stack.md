@@ -9,7 +9,7 @@
 
 ## 1. Dependency Inventory
 
-### 1.1 inventory-common Dependencies
+### 1.1 workshop-common Dependencies
 
 | Crate | Version | Purpose | License | Notes |
 |-------|---------|---------|---------|-------|
@@ -24,11 +24,11 @@
 | `sha2` | 0.10 | SHA-256 hashing | MIT/Apache-2.0 | Hardware hash, device keys |
 | `resvg` | 0.48 | SVG rendering | MIT | Icon generation (default features disabled) |
 
-### 1.2 inventory-server Dependencies
+### 1.2 workshop-server Dependencies
 
 | Crate | Version | Purpose | License | Notes |
 |-------|---------|---------|---------|-------|
-| `inventory-common` | path | Shared types and logic | Proprietary | Local workspace crate |
+| `workshop-common` | path | Shared types and logic | Proprietary | Local workspace crate |
 | `axum` | 0.7 | HTTP framework | MIT | Tower-based, async |
 | `tokio` | 1.x | Async runtime | MIT | `full` feature set |
 | `sqlx` | 0.7 | Async PostgreSQL driver | MIT/Apache-2.0 | `runtime-tokio`, `postgres`, `chrono`, `uuid`, `migrate` |
@@ -68,11 +68,11 @@
 | `winreg` | 0.52 | Windows registry | MIT | Registry access |
 | `clipboard-win` | 5.4 | Clipboard access | MIT | Copy/paste support |
 
-### 1.3 inventory-viewer Dependencies
+### 1.3 workshop-viewer Dependencies
 
 | Crate | Version | Purpose | License | Notes |
 |-------|---------|---------|---------|-------|
-| `inventory-common` | path | Shared types and logic | Proprietary | Local workspace crate |
+| `workshop-common` | path | Shared types and logic | Proprietary | Local workspace crate |
 | `dioxus` | 0.6 | Desktop UI framework | MIT/Apache-2.0 | `desktop` feature |
 | `dioxus-desktop` | 0.6 | Desktop runtime | MIT/Apache-2.0 | WebView-based rendering |
 | `dioxus-router` | 0.6 | Client-side routing | MIT/Apache-2.0 | Page navigation |
@@ -132,7 +132,7 @@
 
 **Decision rationale:**
 - RSX syntax is familiar to web developers (similar to JSX)
-- Full Rust type safety with shared `inventory-common` types
+- Full Rust type safety with shared `workshop-common` types
 - System WebView avoids bundling Chromium (unlike Electron)
 - Simpler architecture than Tauri for desktop-only apps
 - Active development with frequent releases
@@ -304,13 +304,13 @@ cargo build --workspace
 cargo build --workspace --release
 
 # Server only
-cargo build -p inventory-server --release
+cargo build -p workshop-server --release
 
 # Viewer only
-cargo build -p inventory-viewer --release
+cargo build -p workshop-viewer --release
 
 # Fast type check
-cargo check -p inventory-viewer
+cargo check -p workshop-viewer
 
 # Linter
 cargo clippy --workspace -- -D warnings
@@ -350,8 +350,8 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace -- -D warnings
       - run: cargo test --workspace
-      - run: cargo build -p inventory-server --release
-      - run: cargo build -p inventory-viewer --release
+      - run: cargo build -p workshop-server --release
+      - run: cargo build -p workshop-viewer --release
 ```
 
 ### 5.5 Release Profile
@@ -419,7 +419,7 @@ jobs:
 | MIT | 30+ | axum, tokio, serde, argon2, aes-gcm |
 | MIT/Apache-2.0 | 20+ | sqlx, uuid, chrono, jsonwebtoken |
 | Apache-2.0 | 5 | ed25519-dalek, tao, reqwest |
-| Proprietary | 1 | inventory-common, inventory-server, inventory-viewer |
+| Proprietary | 1 | workshop-common, workshop-server, workshop-viewer |
 
 All dependencies use permissive licenses (MIT, Apache-2.0). No copyleft (GPL/AGPL) dependencies are used, preserving the proprietary license for the application.
 

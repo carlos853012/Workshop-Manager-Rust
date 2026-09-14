@@ -5,18 +5,18 @@
 
 ## Workspace structure
 3 crates in a Cargo workspace:
-- `crates/inventory-common` — shared types (Product, Sale, SaleItem, Repair, Supplier, User, AuditLog, Workshop), enums (PaymentMethod, RepairStatus, Priority, UserRole), DTOs, licensing (Ed25519 hardware-bound), money logic (IVA configurable), patent validation
-- `crates/inventory-server` — Axum 0.7 backend on `:8443`, full DB (PostgreSQL embedded + 10 migrations), TLS, JWT auth, audit, backup, rate limiter, device keys, barcode generation
-- `crates/inventory-viewer` — Dioxus 0.6 Desktop, 13 pages, routing, Atomic Design components (atoms/molecules/organisms), theme system, API client
+- `crates/workshop-common` — shared types (Product, Sale, SaleItem, Repair, Supplier, User, AuditLog, Workshop), enums (PaymentMethod, RepairStatus, Priority, UserRole), DTOs, licensing (Ed25519 hardware-bound), money logic (IVA configurable), patent validation
+- `crates/workshop-server` — Axum 0.7 backend on `:8443`, full DB (PostgreSQL embedded + 10 migrations), TLS, JWT auth, audit, backup, rate limiter, device keys, barcode generation
+- `crates/workshop-viewer` — Dioxus 0.6 Desktop, 13 pages, routing, Atomic Design components (atoms/molecules/organisms), theme system, API client
 
-**Important:** Package names are `inventory-common`, `inventory-server`, `inventory-viewer` — NOT `common`, `server`, `viewer`.
+**Important:** Package names are `workshop-common`, `workshop-server`, `workshop-viewer` — NOT `common`, `server`, `viewer`.
 
 ## Build commands
 ```powershell
 cargo build --workspace                    # build all
-cargo build -p inventory-server            # server only
-cargo build -p inventory-viewer            # viewer only
-cargo check -p inventory-viewer            # fast verify
+cargo build -p workshop-server            # server only
+cargo build -p workshop-viewer            # viewer only
+cargo check -p workshop-viewer            # fast verify
 cargo clippy --workspace -- -D warnings    # linter
 cargo fmt --all --check                    # format check
 cargo test --workspace                     # tests (83 total)
@@ -28,21 +28,21 @@ cargo test --workspace                     # tests (83 total)
 git push && git push --tags
 ```
 
-## Domain types (inventory-common)
+## Domain types (workshop-common)
 Structs: `Product`, `Sale`, `SaleItem`, `Repair`, `RepairUpdate`, `RepairPart`, `Supplier`, `User`, `Workshop`, `AuditLog`
 Enums: `PaymentMethod` (Cash/Card/Transfer), `RepairStatus` (Pending/InProgress/Completed/Cancelled/Deleted), `Priority` (High/Medium/Low), `UserRole` (Admin/Mechanic/Seller)
 DTOs: `LoginRequest`, `CreateProductRequest`, `CreateSaleRequest`, `CreateRepairRequest`, `CreateSupplierRequest`, `AddRepairPartRequest`, `ApiResponse<T>`, `PaginatedResponse<T>`, `LoginResponse`, `DashboardResponse`
 License: `Feature` enum (16 features across 4 tiers), `License` struct with Ed25519 signature verification
 
 ## Server architecture
-- Entrypoint: `crates/inventory-server/src/main.rs`
+- Entrypoint: `crates/workshop-server/src/main.rs`
 - Config: `config/server.toml` (TOML, host/port/api_key/require_device_key/tax.iva_rate)
 - Secrets: generated/persisted at `dirs::data_local_dir()/WorkshopManager/data/` (.jwt_secret, .crypto_key, .postgres_password)
 - Crypto: AES-256-GCM via `crypto::init()` with `OnceLock` (no `unsafe`)
 - Auth: JWT HS256 (8h) + Argon2id (64MB, 3 iter, 4 parallelism); middleware `api_key` → `device_key` → `authenticate` → `require_admin`
 - DB: PostgreSQL embebido via `postgresql_embedded` (`bundled` feature), pool en `AppState`
 - Database name: `workshop_manager`
-- Migrations: SQLx migrations in `crates/inventory-server/migrations/` (10 files)
+- Migrations: SQLx migrations in `crates/workshop-server/migrations/` (10 files)
 - TLS: certificados autofirmados generados con `rcgen`, servidos por `axum-server` (`tls-rustls`)
 - Security headers: HSTS, X-Content-Type-Options: nosniff, X-Frame-Options: DENY
 - CORS: localhost only, GET/POST/PUT/DELETE, Authorization + Content-Type headers
@@ -56,7 +56,7 @@ License: `Feature` enum (16 features across 4 tiers), `License` struct with Ed25
 - Health: `GET /health` returns `"OK"`
 
 ## Viewer architecture
-- Entrypoint: `crates/inventory-viewer/src/main.rs`
+- Entrypoint: `crates/workshop-viewer/src/main.rs`
 - CSS inlined at compile time via `include_str!("../index.css")` — **rebuild to see CSS changes**
 - Routing: `dioxus-router` with 13 pages (Root, Login, Setup, Dashboard, Products, POS, Sales, Repairs, Suppliers, Reports, ServiceCertificate, Users, DeviceKeys)
 - Components: Atomic Design — atoms (Button, Icon, Input, Spinner), molecules (Card, ConfirmModal, Modal), organisms (ServerSettings, DataTable, Header, UserFormModal, SaleDetailModal, RepairDetailModal, StockEntryModal, PartsTab, PartsTabCert)

@@ -48,7 +48,7 @@
 
 | Actor | Description | Interaction |
 |-------|-------------|-------------|
-| Workshop Owner | Primary user, manages all operations | Desktop UI via inventory-viewer |
+| Workshop Owner | Primary user, manages all operations | Desktop UI via workshop-viewer |
 | Workshop Mechanic | Creates repairs, views inventory | Desktop UI (limited role) |
 | Workshop Seller | Processes sales, looks up products | Desktop UI (limited role) |
 | System Admin | Manages users, device keys | Desktop UI (admin role only) |
@@ -63,7 +63,7 @@
 │                                                                         │
 │  ┌──────────────────────────────────────────────────────────────────┐   │
 │  │                                                                  │   │
-│  │   CONTAINER 1: inventory-viewer                                  │   │
+│  │   CONTAINER 1: workshop-viewer                                  │   │
 │  │   Technology: Dioxus 0.6 Desktop (Rust)                         │   │
 │  │                                                                  │   │
 │  │   - 13 page components (Router)                                  │   │
@@ -80,7 +80,7 @@
 │                              │                                           │
 │  ┌──────────────────────────▼───────────────────────────────────────┐   │
 │  │                                                                  │   │
-│  │   CONTAINER 2: inventory-server                                  │   │
+│  │   CONTAINER 2: workshop-server                                  │   │
 │  │   Technology: Axum 0.7 (Rust)                                    │   │
 │  │                                                                  │   │
 │  │   - REST API (public, protected, admin routes)                   │   │
@@ -114,8 +114,8 @@
 │  └──────────────────────────────────────────────────────────────────┘   │
 │                                                                         │
 │  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │   SHARED LIBRARY: inventory-common                               │   │
-│  │   Used by: inventory-server, inventory-viewer                    │   │
+│  │   SHARED LIBRARY: workshop-common                               │   │
+│  │   Used by: workshop-server, workshop-viewer                    │   │
 │  │                                                                  │   │
 │  │   - Domain types (Product, Sale, Repair, Supplier, User)        │   │
 │  │   - DTOs (request/response structs)                              │   │
@@ -131,7 +131,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                      inventory-server Components                         │
+│                      workshop-server Components                         │
 │                                                                         │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
 │  │                     HTTP LAYER                                  │   │
@@ -535,7 +535,7 @@ pub struct AppState {
 | `Query(params)` | Query string parameters |
 | `Json(body)` | Request body deserialization |
 
-### 7.2 Client-Side State (inventory-viewer)
+### 7.2 Client-Side State (workshop-viewer)
 
 | Provider | State | Purpose |
 |----------|-------|---------|

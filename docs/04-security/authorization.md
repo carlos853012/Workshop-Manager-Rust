@@ -155,7 +155,7 @@ All API requests pass through the middleware stack in order. Each layer can reje
 | POST | `/api/device-keys` | Create device key | Admin only |
 | DELETE | `/api/device-keys/:id` | Revoke device key | Admin only |
 
-**Source:** `crates/inventory-server/src/routes/mod.rs:17-38`
+**Source:** `crates/workshop-server/src/routes/mod.rs:17-38`
 
 ---
 
@@ -223,7 +223,7 @@ The `workshop_id` is:
 
 ### 6.1 API Key Middleware
 
-**Source:** `crates/inventory-server/src/middleware.rs:48-62`
+**Source:** `crates/workshop-server/src/middleware.rs:48-62`
 
 ```
 Header: X-WorkshopManager-Key
@@ -237,7 +237,7 @@ Header: X-WorkshopManager-Key
 
 ### 6.2 Device Key Middleware
 
-**Source:** `crates/inventory-server/src/device_key.rs:23-58`
+**Source:** `crates/workshop-server/src/device_key.rs:23-58`
 
 ```
 Header: X-WorkshopManager-Device-Key
@@ -253,7 +253,7 @@ Header: X-WorkshopManager-Device-Key
 
 ### 6.3 JWT Auth Middleware
 
-**Source:** `crates/inventory-server/src/middleware.rs:65-78`
+**Source:** `crates/workshop-server/src/middleware.rs:65-78`
 
 ```
 Header: Authorization: Bearer <token>
@@ -270,7 +270,7 @@ Header: Authorization: Bearer <token>
 
 ### 6.4 Admin Check Middleware
 
-**Source:** `crates/inventory-server/src/middleware.rs:81-95`
+**Source:** `crates/workshop-server/src/middleware.rs:81-95`
 
 ```
 AuthenticatedUser in request?
@@ -304,7 +304,7 @@ AuthenticatedUser in request?
 }
 ```
 
-**Source:** `crates/inventory-server/src/error.rs`
+**Source:** `crates/workshop-server/src/error.rs`
 
 ---
 

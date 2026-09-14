@@ -6,14 +6,14 @@ First-time setup guide for WorkshopManager.
 
 WorkshopManager consists of two programs:
 
-1. **Server** (`inventory-server`) - Must be running first
-2. **Viewer** (`inventory-viewer`) - Desktop UI that connects to the server
+1. **Server** (`workshop-server`) - Must be running first
+2. **Viewer** (`workshop-viewer`) - Desktop UI that connects to the server
 
 ### Starting the Server
 
 ```powershell
 cd target\release
-.\inventory-server.exe
+.\workshop-server.exe
 ```
 
 Wait until you see:
@@ -27,7 +27,7 @@ In a second terminal:
 
 ```powershell
 cd target\release
-.\inventory-viewer.exe
+.\workshop-viewer.exe
 ```
 
 The desktop application will open.

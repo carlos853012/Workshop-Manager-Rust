@@ -62,14 +62,14 @@ pub fn create_product(state: &AppState, name: &str, price: f64) -> Product {
 
 ```
 crates/
-├── inventory-common/
+├── workshop-common/
 │   ├── src/
 │   │   ├── lib.rs          # Module declarations
 │   │   ├── types.rs        # Domain types
 │   │   ├── enums.rs        # Enumerations
 │   │   ├── dto.rs          # Data transfer objects
 │   │   └── ...
-├── inventory-server/
+├── workshop-server/
 │   ├── src/
 │   │   ├── main.rs         # Entry point
 │   │   ├── routes/         # Route handlers
@@ -78,7 +78,7 @@ crates/
 │   │   ├── crypto.rs       # Encryption
 │   │   ├── audit.rs        # Audit logging
 │   │   └── ...
-└── inventory-viewer/
+└── workshop-viewer/
     ├── src/
     │   ├── main.rs         # Entry point
     │   ├── components/     # Atomic Design components
@@ -380,7 +380,7 @@ Each crate should have a README with:
 ### 7.1 Server File Structure
 
 ```
-crates/inventory-server/src/
+crates/workshop-server/src/
 ├── main.rs                 # Entry point, server setup
 ├── config.rs               # Configuration handling
 ├── error.rs                # Error types
@@ -408,7 +408,7 @@ crates/inventory-server/src/
 ### 7.2 Viewer File Structure
 
 ```
-crates/inventory-viewer/src/
+crates/workshop-viewer/src/
 ├── main.rs                 # Entry point
 ├── api.rs                  # API client
 ├── auth.rs                 # Auth context

@@ -92,9 +92,9 @@
 
 | Archivo | Cambio |
 |---------|--------|
-| `inventory-server/src/routes/analytics.rs` | +workshop_id filters |
-| `inventory-server/src/routes/reports.rs` | +workshop_id filters, +client-history endpoint |
-| `inventory-viewer/src/api.rs` | +8 métodos, +6 DTOs nuevos |
-| `inventory-viewer/src/pages/home.rs` | Dashboard real con API |
-| `inventory-viewer/src/pages/reports.rs` | Client list + history UI |
-| `inventory-viewer/src/pages/users.rs` | CRUD users UI |
+| `workshop-server/src/routes/analytics.rs` | +workshop_id filters |
+| `workshop-server/src/routes/reports.rs` | +workshop_id filters, +client-history endpoint |
+| `workshop-viewer/src/api.rs` | +8 métodos, +6 DTOs nuevos |
+| `workshop-viewer/src/pages/home.rs` | Dashboard real con API |
+| `workshop-viewer/src/pages/reports.rs` | Client list + history UI |
+| `workshop-viewer/src/pages/users.rs` | CRUD users UI |

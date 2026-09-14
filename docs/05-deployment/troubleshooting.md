@@ -220,10 +220,10 @@ Logs are written to stdout by default. To capture logs:
 
 ```powershell
 # Windows
-.\inventory-server.exe 2>&1 | Tee-Object -FilePath "server.log"
+.\workshop-server.exe 2>&1 | Tee-Object -FilePath "server.log"
 
 # Linux
-./inventory-server 2>&1 | tee server.log
+./workshop-server 2>&1 | tee server.log
 ```
 
 ### Log Levels

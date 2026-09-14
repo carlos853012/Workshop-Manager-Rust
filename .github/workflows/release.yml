@@ -86,10 +86,10 @@ jobs:
         run: cargo build --release --workspace
 
       - name: Build MSI (server)
-        run: cargo wix -p inventory-server --nocapture
+        run: cargo wix -p workshop-server --nocapture
 
       - name: Build MSI (viewer)
-        run: cargo wix -p inventory-viewer --nocapture
+        run: cargo wix -p workshop-viewer --nocapture
 
       - name: Upload MSIs
         uses: actions/upload-artifact@v4
@@ -125,11 +125,11 @@ jobs:
         run: cargo install cargo-deb --locked
 
       - name: Build release
-        run: cargo build --release -p inventory-server
+        run: cargo build --release -p workshop-server
 
       - name: Smoke test (server nativo arranca y responde)
         run: |
-          ./target/release/server > /tmp/server-smoke.log 2>&1 &
+          ./target/release/workshop-server > /tmp/server-smoke.log 2>&1 &
           SERVER_PID=$!
           ok=""
           for i in $(seq 1 45); do
@@ -145,7 +145,7 @@ jobs:
           echo "Smoke test OK: server nativo x86_64 arrancó (PG embebido correcto)"
 
       - name: Build .deb
-        run: cargo deb -p inventory-server
+        run: cargo deb -p workshop-server
 
       # upload-artifact@v4 preserva la jerarquía (raíz = LCA de los patrones),
       # así que se sube un staging plano para que el job `release` encuentre
@@ -153,7 +153,7 @@ jobs:
       - name: Preparar artefacto (binario + .deb)
         run: |
           mkdir -p staging
-          cp target/release/server staging/server
+          cp target/release/workshop-server staging/workshop-server
           cp target/debian/*.deb staging/
 
       - name: Upload binario y .deb
@@ -192,11 +192,11 @@ jobs:
         run: cargo install cargo-deb --locked
 
       - name: Build release
-        run: cargo build --release -p inventory-server
+        run: cargo build --release -p workshop-server
 
       - name: Smoke test (server nativo arranca y responde)
         run: |
-          ./target/release/server > /tmp/server-smoke.log 2>&1 &
+          ./target/release/workshop-server > /tmp/server-smoke.log 2>&1 &
           SERVER_PID=$!
           ok=""
           for i in $(seq 1 45); do
@@ -212,12 +212,12 @@ jobs:
           echo "Smoke test OK: server nativo aarch64 arrancó (PG embebido correcto)"
 
       - name: Build .deb
-        run: cargo deb -p inventory-server
+        run: cargo deb -p workshop-server
 
       - name: Preparar artefacto (binario + .deb)
         run: |
           mkdir -p staging
-          cp target/release/server staging/server
+          cp target/release/workshop-server staging/workshop-server
           cp target/debian/*.deb staging/
 
       - name: Upload binario y .deb
@@ -257,8 +257,8 @@ jobs:
           mkdir -p dist
           cp server-linux-x86_64/*.deb "dist/equipos-server_${VER}_amd64.deb"
           cp server-aarch64/*.deb "dist/equipos-server_${VER}_arm64.deb"
-          cp server-linux-x86_64/server "dist/equipos-server-linux-x86_64"
-          cp server-aarch64/server "dist/equipos-server-aarch64"
+          cp server-linux-x86_64/workshop-server "dist/equipos-server-linux-x86_64"
+          cp server-aarch64/workshop-server "dist/equipos-server-aarch64"
           ls -la dist
 
       - name: Publish GitHub Release

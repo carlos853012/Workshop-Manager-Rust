@@ -10,29 +10,29 @@ cargo build
 cargo build --release
 
 # Compilar solo un crate
-cargo build -p inventory-server
-cargo build -p inventory-viewer
+cargo build -p workshop-server
+cargo build -p workshop-viewer
 
 # Verificar sin generar binarios (más rápido)
-cargo check -p inventory-viewer
+cargo check -p workshop-viewer
 
 # Ejecutar server (con terminal visible en debug)
-cargo run -p inventory-server
+cargo run -p workshop-server
 
 # Ejecutar viewer
-cargo run -p inventory-viewer
+cargo run -p workshop-viewer
 ```
 
 ## MSI / Instaladores
 
 ```powershell
 # Server MSI (requiere WiX Toolset v3)
-cargo wix -p inventory-server --nocapture --install-version 0.1.0
-cargo wix -p inventory-server --nocapture -o "target/wix/WorkshopManagerServer-v0.1.0.msi"
+cargo wix -p workshop-server --nocapture --install-version 0.1.0
+cargo wix -p workshop-server --nocapture -o "target/wix/WorkshopManagerServer-v0.1.0.msi"
 
 # Viewer MSI
-cargo wix -p inventory-viewer --nocapture
-cargo wix -p inventory-viewer --nocapture -o "target/wix/WorkshopManagerViewer-v0.1.0.msi"
+cargo wix -p workshop-viewer --nocapture
+cargo wix -p workshop-viewer --nocapture -o "target/wix/WorkshopManagerViewer-v0.1.0.msi"
 
 # Limpiar artefactos WiX anteriores
 Remove-Item -Recurse -Force target\wix -ErrorAction SilentlyContinue
@@ -45,7 +45,7 @@ systemd con el usuario `workshopmanager`:
 
 ```bash
 # Instalar el .deb (el postinst crea el usuario y arranca el servicio)
-sudo dpkg -i inventory-server_0.1.0-1_amd64.deb
+sudo dpkg -i workshop-server_0.1.0-1_amd64.deb
 
 # Estado y logs
 systemctl status workshopmanager-server
@@ -76,7 +76,7 @@ curl -k -H "X-Device-Key: $KEY" https://<ip>:8443/api/device-key/check
 file /var/lib/workshopmanager-server/.theseus/postgresql/18.3.0/bin/postgres
 
 # Remover el paquete (conserva los datos)
-sudo dpkg -r inventory-server
+sudo dpkg -r workshop-server
 # Limpieza total: sudo userdel -r workshopmanager && sudo rm -rf /var/lib/workshopmanager-server
 ```
 
@@ -84,14 +84,14 @@ sudo dpkg -r inventory-server
 
 ```powershell
 # MSIs (Windows, requiere WiX Toolset v3)
-cargo build --release -p inventory-server -p inventory-viewer
-cargo wix -p inventory-server --nocapture
-cargo wix -p inventory-viewer --nocapture
+cargo build --release -p workshop-server -p workshop-viewer
+cargo wix -p workshop-server --nocapture
+cargo wix -p workshop-viewer --nocapture
 
 # .deb Linux (requiere cargo-deb: cargo install cargo-deb --locked)
-# Nota: cargo-deb espera target/release/inventory-server sin extensión .exe
-Copy-Item target\release\inventory-server.exe target\release\inventory-server
-cargo deb -p inventory-server
+# Nota: cargo-deb espera target/release/workshop-server sin extensión .exe
+Copy-Item target\release\workshop-server.exe target\release\workshop-server
+cargo deb -p workshop-server
 
 # Versionado del workspace (bump + commit + tag v<version>)
 .\scripts\bump.ps1 0.4.0
@@ -113,7 +113,7 @@ C:\Users\carlos\.theseus\postgresql\18.3.0\bin\
 /var/lib/equipos-server/.theseus/postgresql/18.3.0/bin/
 
 # Ruta de datos en desarrollo (relativa al dir de trabajo)
-crates\inventory-server\data\pgdata\
+crates\workshop-server\data\pgdata\
 
 # Ruta de datos en producción (MSI)
 %LOCALAPPDATA%\WorkshopManager\data\pgdata\
@@ -153,7 +153,7 @@ Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Na
 Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "WorkshopManagerServer"
 
 # Agregar manualmente
-Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "WorkshopManagerServer" -Value "C:\Program Files\WorkshopManager\bin\inventory-server.exe"
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "WorkshopManagerServer" -Value "C:\Program Files\WorkshopManager\bin\workshop-server.exe"
 ```
 
 ## Pruebas de seguridad
@@ -181,7 +181,7 @@ PowerShell -ExecutionPolicy Bypass -File test_seguridad.ps1
 C:\Users\carlos\Desktop\workshop-manager\
 
 # Datos de PostgreSQL (desarrollo)
-C:\Users\carlos\Desktop\workshop-manager\crates\inventory-server\data\pgdata\
+C:\Users\carlos\Desktop\workshop-manager\crates\workshop-server\data\pgdata\
 
 # Datos de PostgreSQL (producción)
 %LOCALAPPDATA%\WorkshopManager\data\pgdata\
@@ -193,11 +193,11 @@ C:\Users\carlos\Desktop\workshop-manager\crates\inventory-server\data\pgdata\
 %LOCALAPPDATA%\WorkshopManager\viewer_storage\
 
 # Assets del server
-C:\Users\carlos\Desktop\workshop-manager\crates\inventory-server\assets\icon.png
-C:\Users\carlos\Desktop\workshop-manager\crates\inventory-server\assets\icon.ico
+C:\Users\carlos\Desktop\workshop-manager\crates\workshop-server\assets\icon.png
+C:\Users\carlos\Desktop\workshop-manager\crates\workshop-server\assets\icon.ico
 
 # CSS compilado del viewer
-C:\Users\carlos\Desktop\workshop-manager\crates\inventory-viewer\index.css
+C:\Users\carlos\Desktop\workshop-manager\crates\workshop-viewer\index.css
 
 # MSIs generados
 C:\Users\carlos\Desktop\workshop-manager\target\wix\
@@ -240,7 +240,7 @@ New-NetFirewallRule -DisplayName "WorkshopManager Server" -Direction Inbound -Pr
 
 # Reconstruir el viewer con CSS actualizado
 # (el CSS está inlinado en el binario vía include_str!)
-cargo build -p inventory-viewer
+cargo build -p workshop-viewer
 ```
 
 ## Dependencias del sistema

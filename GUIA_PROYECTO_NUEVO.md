@@ -31,9 +31,9 @@ workshop-manager/
 ├── .opencode/
 │   └── skills/
 ├── crates/
-│   ├── inventory-common/
-│   ├── inventory-server/
-│   └── inventory-viewer/
+│   ├── workshop-common/
+│   ├── workshop-server/
+│   └── workshop-viewer/
 ├── config/
 │   └── themes/
 ├── scripts/
@@ -108,9 +108,9 @@ secrets/
 ```toml
 [workspace]
 members = [
-    "crates/inventory-common",
-    "crates/inventory-server",
-    "crates/inventory-viewer"
+    "crates/workshop-common",
+    "crates/workshop-server",
+    "crates/workshop-viewer"
 ]
 resolver = "2"
 
@@ -139,51 +139,51 @@ linker = "aarch64-linux-gnu-gcc"
 
 ```bash
 # Crear estructura mínima
-mkdir -p crates/inventory-common/src
-mkdir -p crates/inventory-server/src
-mkdir -p crates/inventory-viewer/src
+mkdir -p crates/workshop-common/src
+mkdir -p crates/workshop-server/src
+mkdir -p crates/workshop-viewer/src
 
 # Crear archivos mínimos
-echo 'pub fn hello() -> String { "Hello".to_string() }' > crates/inventory-common/src/lib.rs
-echo 'fn main() { println!("Server"); }' > crates/inventory-server/src/main.rs
-echo 'fn main() { println!("Viewer"); }' > crates/inventory-viewer/src/main.rs
+echo 'pub fn hello() -> String { "Hello".to_string() }' > crates/workshop-common/src/lib.rs
+echo 'fn main() { println!("Server"); }' > crates/workshop-server/src/main.rs
+echo 'fn main() { println!("Viewer"); }' > crates/workshop-viewer/src/main.rs
 
 # Crear Cargo.tomls de cada crate
-cat > crates/inventory-common/Cargo.toml << 'EOF'
+cat > crates/workshop-common/Cargo.toml << 'EOF'
 [package]
-name = "inventory-common"
+name = "workshop-common"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 EOF
 
-cat > crates/inventory-server/Cargo.toml << 'EOF'
+cat > crates/workshop-server/Cargo.toml << 'EOF'
 [package]
-name = "inventory-server"
+name = "workshop-server"
 version.workspace = true
 edition.workspace = true
 
 [[bin]]
-name = "inventory-server"
+name = "workshop-server"
 path = "src/main.rs"
 
 [dependencies]
-inventory-common = { path = "../inventory-common" }
+workshop-common = { path = "../workshop-common" }
 EOF
 
-cat > crates/inventory-viewer/Cargo.toml << 'EOF'
+cat > crates/workshop-viewer/Cargo.toml << 'EOF'
 [package]
-name = "inventory-viewer"
+name = "workshop-viewer"
 version.workspace = true
 edition.workspace = true
 
 [[bin]]
-name = "inventory-viewer"
+name = "workshop-viewer"
 path = "src/main.rs"
 
 [dependencies]
-inventory-common = { path = "../inventory-common" }
+workshop-common = { path = "../workshop-common" }
 EOF
 
 # Verificar compilación
@@ -241,13 +241,13 @@ Copy-Item "C:\Users\carlos\Desktop\Equipos-Rust\.geminirules" ".\.geminirules"
 
 ---
 
-## Paso 3: Configurar inventory-common
+## Paso 3: Configurar workshop-common
 
 ### 3.1 Actualizar Cargo.toml
 
 ```toml
 [package]
-name = "inventory-common"
+name = "workshop-common"
 version.workspace = true
 edition.workspace = true
 
@@ -786,28 +786,28 @@ pub struct DashboardResponse {
 ### 3.6 Verificar compilación
 
 ```bash
-cargo build -p inventory-common
-cargo test -p inventory-common
+cargo build -p workshop-common
+cargo test -p workshop-common
 ```
 
 ---
 
-## Paso 4: Configurar inventory-server
+## Paso 4: Configurar workshop-server
 
 ### 4.1 Actualizar Cargo.toml
 
 ```toml
 [package]
-name = "inventory-server"
+name = "workshop-server"
 version.workspace = true
 edition.workspace = true
 
 [[bin]]
-name = "inventory-server"
+name = "workshop-server"
 path = "src/main.rs"
 
 [dependencies]
-inventory-common = { path = "../inventory-common" }
+workshop-common = { path = "../workshop-common" }
 axum = "0.7"
 tokio = { version = "1", features = ["full"] }
 sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "chrono", "uuid"] }
@@ -924,27 +924,27 @@ async fn health() -> &'static str {
 ### 4.3 Verificar compilación (sin dependencias faltantes)
 
 ```bash
-cargo build -p inventory-server
+cargo build -p workshop-server
 ```
 
 ---
 
-## Paso 5: Configurar inventory-viewer
+## Paso 5: Configurar workshop-viewer
 
 ### 5.1 Actualizar Cargo.toml
 
 ```toml
 [package]
-name = "inventory-viewer"
+name = "workshop-viewer"
 version.workspace = true
 edition.workspace = true
 
 [[bin]]
-name = "inventory-viewer"
+name = "workshop-viewer"
 path = "src/main.rs"
 
 [dependencies]
-inventory-common = { path = "../inventory-common" }
+workshop-common = { path = "../workshop-common" }
 dioxus = { version = "0.5", features = ["desktop"] }
 dioxus-desktop = "0.5"
 dioxus-router = "0.5"
@@ -1041,7 +1041,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 ### 5.4 Verificar compilación
 
 ```bash
-cargo build -p inventory-viewer
+cargo build -p workshop-viewer
 ```
 
 ---
@@ -1085,17 +1085,17 @@ workshop-manager/
 ├── .cursorrules
 ├── .geminirules
 ├── crates/
-│   ├── inventory-common/
+│   ├── workshop-common/
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs
 │   │       ├── features.rs
 │   │       ├── license.rs
 │   │       └── dto.rs
-│   ├── inventory-server/
+│   ├── workshop-server/
 │   │   ├── Cargo.toml
 │   │   └── src/main.rs
-│   └── inventory-viewer/
+│   └── workshop-viewer/
 │       ├── Cargo.toml
 │       ├── index.css
 │       └── src/main.rs

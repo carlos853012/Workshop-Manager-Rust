@@ -60,7 +60,7 @@ WorkshopManager uses encryption at three layers: data at rest, data in transit, 
 | Initialization | `OnceLock` cipher (set once at startup, no `unsafe`) |
 | Rotation | Not implemented (backlog) |
 
-**Source:** `crates/inventory-server/src/secrets.rs:54-88`
+**Source:** `crates/workshop-server/src/secrets.rs:54-88`
 
 ### 2.3 Encryption Flow
 
@@ -81,7 +81,7 @@ WorkshopManager uses encryption at three layers: data at rest, data in transit, 
                                                            └──────────────┘
 ```
 
-**Source:** `crates/inventory-server/src/crypto.rs:40-60`
+**Source:** `crates/workshop-server/src/crypto.rs:40-60`
 
 ### 2.4 Decryption Flow
 
@@ -93,7 +93,7 @@ WorkshopManager uses encryption at three layers: data at rest, data in transit, 
 └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-**Source:** `crates/inventory-server/src/crypto.rs:62-78`
+**Source:** `crates/workshop-server/src/crypto.rs:62-78`
 
 ### 2.5 What Gets Encrypted
 
@@ -107,7 +107,7 @@ WorkshopManager uses encryption at three layers: data at rest, data in transit, 
 
 Each encryption operation generates a fresh random 12-byte nonce via `OsRng`. This ensures that encrypting the same plaintext twice produces different ciphertexts, preventing nonce reuse attacks.
 
-**Test:** `crates/inventory-server/src/crypto.rs:118-128`
+**Test:** `crates/workshop-server/src/crypto.rs:118-128`
 
 ---
 
@@ -126,7 +126,7 @@ Each encryption operation generates a fresh random 12-byte nonce via `OsRng`. Th
 
 ### 3.2 Certificate Management
 
-**Source:** `crates/inventory-server/src/tls.rs:56-101`
+**Source:** `crates/workshop-server/src/tls.rs:56-101`
 
 | Aspect | Implementation |
 |--------|---------------|
@@ -166,7 +166,7 @@ rustls::ServerConfig::builder()
     .with_single_cert(certs, key)             // Server certificate + private key
 ```
 
-**Source:** `crates/inventory-server/src/tls.rs:104-114`
+**Source:** `crates/workshop-server/src/tls.rs:104-114`
 
 ---
 
@@ -214,7 +214,7 @@ $argon2id$v=19$m=65536,t=3,p=4$<base64-salt>$<base64-hash>
 
 ### 5.2 Secret Initialization
 
-**Source:** `crates/inventory-server/src/secrets.rs:7-15`
+**Source:** `crates/workshop-server/src/secrets.rs:7-15`
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
@@ -235,7 +235,7 @@ $argon2id$v=19$m=65536,t=3,p=4$<base64-salt>$<base64-hash>
 | Persistence | Generated once, reused across restarts |
 | Algorithm | HS256 (HMAC-SHA256) |
 
-**Source:** `crates/inventory-server/src/secrets.rs:17-52`
+**Source:** `crates/workshop-server/src/secrets.rs:17-52`
 
 ### 5.4 Crypto Key
 
@@ -248,7 +248,7 @@ $argon2id$v=19$m=65536,t=3,p=4$<base64-salt>$<base64-hash>
 | Persistence | Generated once, reused across restarts |
 | Algorithm | AES-256-GCM |
 
-**Source:** `crates/inventory-server/src/secrets.rs:54-88`
+**Source:** `crates/workshop-server/src/secrets.rs:54-88`
 
 ### 5.5 Secret File Permissions
 
@@ -293,7 +293,7 @@ $argon2id$v=19$m=65536,t=3,p=4$<base64-salt>$<base64-hash>
 └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-**Source:** `crates/inventory-server/src/backup.rs:10-52`
+**Source:** `crates/workshop-server/src/backup.rs:10-52`
 
 ### 7.2 Backup Properties
 

@@ -21,8 +21,8 @@ This produces two binaries in `target/release/`:
 
 | Binary | Purpose |
 |--------|---------|
-| `inventory-server.exe` | Backend server (Axum + embedded PostgreSQL) |
-| `inventory-viewer.exe` | Desktop UI (Dioxus) |
+| `workshop-server.exe` | Backend server (Axum + embedded PostgreSQL) |
+| `workshop-viewer.exe` | Desktop UI (Dioxus) |
 
 > First build takes 5-10 minutes due to LTO optimizations. Subsequent builds are fast.
 
@@ -40,7 +40,7 @@ Copy-Item "config\viewer.toml" -Destination "target\release\config\"
 
 ```powershell
 cd target\release
-.\inventory-server.exe
+.\workshop-server.exe
 ```
 
 On first run, the server will:
@@ -60,7 +60,7 @@ In a second terminal:
 
 ```powershell
 cd target\release
-.\inventory-viewer.exe
+.\workshop-viewer.exe
 ```
 
 The desktop app will open and connect to the server.
@@ -80,7 +80,7 @@ cargo build --workspace --release
 ```
 
 **Run server as background service (optional):**
-Use [NSSM](https://nssm.cc/) or Windows Task Scheduler to run `inventory-server.exe` at startup.
+Use [NSSM](https://nssm.cc/) or Windows Task Scheduler to run `workshop-server.exe` at startup.
 
 ### Linux
 
@@ -104,14 +104,14 @@ cargo build --workspace --release
 **Run:**
 ```bash
 cd target/release
-./inventory-server &
-./inventory-viewer
+./workshop-server &
+./workshop-viewer
 ```
 
 **Create .deb package (optional):**
 ```bash
-cargo deb -p inventory-server
-cargo deb -p inventory-viewer
+cargo deb -p workshop-server
+cargo deb -p workshop-viewer
 ```
 
 ## First-Time Setup Wizard

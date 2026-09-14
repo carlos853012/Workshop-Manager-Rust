@@ -18,20 +18,20 @@ Sistema de gestión integral para talleres de motocicletas. Inventario, ventas, 
 
 ```
 ┌─────────────────────┐     HTTPS/TLS      ┌──────────────────────┐
-│  inventory-viewer   │ ◄────────────────►  │  inventory-server    │
+│  workshop-viewer   │ ◄────────────────►  │  workshop-server    │
 │  Dioxus Desktop     │    REST API         │  Axum 0.7 + Tokio    │
 │  (WebView2)         │                     │  PostgreSQL embebido  │
 └─────────────────────┘                     └──────────────────────┘
         │                                           │
-        └──────────► inventory-common ◄─────────────┘
+        └──────────► workshop-common ◄─────────────┘
                      (tipos compartidos)
 ```
 
-**Crate `inventory-common`**: tipos de dominio, DTOs, enums, sistema de licencias.
+**Crate `workshop-common`**: tipos de dominio, DTOs, enums, sistema de licencias.
 
-**Crate `inventory-server`**: backend HTTP con autenticación JWT, cifrado AES-256-GCM, auditoría, backup automático, y PostgreSQL embebido (sin instalación externa).
+**Crate `workshop-server`**: backend HTTP con autenticación JWT, cifrado AES-256-GCM, auditoría, backup automático, y PostgreSQL embebido (sin instalación externa).
 
-**Crate `inventory-viewer`**: cliente de escritorio con Dioxus, componentes Atomic Design, temas claro/oscuro.
+**Crate `workshop-viewer`**: cliente de escritorio con Dioxus, componentes Atomic Design, temas claro/oscuro.
 
 ## Requisitos previos
 
@@ -47,11 +47,11 @@ Sistema de gestión integral para talleres de motocicletas. Inventario, ventas, 
 cargo build --workspace
 
 # Compilar solo un crate
-cargo build -p inventory-server
-cargo build -p inventory-viewer
+cargo build -p workshop-server
+cargo build -p workshop-viewer
 
 # Verificar sin generar binarios
-cargo check -p inventory-viewer
+cargo check -p workshop-viewer
 
 # Release optimizado
 cargo build --release --workspace
@@ -61,10 +61,10 @@ cargo build --release --workspace
 
 ```powershell
 # Server (escucha en https://0.0.0.0:8443)
-cargo run -p inventory-server
+cargo run -p workshop-server
 
 # Viewer (abre ventana de escritorio)
-cargo run -p inventory-viewer
+cargo run -p workshop-viewer
 ```
 
 El server genera automáticamente PostgreSQL embebido, certificados TLS, y credenciales en el primer arranque. Los datos se almacenan en el directorio de datos local de la plataforma.
@@ -91,7 +91,7 @@ workshop-manager/
 │   ├── server.toml                # Config del server (gitignored)
 │   └── viewer.toml                # Config del viewer (gitignored)
 ├── crates/
-│   ├── inventory-common/          # Tipos compartidos
+│   ├── workshop-common/          # Tipos compartidos
 │   │   └── src/
 │   │       ├── lib.rs
 │   │       ├── dto.rs             # Data Transfer Objects
@@ -99,7 +99,7 @@ workshop-manager/
 │   │       ├── license.rs         # Verificación Ed25519
 │   │       ├── money.rs           # Lógica monetaria
 │   │       └── patente.rs         # Validación patentes
-│   ├── inventory-server/          # Backend
+│   ├── workshop-server/          # Backend
 │   │   ├── migrations/            # Migraciones SQL (8 archivos)
 │   │   └── src/
 │   │       ├── main.rs
@@ -110,7 +110,7 @@ workshop-manager/
 │   │       ├── backup.rs          # Backup automático
 │   │       ├── db_manager.rs      # PostgreSQL embebido
 │   │       └── routes/            # Endpoints REST
-│   └── inventory-viewer/          # Frontend Desktop
+│   └── workshop-viewer/          # Frontend Desktop
 │       ├── index.css              # Estilos (inlinados)
 │       ├── assets/                # Tokens de tema
 │       └── src/
@@ -135,12 +135,12 @@ workshop-manager/
 .\scripts\bump.ps1 0.2.0
 
 # Windows: MSI
-cargo build --release -p inventory-server -p inventory-viewer
-cargo wix -p inventory-server --nocapture
-cargo wix -p inventory-viewer --nocapture
+cargo build --release -p workshop-server -p workshop-viewer
+cargo wix -p workshop-server --nocapture
+cargo wix -p workshop-viewer --nocapture
 
 # Linux: .deb
-cargo deb -p inventory-server
+cargo deb -p workshop-server
 ```
 
 Los workflows de CI/CD replican estos pasos: `ci.yml` en cada push, `release.yml` al taggear `v*` (genera 2 MSIs + 2 .deb + 2 binarios raw).

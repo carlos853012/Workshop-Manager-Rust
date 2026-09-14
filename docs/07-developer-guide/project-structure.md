@@ -14,9 +14,9 @@ workshop-manager/
 │   ├── server.toml               # Server configuration
 │   └── viewer.toml               # Viewer configuration
 ├── crates/
-│   ├── inventory-common/         # Shared types, DTOs, enums, licensing
-│   ├── inventory-server/         # Axum backend, DB, auth, TLS
-│   └── inventory-viewer/         # Dioxus Desktop frontend
+│   ├── workshop-common/         # Shared types, DTOs, enums, licensing
+│   ├── workshop-server/         # Axum backend, DB, auth, TLS
+│   └── workshop-viewer/         # Dioxus Desktop frontend
 ├── docs/                         # Documentation
 ├── scripts/
 │   └── bump.ps1                  # Version bump automation
@@ -31,12 +31,12 @@ workshop-manager/
 
 ## Crate Responsibilities
 
-### inventory-common
+### workshop-common
 
 **Shared foundation** used by both server and viewer.
 
 ```
-crates/inventory-common/src/
+crates/workshop-common/src/
 ├── lib.rs          # Module declarations, re-exports
 ├── dto.rs          # Request/Response DTOs (358 lines)
 ├── features.rs     # Feature flags and licensing tiers
@@ -52,12 +52,12 @@ crates/inventory-common/src/
 - DTOs: `LoginRequest`, `CreateProductRequest`, `CreateSaleRequest`, `ApiResponse<T>`, `PaginatedResponse<T>`
 - License: `Feature` enum (15 features), `License` struct with signature verification
 
-### inventory-server
+### workshop-server
 
 **Backend API server** with embedded database.
 
 ```
-crates/inventory-server/src/
+crates/workshop-server/src/
 ├── main.rs         # Entrypoint, server bootstrap
 ├── state.rs        # AppState (DB pool, config, secrets)
 ├── config.rs       # TOML configuration loading
@@ -90,12 +90,12 @@ crates/inventory-server/src/
     └── pagination.rs  # Shared pagination logic
 ```
 
-### inventory-viewer
+### workshop-viewer
 
 **Dioxus Desktop frontend** with Atomic Design components.
 
 ```
-crates/inventory-viewer/src/
+crates/workshop-viewer/src/
 ├── main.rs         # Entrypoint, Dioxus app launch
 ├── routes.rs       # Route enum (dioxus-router)
 ├── app_state.rs    # Global app state
@@ -156,16 +156,16 @@ pub fn MyComponent(props: MyComponentProps) -> Element {
 ## Dependency Graph
 
 ```
-inventory-viewer ──depends on──► inventory-common
+workshop-viewer ──depends on──► workshop-common
        │
        └── (HTTP calls to server at runtime)
 
-inventory-server ──depends on──► inventory-common
+workshop-server ──depends on──► workshop-common
        │
        └── (Direct DB access, no viewer dependency)
 ```
 
-**Rule**: `inventory-common` never depends on server or viewer. It is a pure data/types crate.
+**Rule**: `workshop-common` never depends on server or viewer. It is a pure data/types crate.
 
 ---
 
@@ -186,7 +186,7 @@ inventory-server ──depends on──► inventory-common
 
 | Item | Convention | Example |
 |------|-----------|---------|
-| Crate names | `inventory-{role}` | `inventory-server` |
+| Crate names | `inventory-{role}` | `workshop-server` |
 | Module files | `snake_case.rs` | `device_key.rs` |
 | Structs | `PascalCase` | `CreateProductRequest` |
 | Functions | `snake_case` | `require_auth()` |

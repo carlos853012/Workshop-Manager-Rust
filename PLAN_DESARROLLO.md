@@ -51,14 +51,14 @@ workshop-manager/
 ├── .gitignore
 ├── .cargo/config.toml
 ├── crates/
-│   ├── inventory-common/
+│   ├── workshop-common/
 │   │   ├── Cargo.toml
 │   │   └── src/lib.rs
-│   ├── inventory-server/
+│   ├── workshop-server/
 │   │   ├── Cargo.toml
 │   │   ├── build.rs
 │   │   └── src/main.rs
-│   └── inventory-viewer/
+│   └── workshop-viewer/
 │       ├── Cargo.toml
 │       ├── build.rs
 │       └── src/main.rs
@@ -200,11 +200,11 @@ opt-level = "z"
 
 ## FASE 2: Domain Layer (Semana 2)
 
-### Tarea 2.1: Configurar dependencias de inventory-common
+### Tarea 2.1: Configurar dependencias de workshop-common
 
 **Descripción:** Definir las dependencias del crate common.
 
-**Archivo:** `crates/inventory-common/Cargo.toml`
+**Archivo:** `crates/workshop-common/Cargo.toml`
 
 **Dependencias:**
 ```toml
@@ -219,7 +219,7 @@ ed25519-dalek = "2.1"
 ```
 
 **Criterios de aceptación:**
-- [ ] `cargo build -p inventory-common` compila
+- [ ] `cargo build -p workshop-common` compila
 - [ ] Dependencias se resuelven correctamente
 
 ---
@@ -228,7 +228,7 @@ ed25519-dalek = "2.1"
 
 **Descripción:** Definir todas las estructuras del dominio.
 
-**Archivo:** `crates/inventory-common/src/lib.rs`
+**Archivo:** `crates/workshop-common/src/lib.rs`
 
 **Entidades:**
 - Product
@@ -258,7 +258,7 @@ ed25519-dalek = "2.1"
 
 **Descripción:** Definir sistema de features para DLCs.
 
-**Archivo:** `crates/inventory-common/src/features.rs`
+**Archivo:** `crates/workshop-common/src/features.rs`
 
 **Criterios de aceptación:**
 - [ ] Todos los features listados
@@ -272,7 +272,7 @@ ed25519-dalek = "2.1"
 
 **Descripción:** Implementar validación Ed25519.
 
-**Archivo:** `crates/inventory-common/src/license.rs`
+**Archivo:** `crates/workshop-common/src/license.rs`
 
 **Criterios de aceptación:**
 - [ ] verify_license() funciona
@@ -286,7 +286,7 @@ ed25519-dalek = "2.1"
 
 **Descripción:** Definir DTOs para API.
 
-**Archivo:** `crates/inventory-common/src/dto.rs`
+**Archivo:** `crates/workshop-common/src/dto.rs`
 
 **Criterios de aceptación:**
 - [ ] Request structs definidas
@@ -302,12 +302,12 @@ ed25519-dalek = "2.1"
 
 **Descripción:** Definir todas las dependencias del server.
 
-**Archivo:** `crates/inventory-server/Cargo.toml`
+**Archivo:** `crates/workshop-server/Cargo.toml`
 
 **Dependencias principales:**
 ```toml
 [dependencies]
-inventory-common = { path = "../inventory-common" }
+workshop-common = { path = "../workshop-common" }
 axum = "0.7"
 tokio = { version = "1", features = ["full"] }
 sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "chrono", "uuid"] }
@@ -331,7 +331,7 @@ obfstr = "0.4"
 ```
 
 **Criterios de aceptación:**
-- [ ] `cargo build -p inventory-server` compila
+- [ ] `cargo build -p workshop-server` compila
 - [ ] Todas las dependencias se resuelven
 
 ---
@@ -375,7 +375,7 @@ obfstr = "0.4"
 
 **Descripción:** Implementar carga de configuración TOML.
 
-**Archivo:** `crates/inventory-server/src/config.rs`
+**Archivo:** `crates/workshop-server/src/config.rs`
 
 **Criterios de aceptación:**
 - [ ] ServerConfig se carga desde TOML
@@ -648,12 +648,12 @@ obfstr = "0.4"
 
 ### Tarea 5.1: Configurar dependencias del viewer
 
-**Archivo:** `crates/inventory-viewer/Cargo.toml`
+**Archivo:** `crates/workshop-viewer/Cargo.toml`
 
 **Dependencias:**
 ```toml
 [dependencies]
-inventory-common = { path = "../inventory-common" }
+workshop-common = { path = "../workshop-common" }
 dioxus = { version = "0.5", features = ["desktop"] }
 dioxus-desktop = "0.5"
 dioxus-router = "0.5"
@@ -853,7 +853,7 @@ image = "0.25"
 
 ---
 
-### Tarea 6.5: Crear debian/inventory-server.service
+### Tarea 6.5: Crear debian/workshop-server.service
 
 **Descripción:** Systemd unit file.
 

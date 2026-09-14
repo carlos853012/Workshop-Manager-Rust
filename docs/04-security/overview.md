@@ -39,7 +39,7 @@ WorkshopManager implements a layered security model where no single control is r
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         CLIENT (inventory-viewer)                       │
+│                         CLIENT (workshop-viewer)                       │
 │                                                                         │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────────┐  │
 │  │ API Key      │  │ Device Key   │  │ JWT Bearer Token             │  │
