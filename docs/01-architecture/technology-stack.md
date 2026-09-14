@@ -2,7 +2,7 @@
 
 **Version:** 0.1.0
 **Status:** Phase 3 of 8 Complete
-**Last Updated:** 2026-09-13
+**Last Updated:** 2026-09-14
 **Audience:** Developers, DevOps, technical stakeholders
 
 ---
@@ -89,7 +89,16 @@
 
 | Crate | Version | Purpose | License | Notes |
 |-------|---------|---------|---------|-------|
-| `tray-icon` | 0.14 | System tray (workspace override) | MIT | All features disabled to avoid GTK init |
+| `tray-icon` | 0.19 | System tray (workspace override) | MIT | All features disabled to avoid GTK init |
+
+### 1.5 license-tool Dependencies
+
+| Crate | Version | Purpose | License | Notes |
+|-------|---------|---------|---------|-------|
+| `workshop-common` | path | Shared types and licensing logic | Proprietary | Local workspace crate |
+| `clap` | 4 | CLI argument parsing | MIT | `derive` feature |
+| `serde_json` | 1.0 | JSON serialization | MIT/Apache-2.0 | License data |
+| `chrono` | 0.4 | Date/time | MIT/Apache-2.0 | License timestamps |
 
 ---
 

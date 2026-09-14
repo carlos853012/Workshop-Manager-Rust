@@ -16,10 +16,12 @@ workshop-manager/
 ├── crates/
 │   ├── workshop-common/         # Shared types, DTOs, enums, licensing
 │   ├── workshop-server/         # Axum backend, DB, auth, TLS
-│   └── workshop-viewer/         # Dioxus Desktop frontend
+│   ├── workshop-viewer/         # Dioxus Desktop frontend
+│   └── license-tool/            # CLI for license generation
 ├── docs/                         # Documentation
 ├── scripts/
-│   └── bump.ps1                  # Version bump automation
+│   ├── bump.ps1                  # Version bump automation
+│   └── restore.ps1               # Backup restore script
 ├── tools/                        # Dev utilities
 ├── AGENTS.md                     # AI assistant instructions
 ├── CONSTITUCION.md               # Coding rules and principles
@@ -39,9 +41,10 @@ workshop-manager/
 crates/workshop-common/src/
 ├── lib.rs          # Module declarations, re-exports
 ├── dto.rs          # Request/Response DTOs (358 lines)
-├── features.rs     # Feature flags and licensing tiers
+├── features.rs     # Feature flags and licensing tiers (17 features, 5 tiers)
+├── hardware.rs     # Hardware fingerprint extraction (CPU + MB + Disk)
 ├── icon_data.rs    # Icon SVG data
-├── license.rs      # Ed25519 hardware-bound license verification
+├── license.rs      # Ed25519 signing/verification, license creation
 ├── money.rs        # Monetary calculations (Decimal-based)
 └── patente.rs      # Vehicle patent/plate validation
 ```
@@ -50,7 +53,7 @@ crates/workshop-common/src/
 - Domain structs: `Product`, `Sale`, `SaleItem`, `Repair`, `Supplier`, `User`, `AuditLog`
 - Enums: `PaymentMethod`, `RepairStatus`, `Priority`, `UserRole`
 - DTOs: `LoginRequest`, `CreateProductRequest`, `CreateSaleRequest`, `ApiResponse<T>`, `PaginatedResponse<T>`
-- License: `Feature` enum (15 features), `License` struct with signature verification
+- License: `Feature` enum (17 features), `LicenseTier` enum (5 tiers), `License` struct with Ed25519 signature verification
 
 ### workshop-server
 
@@ -75,7 +78,8 @@ crates/workshop-server/src/
 ├── certificate.rs # Service certificate generation
 ├── schema.rs       # DB schema types
 ├── db_manager.rs   # Database lifecycle management
-├── tray.rs         # System tray icon
+├── license.rs      # License loading, validation, online activation
+├── tray.rs         # System tray icon (API key copy, license status)
 └── routes/
     ├── mod.rs      # Route registration
     ├── auth.rs     # POST /api/auth/login, /register
@@ -85,6 +89,7 @@ crates/workshop-server/src/
     ├── suppliers.rs# CRUD /api/suppliers
     ├── users.rs    # CRUD /api/users (admin)
     ├── device_keys.rs # CRUD /api/device-keys
+    ├── audit.rs     # GET /api/audit (admin)
     ├── analytics.rs   # Dashboard analytics
     ├── reports.rs     # Report generation
     └── pagination.rs  # Shared pagination logic

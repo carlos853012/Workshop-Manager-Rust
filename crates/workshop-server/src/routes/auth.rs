@@ -99,7 +99,7 @@ async fn register(
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     if existing_count > 0 {
-        return Err(AppError::Forbidden);
+        return Err(AppError::Forbidden("Acceso denegado".to_string()));
     }
 
     let existing_email: Option<Uuid> = sqlx::query_scalar("SELECT id FROM users WHERE email = $1")

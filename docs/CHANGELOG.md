@@ -17,6 +17,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Password history enforcement
 - CSP and Permissions-Policy security headers
 - Automated crypto key rotation
+- Online validation server deployment
+
+### Added (since 0.1.0)
+- **Licensing system**: Ed25519-signed, hardware-bound licenses with 5 tiers
+- **license-tool**: CLI for generating, verifying, and migrating licenses
+- **Hardware fingerprinting**: CPU + Motherboard + Disk SHA-256 hash
+- **Viewer limits**: Configurable per license tier (Trial:1, Base:2, Reports:5, Advanced:10, API:999)
+- **License migration**: Transfer licenses between machines with transfer count limits
+- **Trial mode**: 7-day trial license on first run
+- **Tray icon enhancements**: Copy API Key, Copy Device Key, license status display
+- **Sale cancellation endpoint**: `POST /api/sales/:id/cancel`
+- **Audit log endpoint**: `GET /api/audit` (admin only)
+- **Backup restore script**: `scripts/restore.ps1`
+- **User manual**: Complete Spanish documentation for clients
+- **Configurable IVA rate**: `[tax] iva_rate` in server.toml
+- **Configurable icon colors**: `[icon] bg` and `[icon] fg` in server.toml
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Version:** 0.1.0
 **Status:** Phase 3 of 8 Complete
-**Last Updated:** 2026-09-13
+**Last Updated:** 2026-09-14
 **Audience:** Architects, developers, technical stakeholders
 
 ---
@@ -138,8 +138,9 @@ WorkshopManager is a **desktop-native, integrated management system** designed f
 | `dto.rs` | Request/response DTOs (`LoginRequest`, `CreateSaleRequest`, `ApiResponse<T>`, `PaginatedResponse<T>`, `DashboardResponse`, `ServiceCertificate`) |
 | `money.rs` | Chilean CLP monetary logic: IVA 19% calculation, price extraction (base + IVA), CLP rounding to nearest $10, CLP formatting with thousand separators |
 | `patente.rs` | Chilean license plate (PPU) validation: Antigua (LLnnnn), Nueva (LLLLnn), Moto (LLLnn), Policia (Lnnnn) |
-| `license.rs` | License system: hardware hash extraction (SHA-256), Ed25519 signature verification |
-| `features.rs` | Feature flag system with 4 license tiers: Base, Reports, Advanced, API |
+| `license.rs` | License system: Ed25519 signature creation/verification, hardware hash validation, license file I/O |
+| `features.rs` | Feature flag system with 5 license tiers: Trial, Base, Reports, Advanced, API (17 features) |
+| `hardware.rs` | Hardware fingerprint extraction (CPU + Motherboard + Disk → SHA-256) |
 | `icon_data.rs` | Procedurally generated application icon (wrench) |
 
 ### 3.2 workshop-server (Backend)
@@ -235,13 +236,19 @@ WorkshopManager is a **desktop-native, integrated management system** designed f
 
 ### D5: License System with Hardware Binding
 
-**Decision:** Implement Ed25519-signed licenses with optional hardware fingerprinting.
+**Decision:** Implement Ed25519-signed licenses with hardware fingerprinting and tiered feature gating.
 
 **Rationale:**
-- Enables tiered feature gating (Base → Reports → Advanced → API)
-- Hardware binding prevents casual license sharing
-- Ed25519 signatures are fast and have small keys (32 bytes)
-- Future-proof for online activation if needed
+- 5 license tiers (Trial → Base → Reports → Advanced → API) with 17 features
+- Hardware binding (CPU + MB + Disk SHA-256) prevents license sharing
+- Ed25519 signatures are fast, small keys (32 bytes), and cryptographically secure
+- Max viewers per tier controls concurrent connections
+- Max transfers limits migration abuse
+- Online validation on first activation prevents multi-PC use
+- Trial mode enables immediate use without activation
+- `license-tool` CLI for vendor license generation
+
+**Trade-off:** Requires vendor involvement for license generation; offline piracy detection is limited.
 
 ### D6: Atomic Design for UI Components
 
@@ -345,7 +352,7 @@ WorkshopManager is a **desktop-native, integrated management system** designed f
 
 | Dimension | Current | Limit |
 |-----------|---------|-------|
-| Concurrent users | Single-user desktop | 1 (by design) |
+| Concurrent viewers | Per license tier | Trial: 1, Base: 2, Reports: 5, Advanced: 10, API: 999 |
 | Product catalog | Unlimited | Limited by disk space |
 | Transaction history | Unlimited | Limited by disk space |
 | Multi-workshop | Single workshop | Data isolation ready for multi-tenant |
@@ -355,9 +362,9 @@ WorkshopManager is a **desktop-native, integrated management system** designed f
 
 | Aspect | Approach |
 |--------|----------|
-| Code organization | 3-crate workspace with clear separation of concerns |
+| Code organization | 4-crate workspace (common, server, viewer, license-tool) |
 | Type safety | Shared domain types across server and viewer |
-| Testing | 23 inline unit tests across 9 modules |
+| Testing | 92 unit tests across 4 crates |
 | Linting | `cargo clippy --workspace -- -D warnings` |
 | Formatting | `cargo fmt --all --check` |
 | Versioning | Semantic versioning with `scripts/bump.ps1` |

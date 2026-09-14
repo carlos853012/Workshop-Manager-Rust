@@ -24,6 +24,7 @@ pub struct ServerConfig {
     pub port: u16,
     pub api_key: String,
     pub require_device_key: bool,
+    pub max_viewers: u32,
     pub iva_rate: f64,
     pub icon_bg: [u8; 3],
     pub icon_fg: [u8; 3],

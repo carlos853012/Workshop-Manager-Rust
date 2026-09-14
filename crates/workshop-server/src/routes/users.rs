@@ -191,7 +191,7 @@ async fn update_user(
     if admin.id == id {
         if let Some(ref new_role) = req.role {
             if !matches!(new_role, UserRole::Admin) {
-                return Err(AppError::Forbidden);
+                return Err(AppError::Forbidden("Acceso denegado".to_string()));
             }
         }
     }
@@ -255,7 +255,7 @@ async fn delete_user(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<()>>, AppError> {
     if admin.id == id {
-        return Err(AppError::Forbidden);
+        return Err(AppError::Forbidden("Acceso denegado".to_string()));
     }
 
     let old_user: Option<User> = sqlx::query_as(

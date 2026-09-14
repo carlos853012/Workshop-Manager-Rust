@@ -99,7 +99,7 @@ async fn create_product(
     Json(req): Json<CreateProductRequest>,
 ) -> Result<Json<ApiResponse<Product>>, AppError> {
     if !matches!(user.role, UserRole::Admin | UserRole::Seller) {
-        return Err(AppError::Forbidden);
+        return Err(AppError::Forbidden("Acceso denegado".to_string()));
     }
     validate_create_product_request(&req)?;
 
@@ -197,7 +197,7 @@ async fn update_product(
     Json(req): Json<CreateProductRequest>,
 ) -> Result<Json<ApiResponse<Product>>, AppError> {
     if !matches!(user.role, UserRole::Admin | UserRole::Seller) {
-        return Err(AppError::Forbidden);
+        return Err(AppError::Forbidden("Acceso denegado".to_string()));
     }
     validate_create_product_request(&req)?;
 
@@ -290,7 +290,7 @@ async fn delete_product(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<()>>, AppError> {
     if !user.is_admin() {
-        return Err(AppError::Forbidden);
+        return Err(AppError::Forbidden("Acceso denegado".to_string()));
     }
     let old_product: Option<Product> = sqlx::query_as(
         "SELECT id, workshop_id, name, description, category, brand, model, sku, barcode, price, cost, stock, min_stock, \

@@ -38,6 +38,7 @@ anyhow = "1.0"
 regex = "1"
 thiserror = "1.0"
 genpdf = "0.2"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 
 [target.'cfg(windows)'.dependencies]
 tao = "0.30"

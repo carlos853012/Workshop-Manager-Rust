@@ -1,13 +1,14 @@
 # AGENTS.md — WorkshopManager
 
 ## Project status
-**Version 0.1.0** — All critical/high audit items resolved. 84 tests passing, clippy clean. Domain: motorcycle workshop (products, sales, repairs, suppliers).
+**Version 0.1.0** — All critical/high audit items resolved. 92 tests passing, clippy clean. Domain: motorcycle workshop (products, sales, repairs, suppliers).
 
 ## Workspace structure
-3 crates in a Cargo workspace:
-- `crates/workshop-common` — shared types (Product, Sale, SaleItem, Repair, Supplier, User, AuditLog, Workshop), enums (PaymentMethod, RepairStatus, Priority, UserRole), DTOs, licensing (Ed25519 hardware-bound), money logic (IVA configurable), patent validation, configurable icon generation
-- `crates/workshop-server` — Axum 0.7 backend on `:8443`, full DB (PostgreSQL embedded + 10 migrations), TLS, JWT auth, audit, backup, rate limiter, device keys, barcode generation
+4 crates in a Cargo workspace:
+- `crates/workshop-common` — shared types (Product, Sale, SaleItem, Repair, Supplier, User, AuditLog, Workshop), enums (PaymentMethod, RepairStatus, Priority, UserRole), DTOs, licensing (Ed25519 hardware-bound), money logic (IVA configurable), patent validation, configurable icon generation, hardware fingerprinting
+- `crates/workshop-server` — Axum 0.7 backend on `:8443`, full DB (PostgreSQL embedded + 10 migrations), TLS, JWT auth, audit, backup, rate limiter, device keys, barcode generation, license validation
 - `crates/workshop-viewer` — Dioxus 0.6 Desktop, 13 pages, routing, Atomic Design components (atoms/molecules/organisms), theme system, API client
+- `crates/license-tool` — CLI for generating, verifying, and migrating licenses
 
 **Important:** Package names are `workshop-common`, `workshop-server`, `workshop-viewer` — NOT `common`, `server`, `viewer`.
 
@@ -16,10 +17,11 @@
 cargo build --workspace                    # build all
 cargo build -p workshop-server            # server only
 cargo build -p workshop-viewer            # viewer only
+cargo build -p license-tool               # license tool only
 cargo check -p workshop-viewer            # fast verify
 cargo clippy --workspace -- -D warnings    # linter
 cargo fmt --all --check                    # format check
-cargo test --workspace                     # tests (84 total)
+cargo test --workspace                     # tests (92 total)
 ```
 
 ## Version bump
@@ -32,14 +34,14 @@ git push && git push --tags
 Structs: `Product`, `Sale`, `SaleItem`, `Repair`, `RepairUpdate`, `RepairPart`, `Supplier`, `User`, `Workshop`, `AuditLog`
 Enums: `PaymentMethod` (Cash/Card/Transfer), `RepairStatus` (Pending/InProgress/Completed/Cancelled/Deleted), `Priority` (High/Medium/Low), `UserRole` (Admin/Mechanic/Seller)
 DTOs: `LoginRequest`, `CreateProductRequest`, `CreateSaleRequest`, `CreateRepairRequest`, `CreateSupplierRequest`, `AddRepairPartRequest`, `ApiResponse<T>`, `PaginatedResponse<T>`, `LoginResponse`, `DashboardResponse`
-License: `Feature` enum (16 features across 4 tiers), `License` struct with Ed25519 signature verification
+License: `Feature` enum (17 features across 5 tiers), `LicenseTier` enum (Trial/Base/Reports/Advanced/API), `License` struct with Ed25519 signature verification, hardware fingerprinting
 
 ## Server architecture
 - Entrypoint: `crates/workshop-server/src/main.rs`
 - Config: `config/server.toml` (TOML, host/port/api_key/require_device_key/tax.iva_rate/icon.bg/icon.fg)
 - Secrets: generated/persisted at `dirs::data_local_dir()/WorkshopManager/data/` (.jwt_secret, .crypto_key, .postgres_password)
 - Crypto: AES-256-GCM via `crypto::init()` with `OnceLock` (no `unsafe`)
-- Auth: JWT HS256 (8h) + Argon2id (64MB, 3 iter, 4 parallelism); middleware `api_key` → `device_key` → `authenticate` → `require_admin`
+- Auth: JWT HS256 (24h) + Argon2id (64MB, 3 iter, 4 parallelism); middleware `api_key` → `device_key` → `authenticate` → `require_admin`
 - DB: PostgreSQL embebido via `postgresql_embedded` (`bundled` feature), pool en `AppState`
 - Database name: `workshop_manager`
 - Migrations: SQLx migrations in `crates/workshop-server/migrations/` (10 files)
@@ -122,6 +124,7 @@ Full professional documentation in `docs/` (53 files):
 - `docs/07-developer-guide/` — setup, project structure, conventions, testing, component library, contributing
 - `docs/08-compliance/` — OWASP Top 10, data protection, coding standards
 - `docs/09-operations/` — monitoring, incident response, maintenance
+- `docs/10-licensing/` — licensing system overview, license-tool CLI reference
 - `GLOSSARY.md`, `ACRONYMS.md`
 
 ## Skills
@@ -147,6 +150,6 @@ See `AUDITORIA.md` for full tracking. Summary:
 
 ## Known security improvements (backlog)
 - **Secrets storage**: `.crypto_key`, `.jwt_secret`, `.postgres_password` stored as raw files. Mitigation: DPAPI/Keychain.
-- **JWT refresh**: No refresh token mechanism (8h fixed TTL).
-- **Sale cancellation**: No endpoint for annulling/returning sales.
-- **Audit read**: No endpoint for reading audit logs.
+- **JWT refresh**: No refresh token mechanism (24h fixed TTL).
+- **Sale cancellation**: Implemented (`POST /api/sales/:id/cancel`).
+- **Audit read**: Implemented (`GET /api/audit`).

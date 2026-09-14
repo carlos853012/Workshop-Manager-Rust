@@ -20,15 +20,16 @@ mod tests {
 }
 ```
 
-**Current coverage**: 82+ tests across 3 crates.
+**Current coverage**: 92 tests across 4 crates.
 
 ### Test Distribution
 
 | Crate | Focus Areas |
 |-------|------------|
-| `workshop-common` | Money calculations, patent validation, DTO serialization, license verification |
-| `workshop-server` | Auth, crypto, error handling, middleware, route logic |
+| `workshop-common` | Money calculations, patent validation, DTO serialization, license verification, hardware fingerprinting |
+| `workshop-server` | Auth, crypto, error handling, middleware, route logic, license validation |
 | `workshop-viewer` | Component rendering, state management (planned) |
+| `license-tool` | CLI argument parsing (planned) |
 
 ---
 

@@ -22,6 +22,14 @@ enum TrayEvent {
 }
 
 #[allow(dead_code)]
+fn copy_api_key_action(config: &super::state::ServerConfig) {
+    match clipboard_win::set_clipboard_string(&config.api_key) {
+        Ok(()) => tracing::info!("API Key copiada al portapapeles"),
+        Err(error) => tracing::error!(%error, "No se pudo copiar la API Key"),
+    }
+}
+
+#[allow(dead_code)]
 fn generate_key_action(pool: &PgPool) {
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(runtime) => runtime,
@@ -76,7 +84,12 @@ fn tray_icon(config: &super::state::ServerConfig) -> Result<Icon, String> {
 }
 
 #[allow(dead_code)]
-pub fn run(shutdown_tx: Sender<()>, pool: PgPool, config: super::state::ServerConfig) {
+pub fn run(
+    shutdown_tx: Sender<()>,
+    pool: PgPool,
+    config: super::state::ServerConfig,
+    license_info: Option<String>,
+) {
     let mut event_loop_builder = EventLoopBuilder::<TrayEvent>::with_user_event();
     event_loop_builder.with_any_thread(true);
     let event_loop = event_loop_builder.build();
@@ -87,8 +100,11 @@ pub fn run(shutdown_tx: Sender<()>, pool: PgPool, config: super::state::ServerCo
     }));
 
     let menu = Menu::new();
-    let status_item = MenuItem::new("Servidor activo", false, None);
-    let generate_key_item = MenuItem::new("Generar clave de viewer", true, None);
+
+    let license_text = license_info.unwrap_or_else(|| "Trial (7 días)".to_string());
+    let status_item = MenuItem::new(format!("Licencia: {license_text}"), false, None);
+    let copy_api_key_item = MenuItem::new("Copiar API Key", true, None);
+    let generate_key_item = MenuItem::new("Copiar Device Key", true, None);
     let autostart_item =
         CheckMenuItem::new("Ejecutar al inicio", true, is_autostart_enabled(), None);
     let exit_item = MenuItem::new("Salir del servidor", true, None);
@@ -96,7 +112,9 @@ pub fn run(shutdown_tx: Sender<()>, pool: PgPool, config: super::state::ServerCo
     if let Err(error) = menu.append_items(&[
         &status_item,
         &PredefinedMenuItem::separator(),
+        &copy_api_key_item,
         &generate_key_item,
+        &PredefinedMenuItem::separator(),
         &autostart_item,
         &PredefinedMenuItem::separator(),
         &exit_item,
@@ -123,7 +141,7 @@ pub fn run(shutdown_tx: Sender<()>, pool: PgPool, config: super::state::ServerCo
     {
         Ok(tray) => tray,
         Err(error) => {
-            tracing::error!(error = %error, "No se pudo crear el tray icon");
+            tracing::error!(%error, "No se pudo crear el tray icon");
             let _ = shutdown_tx.send(());
             return;
         }
@@ -136,7 +154,9 @@ pub fn run(shutdown_tx: Sender<()>, pool: PgPool, config: super::state::ServerCo
         *control_flow = ControlFlow::Wait;
 
         if let Event::UserEvent(TrayEvent::Menu(event)) = event {
-            if event.id == generate_key_item.id() {
+            if event.id == copy_api_key_item.id() {
+                copy_api_key_action(&config);
+            } else if event.id == generate_key_item.id() {
                 generate_key_action(&pool);
             } else if event.id == autostart_item.id() {
                 let enabled = !autostart_enabled.get();

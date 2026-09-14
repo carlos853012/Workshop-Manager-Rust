@@ -18,6 +18,18 @@ pub fn routes() -> Router<AppState> {
 async fn generate_key(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<device_key::GeneratedDeviceKey>>, AppError> {
+    // Verificar límite de viewers
+    if !device_key::can_create(&state.pool, state.config.max_viewers)
+        .await
+        .map_err(|_| AppError::Internal("Error verificando límite".to_string()))?
+    {
+        return Err(AppError::Forbidden(format!(
+            "Límite de viewers alcanzado ({}/{}). Contacte al administrador.",
+            device_key::count_active(&state.pool).await.unwrap_or(0),
+            state.config.max_viewers
+        )));
+    }
+
     let key = device_key::create(&state.pool)
         .await
         .map_err(|_| AppError::Internal("No se pudo generar la clave".to_string()))?;

@@ -11,6 +11,7 @@
 ### For End Users
 | Document | Description |
 |----------|-------------|
+| [Manual de Usuario](06-user-guide/manual-usuario.md) | Manual completo para clientes (instalación, configuración, uso) |
 | [Getting Started](06-user-guide/getting-started.md) | First-time setup and initial configuration |
 | [User Guide](06-user-guide/dashboard.md) | Complete user manual by module |
 
@@ -124,6 +125,12 @@
 | [Monitoring](09-operations/monitoring.md) | Observability and alerting |
 | [Incident Response](09-operations/incident-response.md) | Incident playbook |
 | [Maintenance](09-operations/maintenance.md) | Routine procedures |
+
+### 10 — Licensing
+| Document | Description |
+|----------|-------------|
+| [Overview](10-licensing/overview.md) | License tiers, hardware binding, Ed25519 signing |
+| [License Tool](10-licensing/license-tool.md) | CLI reference for license generation |
 
 ### Reference
 | Document | Description |

@@ -17,6 +17,7 @@ mod crypto;
 mod db_manager;
 mod device_key;
 mod error;
+mod license;
 mod middleware;
 mod rate_limiter;
 mod routes;
@@ -64,6 +65,43 @@ async fn main() -> anyhow::Result<()> {
     // 4. Init crypto
     crypto::init(&data_dir)?;
     tracing::info!("Crypto initialized");
+
+    // 4.1. License validation
+    let license = match license::load_license(&data_dir) {
+        license::LicenseStatus::Valid(lic) => {
+            if let Err(e) = license::validate_license(&lic) {
+                tracing::error!("Licencia inválida: {}", e);
+                tracing::info!("El servidor funcionará en modo trial por 7 días");
+                None
+            } else {
+                tracing::info!("Licencia válida: {} ({})", lic.license_key, lic.tier);
+                Some(lic)
+            }
+        }
+        license::LicenseStatus::FirstRun(hw_hash) => {
+            tracing::info!("Primer uso — Hardware ID: {}", hw_hash);
+            tracing::info!("Código de activación: {}", &hw_hash[..16]);
+            tracing::info!("Contacte al proveedor para activar la licencia");
+
+            // Intentar validación online
+            match license::validate_online("trial", &hw_hash).await {
+                Some(lic) => {
+                    tracing::info!("Licencia trial activada online");
+                    let _ = license::save_license(&lic, &data_dir);
+                    Some(lic)
+                }
+                None => {
+                    tracing::info!("Sin conexión — funcionando en modo trial (7 días)");
+                    Some(workshop_common::license::create_trial_license(&hw_hash))
+                }
+            }
+        }
+        license::LicenseStatus::Invalid(e) => {
+            tracing::error!("Error de licencia: {}", e);
+            tracing::info!("El servidor funcionará en modo trial por 7 días");
+            None
+        }
+    };
 
     // 5. Start embedded PostgreSQL
     let mut db_manager = db_manager::DbManager::new(&data_dir)?;
@@ -181,7 +219,8 @@ async fn main() -> anyhow::Result<()> {
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
         let tray_pool = state.pool.clone();
         let tray_config = state.config.clone();
-        std::thread::spawn(move || tray::run(shutdown_tx, tray_pool, tray_config));
+        let tray_license = license.as_ref().map(|l| format!("{} ({})", l.license_key, l.tier));
+        std::thread::spawn(move || tray::run(shutdown_tx, tray_pool, tray_config, tray_license));
         let ctrl_c = tokio::signal::ctrl_c();
         tokio::select! {
             _ = shutdown_rx => {}

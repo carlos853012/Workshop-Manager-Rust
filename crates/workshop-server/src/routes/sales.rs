@@ -106,7 +106,7 @@ async fn cancel_sale(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Sale>>, AppError> {
     if !matches!(user.role, UserRole::Admin | UserRole::Seller) {
-        return Err(AppError::Forbidden);
+        return Err(AppError::Forbidden("Acceso denegado".to_string()));
     }
 
     let mut tx = state
@@ -199,7 +199,7 @@ async fn create_sale(
     Json(req): Json<CreateSaleRequest>,
 ) -> Result<Json<ApiResponse<SaleDetail>>, AppError> {
     if !matches!(user.role, UserRole::Admin | UserRole::Seller) {
-        return Err(AppError::Forbidden);
+        return Err(AppError::Forbidden("Acceso denegado".to_string()));
     }
     validate_create_sale_request(&req)?;
 

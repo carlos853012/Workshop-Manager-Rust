@@ -80,6 +80,20 @@ pub async fn create(pool: &sqlx::PgPool) -> anyhow::Result<String> {
     Ok(key)
 }
 
+/// Cuenta las device keys activas.
+pub async fn count_active(pool: &sqlx::PgPool) -> anyhow::Result<i64> {
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM device_keys WHERE active = TRUE")
+        .fetch_one(pool)
+        .await?;
+    Ok(count.0)
+}
+
+/// Verifica si se puede crear una nueva device key (respeta max_viewers).
+pub async fn can_create(pool: &sqlx::PgPool, max_viewers: u32) -> anyhow::Result<bool> {
+    let count = count_active(pool).await?;
+    Ok((count as u32) < max_viewers)
+}
+
 pub async fn list(pool: &sqlx::PgPool) -> anyhow::Result<Vec<DeviceKeySummary>> {
     Ok(sqlx::query_as(
         "SELECT id, bound_ip, active, created_at, last_seen_at FROM device_keys ORDER BY created_at DESC",

@@ -19,6 +19,8 @@ pub struct ServerSection {
     pub api_key: String,
     #[serde(default)]
     pub require_device_key: bool,
+    #[serde(default = "default_max_viewers")]
+    pub max_viewers: u32,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -76,6 +78,10 @@ fn default_api_key() -> String {
     bytes.iter().map(|b| format!("{:02x}", b)).collect()
 }
 
+fn default_max_viewers() -> u32 {
+    2
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -84,6 +90,7 @@ impl Default for Config {
                 port: default_port(),
                 api_key: default_api_key(),
                 require_device_key: false,
+                max_viewers: default_max_viewers(),
             },
             tax: TaxSection {
                 iva_rate: default_iva_rate(),
@@ -104,6 +111,7 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
             port: config.server.port,
             api_key: config.server.api_key,
             require_device_key: config.server.require_device_key,
+            max_viewers: config.server.max_viewers,
             iva_rate: config.tax.iva_rate,
             icon_bg: parse_hex_color(&config.icon.bg),
             icon_fg: parse_hex_color(&config.icon.fg),
@@ -119,6 +127,7 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
             port: default_config.server.port,
             api_key: default_config.server.api_key,
             require_device_key: default_config.server.require_device_key,
+            max_viewers: default_config.server.max_viewers,
             iva_rate: default_config.tax.iva_rate,
             icon_bg: parse_hex_color(&default_config.icon.bg),
             icon_fg: parse_hex_color(&default_config.icon.fg),

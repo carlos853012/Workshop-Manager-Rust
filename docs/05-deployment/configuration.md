@@ -19,6 +19,14 @@ host = "127.0.0.1"
 port = 8443
 api_key = "dev-key-change-in-production"
 require_device_key = false
+max_viewers = 2
+
+[tax]
+iva_rate = 0.19
+
+[icon]
+bg = "#F59E0B"
+fg = "#FFFFFF"
 ```
 
 ### Fields
@@ -29,6 +37,20 @@ require_device_key = false
 | `port` | integer | `8443` | HTTPS listen port. |
 | `api_key` | string | *(auto-generated)* | Shared secret for API authentication. Auto-generates a random 64-char hex key if left empty or set to the default. |
 | `require_device_key` | boolean | `false` | When `true`, clients must present a valid device key in addition to the API key. |
+| `max_viewers` | integer | `2` | Maximum concurrent viewer connections. Overridden by license tier. |
+
+### [tax] Section
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `iva_rate` | float | `0.19` | IVA tax rate as decimal (0.19 = 19%). |
+
+### [icon] Section
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `bg` | string | `#F59E0B` | Background color of the application icon (hex). |
+| `fg` | string | `#FFFFFF` | Foreground (wrench) color of the application icon (hex). |
 
 ### Environment Variable Override
 

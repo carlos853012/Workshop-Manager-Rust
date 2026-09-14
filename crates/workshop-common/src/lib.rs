@@ -1,5 +1,6 @@
 pub mod dto;
 pub mod features;
+pub mod hardware;
 pub mod icon_data;
 pub mod license;
 pub mod money;
