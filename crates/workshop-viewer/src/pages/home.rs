@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
-use workshop_common::money::format_clp;
 use rust_decimal::Decimal;
+use workshop_common::money::format_clp;
 
 use crate::api::ApiError;
 use crate::app_state::use_auth;
@@ -58,9 +58,14 @@ pub fn Dashboard() -> Element {
                         total_revenue_set.set(d.total_revenue);
                         average_sale_set.set(d.average_sale);
                     }
-                    Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
+                    Err(ApiError::Unauthorized) => {
                         auth.logout();
                         navigator.push(Route::Login {});
+                    }
+                    Err(ApiError::Forbidden) => {
+                        error_set.set(Some(
+                            "No tienes permisos para acceder a esta sección.".to_string(),
+                        ));
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));
@@ -131,14 +136,60 @@ pub fn Dashboard() -> Element {
 pub fn Root() -> Element {
     let auth = use_auth();
     let navigator = use_navigator();
+    let checked = use_signal(|| false);
 
-    if auth.is_authenticated() {
-        navigator.push(Route::Dashboard {});
+    use_effect(move || {
+        let mut checked_set = checked;
+        let auth = auth;
+        let navigator = navigator;
+        spawn(async move {
+            if auth.is_authenticated() {
+                navigator.push(Route::Dashboard {});
+                checked_set.set(true);
+                return;
+            }
+            let cfg = crate::config::config();
+            let client = match crate::api::ApiClient::new(
+                None,
+                cfg.server.api_key.clone(),
+                cfg.server.tls_accept_invalid_certs,
+            ) {
+                Ok(c) => c,
+                Err(_) => {
+                    navigator.push(Route::Setup {});
+                    checked_set.set(true);
+                    return;
+                }
+            };
+            match client.setup_status().await {
+                Ok(has_users) => {
+                    if has_users {
+                        navigator.push(Route::Login {});
+                    } else {
+                        navigator.push(Route::Setup {});
+                    }
+                }
+                Err(_) => {
+                    navigator.push(Route::Setup {});
+                }
+            }
+            checked_set.set(true);
+        });
+    });
+
+    if *checked.read() {
+        rsx! {}
     } else {
-        navigator.push(Route::Setup {});
+        rsx! {
+            div { class: "login-page",
+                div { class: "card login-card",
+                    div { class: "card-body empty-state",
+                        crate::components::atoms::spinner::Spinner {}
+                    }
+                }
+            }
+        }
     }
-
-    rsx! {}
 }
 
 #[component]

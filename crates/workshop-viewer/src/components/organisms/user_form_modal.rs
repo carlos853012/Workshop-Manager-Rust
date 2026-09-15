@@ -57,7 +57,9 @@ pub fn UserFormModal(
             return;
         }
         if !is_edit && password_val.len() < 6 {
-            form_error.set(Some("La contraseña debe tener al menos 6 caracteres".to_string()));
+            form_error.set(Some(
+                "La contraseña debe tener al menos 6 caracteres".to_string(),
+            ));
             return;
         }
 
@@ -76,7 +78,11 @@ pub fn UserFormModal(
         if is_edit {
             let user = edit_user.clone().unwrap();
             let req = UpdateUserRequest {
-                display_name: if name_val.is_empty() { None } else { Some(name_val) },
+                display_name: if name_val.is_empty() {
+                    None
+                } else {
+                    Some(name_val)
+                },
                 role: Some(role_val),
                 status: None,
             };
@@ -90,7 +96,11 @@ pub fn UserFormModal(
         } else {
             let req = CreateUserRequest {
                 email: email_val,
-                display_name: if name_val.is_empty() { None } else { Some(name_val) },
+                display_name: if name_val.is_empty() {
+                    None
+                } else {
+                    Some(name_val)
+                },
                 password: password_val,
                 role: role_val,
             };
@@ -104,7 +114,11 @@ pub fn UserFormModal(
         }
     };
 
-    let title = if is_edit { "Editar usuario" } else { "Nuevo usuario" };
+    let title = if is_edit {
+        "Editar usuario"
+    } else {
+        "Nuevo usuario"
+    };
 
     rsx! {
         Modal {

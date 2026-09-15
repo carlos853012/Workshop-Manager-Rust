@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -21,6 +22,8 @@ pub struct ServerSection {
     pub require_device_key: bool,
     #[serde(default = "default_max_viewers")]
     pub max_viewers: u32,
+    #[serde(default)]
+    pub cors_origins: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -50,7 +53,7 @@ impl Default for IconSection {
 }
 
 fn default_host() -> String {
-    "127.0.0.1".to_string()
+    "0.0.0.0".to_string()
 }
 
 fn default_port() -> u16 {
@@ -91,6 +94,7 @@ impl Default for Config {
                 api_key: default_api_key(),
                 require_device_key: false,
                 max_viewers: default_max_viewers(),
+                cors_origins: Vec::new(),
             },
             tax: TaxSection {
                 iva_rate: default_iva_rate(),
@@ -100,8 +104,9 @@ impl Default for Config {
     }
 }
 
-pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
-    let config_path = std::env::current_dir()?.join("config").join("server.toml");
+pub fn load_config(data_dir: &Path) -> anyhow::Result<super::state::ServerConfig> {
+    let config_dir = data_dir.parent().unwrap_or(data_dir).join("config");
+    let config_path = config_dir.join("server.toml");
 
     let mut server_config = if config_path.exists() {
         let content = std::fs::read_to_string(&config_path)?;
@@ -115,13 +120,13 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
             iva_rate: config.tax.iva_rate,
             icon_bg: parse_hex_color(&config.icon.bg),
             icon_fg: parse_hex_color(&config.icon.fg),
+            cors_origins: config.server.cors_origins,
         }
     } else {
         let default_config = Config::default();
-        let config_dir = std::env::current_dir()?.join("config");
         std::fs::create_dir_all(&config_dir)?;
         let content = toml::to_string_pretty(&default_config)?;
-        std::fs::write(config_path, content)?;
+        std::fs::write(&config_path, content)?;
         super::state::ServerConfig {
             host: default_config.server.host,
             port: default_config.server.port,
@@ -131,6 +136,7 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
             iva_rate: default_config.tax.iva_rate,
             icon_bg: parse_hex_color(&default_config.icon.bg),
             icon_fg: parse_hex_color(&default_config.icon.fg),
+            cors_origins: default_config.server.cors_origins,
         }
     };
 
@@ -139,6 +145,12 @@ pub fn load_config() -> anyhow::Result<super::state::ServerConfig> {
         if !env_key.is_empty() {
             server_config.api_key = env_key;
         }
+    }
+
+    // Force regenerate API key if it's the insecure default
+    if server_config.api_key == "dev-key-change-in-production" {
+        tracing::warn!("API key is the insecure default — generating a new random key");
+        server_config.api_key = default_api_key();
     }
 
     Ok(server_config)

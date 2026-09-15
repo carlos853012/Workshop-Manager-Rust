@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use workshop_common::dto::{
     AddRepairPartRequest, ApiResponse, ClientHistoryResponse, ClientReport, ClientSearchResult,
     CreateProductRequest, CreateRepairRequest, CreateSaleRequest, CreateSupplierRequest,
@@ -6,7 +7,6 @@ use workshop_common::dto::{
     RepairPartResponse, SaleDetailResponse, UpdateRepairRequest, UpdateUserRequest,
 };
 use workshop_common::{AuditLog, Product, Repair, Sale, Supplier, User};
-use serde::{Deserialize, Serialize};
 
 const DEFAULT_TIMEOUT_SECONDS: u64 = 60;
 
@@ -86,12 +86,17 @@ impl ApiClient {
             .danger_accept_invalid_certs(accept_invalid_certs)
             .timeout(std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECONDS))
             .build()
-            .map_err(|e| ApiError::Network(format!("Failed to build HTTP client: {}", e)))?;
+            .map_err(|e| {
+                tracing::error!(error = %e, "Failed to build HTTP client");
+                ApiError::Network(format!("Failed to build HTTP client: {}", e))
+            })?;
 
         let config = crate::config::config();
+        let resolved_url =
+            crate::config::resolve_base_url(&base_url.unwrap_or(config.server.base_url));
         Ok(Self {
             client,
-            base_url: base_url.unwrap_or(config.server.base_url),
+            base_url: resolved_url,
             api_key,
             device_key: config.server.device_key,
             token: None,
@@ -110,6 +115,36 @@ impl ApiClient {
 
     fn url(&self, path: &str) -> String {
         format!("{}{}", self.base_url, path)
+    }
+
+    /// GET /api/auth/setup-status (público, sin JWT)
+    pub async fn setup_status(&self) -> Result<bool, ApiError> {
+        #[derive(serde::Deserialize)]
+        struct SetupStatus {
+            has_users: bool,
+        }
+        let url = self.url("/api/auth/setup-status");
+        let resp = self
+            .client
+            .get(&url)
+            .header("X-WorkshopManager-Key", &self.api_key)
+            .send()
+            .await
+            .map_err(|e| {
+                tracing::error!(url = %url, error = %e, "Network error checking setup status");
+                ApiError::Network(e.to_string())
+            })?;
+        let status = resp.status();
+        if !status.is_success() {
+            return Err(ApiError::Unknown(format!("HTTP {status}")));
+        }
+        let body = resp
+            .text()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+        let parsed: ApiResponse<SetupStatus> = serde_json::from_str(&body)
+            .map_err(|e| ApiError::Unknown(format!("JSON error: {e}")))?;
+        Ok(parsed.data.map(|d| d.has_users).unwrap_or(false))
     }
 
     /// POST /api/auth/login
@@ -384,10 +419,10 @@ impl ApiClient {
         if let Some(header) = self.auth_header() {
             request = request.header("Authorization", header);
         }
-        let response = request
-            .send()
-            .await
-            .map_err(|e| ApiError::Network(e.to_string()))?;
+        let response = request.send().await.map_err(|e| {
+            tracing::error!(url = %url, error = %e, "Network error downloading certificate");
+            ApiError::Network(e.to_string())
+        })?;
         let status = response.status();
         if status.is_success() {
             response
@@ -588,26 +623,47 @@ impl ApiClient {
         &self,
         response: Result<reqwest::Response, reqwest::Error>,
     ) -> Result<T, ApiError> {
-        let response = response.map_err(|e| ApiError::Network(e.to_string()))?;
+        let response = match response {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!(
+                    url = %self.base_url,
+                    error = %e,
+                    "Network error in API request"
+                );
+                return Err(ApiError::Network(e.to_string()));
+            }
+        };
         let status = response.status();
+        let url = response.url().clone();
         let body_text = response
             .text()
             .await
             .map_err(|e| ApiError::Network(format!("Failed to read response body: {}", e)))?;
 
         if status.is_success() {
-            let parsed: ApiResponse<T> = serde_json::from_str(&body_text)
-                .map_err(|e| ApiError::Unknown(format!("JSON parse error: {}", e)))?;
+            let parsed: ApiResponse<T> = serde_json::from_str(&body_text).map_err(|e| {
+                tracing::error!(
+                    url = %url,
+                    status = %status,
+                    error = %e,
+                    body = %body_text,
+                    "JSON parse error in API response"
+                );
+                ApiError::Unknown(format!("JSON parse error: {}", e))
+            })?;
             match parsed.data {
                 Some(data) => Ok(data),
-                None => {
-                    // For ApiResponse<()> the server returns {"data":null}
-                    // Try to deserialize null as T (works for unit type)
-                    serde_json::from_str("null")
-                        .map_err(|e| ApiError::Unknown(format!("Empty response data: {}", e)))
-                }
+                None => serde_json::from_str("null")
+                    .map_err(|e| ApiError::Unknown(format!("Empty response data: {}", e))),
             }
         } else {
+            tracing::warn!(
+                url = %url,
+                status = %status,
+                body = %body_text,
+                "API request returned error status"
+            );
             match status.as_u16() {
                 401 => Err(ApiError::Unauthorized),
                 403 => Err(ApiError::Forbidden),

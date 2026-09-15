@@ -3,8 +3,8 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use workshop_common::dto::ApiResponse;
 use uuid::Uuid;
+use workshop_common::dto::ApiResponse;
 
 use crate::{device_key, error::AppError, state::AppState};
 

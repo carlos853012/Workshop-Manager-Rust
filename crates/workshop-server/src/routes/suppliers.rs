@@ -4,9 +4,9 @@ use axum::{
     Extension, Json, Router,
 };
 use chrono::Utc;
+use uuid::Uuid;
 use workshop_common::dto::{ApiResponse, CreateSupplierRequest, PaginatedResponse};
 use workshop_common::Supplier;
-use uuid::Uuid;
 
 use crate::audit::{self, redact_sensitive};
 use crate::error::AppError;

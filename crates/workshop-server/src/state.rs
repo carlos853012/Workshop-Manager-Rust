@@ -30,6 +30,7 @@ pub struct ServerConfig {
     pub iva_rate: f64,
     pub icon_bg: [u8; 3],
     pub icon_fg: [u8; 3],
+    pub cors_origins: Vec<String>,
 }
 
 impl FromRef<AppState> for Secrets {
@@ -51,7 +52,12 @@ impl FromRef<AppState> for PgPool {
 }
 
 impl AppState {
-    pub fn new(secrets: Secrets, config: ServerConfig, pool: PgPool, license: Option<License>) -> Self {
+    pub fn new(
+        secrets: Secrets,
+        config: ServerConfig,
+        pool: PgPool,
+        license: Option<License>,
+    ) -> Self {
         Self {
             secrets,
             config,

@@ -40,12 +40,24 @@ pub struct ColorTokens {
     pub icon_fg: String,
 }
 
-fn default_nav_bg() -> String { "#1E2126".to_string() }
-fn default_nav_text() -> String { "#e5e7eb".to_string() }
-fn default_nav_text_muted() -> String { "#9ca3af".to_string() }
-fn default_nav_hover() -> String { "#2a2d33".to_string() }
-fn default_icon_bg() -> String { "#2563EB".to_string() }
-fn default_icon_fg() -> String { "#FFFFFF".to_string() }
+fn default_nav_bg() -> String {
+    "#1E2126".to_string()
+}
+fn default_nav_text() -> String {
+    "#e5e7eb".to_string()
+}
+fn default_nav_text_muted() -> String {
+    "#9ca3af".to_string()
+}
+fn default_nav_hover() -> String {
+    "#2a2d33".to_string()
+}
+fn default_icon_bg() -> String {
+    "#2563EB".to_string()
+}
+fn default_icon_fg() -> String {
+    "#FFFFFF".to_string()
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TypographyTokens {

@@ -4,11 +4,11 @@ use axum::{
     Extension, Json, Router,
 };
 use chrono::Utc;
-use workshop_common::dto::{ApiResponse, CreateSaleRequest, PaginatedResponse};
-use workshop_common::{PaymentMethod, Sale, SaleItem, UserRole};
 use rust_decimal::Decimal;
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
+use workshop_common::dto::{ApiResponse, CreateSaleRequest, PaginatedResponse};
+use workshop_common::{PaymentMethod, Sale, SaleItem, UserRole};
 
 use crate::audit::{self, redact_sensitive};
 use crate::error::AppError;
@@ -145,7 +145,7 @@ async fn cancel_sale(
     for item in &items {
         sqlx::query(
             "UPDATE products SET stock = stock + $2, updated_at = $3 \
-             WHERE id = $1 AND workshop_id = $4"
+             WHERE id = $1 AND workshop_id = $4",
         )
         .bind(item.product_id)
         .bind(item.quantity)

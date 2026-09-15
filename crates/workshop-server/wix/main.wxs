@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="windows-1252"?>
-<!--
-  WorkshopManager Server — WiX v3 installer template.
-  Generated for cargo-wix. Do not edit by hand; use cargo wix init to regenerate.
--->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
 
   <Product
@@ -11,7 +7,7 @@
     UpgradeCode="B8A2C4D6-E1F3-5A7B-9C0D-2E4F6A8B0C2D"
     Language="1033"
     Codepage="1252"
-    Version="!(bind.FileVersion.inventory-server.exe)"
+    Version="0.1.0"
     Manufacturer="WorkshopManager">
 
     <Package
@@ -19,49 +15,50 @@
       Keywords="Installer"
       Description="WorkshopManager — Servidor de gestión de taller mecánico"
       Manufacturer="WorkshopManager"
-      InstallerVersion="450"
+      InstallerVersion="500"
       Languages="1033"
       Compressed="yes"
       InstallScope="perMachine"
       SummaryCodepage="1252" />
 
+    <MajorUpgrade AllowDowngrades="yes" />
+
     <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" DiskPrompt="CD-ROM #1" />
     <Property Id="DiskPrompt" Value="WorkshopManager Server Installation" />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder" Name="PFiles">
+      <Directory Id="ProgramFiles64Folder" Name="PFiles">
         <Directory Id="INSTALLDIR" Name="WorkshopManager">
-          <Component Id="MainComponent" Guid="A1B2C3D4-E5F6-7A8B-9C0D-1E2F3A4B5C6D">
+          <Component Id="MainComponent" Guid="A1B2C3D4-E5F6-7A8B-9C0D-1E2F3A4B5C6D" Win64="yes">
             <File
-              Id="inventory-server.exe"
-              Name="inventory-server.exe"
+              Id="workshop_server_exe"
+              Name="workshop-server.exe"
               DiskId="1"
-              Source="!(bind.targetDir)\inventory-server.exe"
+              Source="..\..\target\release\workshop-server.exe"
               KeyPath="yes" />
           </Component>
         </Directory>
       </Directory>
       <Directory Id="ProgramMenuFolder">
-        <Directory Id="ApplicationProgramsFolder" Name="WorkshopManager" />
+        <Directory Id="ApplicationProgramsFolder" Name="WorkshopManager">
+          <Component Id="ShortcutRemoveComponent" Guid="E1F2A3B4-C5D6-7E8F-9A0B-1C2D3E4F5A6B" Win64="yes">
+            <RemoveFolder Id="RemoveAppProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
+            <RegistryValue Root="HKCU" Key="Software\WorkshopManager\Server" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+          </Component>
+        </Directory>
       </Directory>
     </Directory>
 
     <DirectoryRef Id="ApplicationProgramsFolder">
-      <Component Id="ShortcutComponent" Guid="B2C3D4E5-F6A7-8B9C-0D1E-2F3A4B5C6D7E">
+      <Component Id="ShortcutComponent" Guid="B2C3D4E5-F6A7-8B9C-0D1E-2F3A4B5C6D7E" Win64="yes">
         <Shortcut
           Id="ServerStartMenuShortcut"
           Name="WorkshopManager Server"
           Description="Iniciar servidor WorkshopManager"
-          Target="[INSTALLDIR]inventory-server.exe"
+          Target="[INSTALLDIR]workshop-server.exe"
           WorkingDirectory="INSTALLDIR"
           Icon="app.exe" />
-        <RegistryValue
-          Root="HKCU"
-          Key="Software\WorkshopManager\Server"
-          Name="installed"
-          Type="integer"
-          Value="1"
-          KeyPath="yes" />
+        <RegistryValue Root="HKCU" Key="Software\WorkshopManager\Server" Name="installed" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </DirectoryRef>
 
@@ -77,13 +74,13 @@
 
       <ComponentRef Id="MainComponent" />
       <ComponentRef Id="ShortcutComponent" />
+      <ComponentRef Id="ShortcutRemoveComponent" />
     </Feature>
 
-    <Icon Id="app.exe" SourceFile="!(bind.targetDir)\inventory-server.exe" />
+    <Icon Id="app.exe" SourceFile="..\..\target\release\workshop-server.exe" />
 
     <UI>
-      <UIRef Id="WixUI_FeatureTree" />
-      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="FeatureDlg" Order="99">1</Publish>
+      <UIRef Id="WixUI_Minimal" />
     </UI>
 
   </Product>

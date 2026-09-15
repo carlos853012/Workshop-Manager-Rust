@@ -17,7 +17,10 @@ pub fn extract_hardware_hash(cpu_id: &str, motherboard: &str, disk: &str) -> Str
 pub fn generate_keypair() -> (Vec<u8>, Vec<u8>) {
     let signing_key = SigningKey::generate(&mut OsRng);
     let verifying_key = signing_key.verifying_key();
-    (signing_key.to_bytes().to_vec(), verifying_key.to_bytes().to_vec())
+    (
+        signing_key.to_bytes().to_vec(),
+        verifying_key.to_bytes().to_vec(),
+    )
 }
 
 /// Firma una licencia con la clave privada del vendor.
@@ -29,8 +32,8 @@ pub fn sign_license(license: &License, secret_key: &[u8]) -> Result<Vec<u8>, Str
             .map_err(|_| "Clave secreta inválida (se esperan 32 bytes)".to_string())?,
     );
 
-    let license_json = serde_json::to_vec(license)
-        .map_err(|e| format!("Error serializando licencia: {e}"))?;
+    let license_json =
+        serde_json::to_vec(license).map_err(|e| format!("Error serializando licencia: {e}"))?;
 
     let signature = signing_key.sign(&license_json);
 

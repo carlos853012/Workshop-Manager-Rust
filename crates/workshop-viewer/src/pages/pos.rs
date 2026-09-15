@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
+use rust_decimal::Decimal;
 use workshop_common::dto::{CreateSaleRequest, PosProductResponse, SaleItemRequest};
 use workshop_common::money::format_clp;
 use workshop_common::PaymentMethod;
-use rust_decimal::Decimal;
 
 use crate::api::ApiError;
 use crate::app_state::use_auth;

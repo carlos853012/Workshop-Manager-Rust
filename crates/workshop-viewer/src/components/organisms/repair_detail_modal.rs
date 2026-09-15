@@ -1,9 +1,9 @@
 use dioxus::prelude::*;
+use rust_decimal::Decimal;
 use workshop_common::dto::{
     AddRepairPartRequest, RepairDetail, RepairPartResponse, UpdateRepairRequest,
 };
 use workshop_common::{Product, RepairStatus, User};
-use rust_decimal::Decimal;
 
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
@@ -79,8 +79,12 @@ pub fn RepairDetailModal(
                     }
                 }
                 match client.list_repair_parts(repair_id).await {
-                    Ok(p) => { parts_set.set(p); }
-                    Err(e) => { error_set.set(Some(e.user_message().to_string())); }
+                    Ok(p) => {
+                        parts_set.set(p);
+                    }
+                    Err(e) => {
+                        error_set.set(Some(e.user_message().to_string()));
+                    }
                 }
                 match client.list_users(1, 50).await {
                     Ok(u) => {
@@ -91,11 +95,17 @@ pub fn RepairDetailModal(
                             .collect();
                         mechanics_set.set(mechs);
                     }
-                    Err(e) => { error_set.set(Some(e.user_message().to_string())); }
+                    Err(e) => {
+                        error_set.set(Some(e.user_message().to_string()));
+                    }
                 }
                 match client.list_products(1, 100).await {
-                    Ok(prod_page) => { products_set.set(prod_page.items); }
-                    Err(e) => { error_set.set(Some(e.user_message().to_string())); }
+                    Ok(prod_page) => {
+                        products_set.set(prod_page.items);
+                    }
+                    Err(e) => {
+                        error_set.set(Some(e.user_message().to_string()));
+                    }
                 }
             }
             loading_set.set(false);
@@ -122,7 +132,9 @@ pub fn RepairDetailModal(
                         detail.set(Some(updated));
                         on_saved2.call(());
                     }
-                    Err(e) => { error.set(Some(e.user_message().to_string())); }
+                    Err(e) => {
+                        error.set(Some(e.user_message().to_string()));
+                    }
                 }
             }
         });
@@ -153,7 +165,9 @@ pub fn RepairDetailModal(
                         detail.set(Some(updated));
                         on_saved2.call(());
                     }
-                    Err(e) => { error.set(Some(e.user_message().to_string())); }
+                    Err(e) => {
+                        error.set(Some(e.user_message().to_string()));
+                    }
                 }
             }
         });
@@ -186,7 +200,9 @@ pub fn RepairDetailModal(
                         new_part_cost.set(String::new());
                         selected_product_id.set(None);
                     }
-                    Err(e) => { error.set(Some(e.user_message().to_string())); }
+                    Err(e) => {
+                        error.set(Some(e.user_message().to_string()));
+                    }
                 }
             }
         });
@@ -203,7 +219,9 @@ pub fn RepairDetailModal(
                             current.into_iter().filter(|x| x.id != part_id).collect();
                         parts.set(filtered);
                     }
-                    Err(e) => { error.set(Some(e.user_message().to_string())); }
+                    Err(e) => {
+                        error.set(Some(e.user_message().to_string()));
+                    }
                 }
             }
         });

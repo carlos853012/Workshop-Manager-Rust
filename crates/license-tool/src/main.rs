@@ -157,7 +157,10 @@ fn main() {
                     println!("  Key: {}", license.license_key);
                     println!("  Tier: {:?}", license.tier);
                     println!("  Viewers: {}", license.max_viewers);
-                    println!("  Migraciones: {}/{}", license.transfer_count, license.max_transfers);
+                    println!(
+                        "  Migraciones: {}/{}",
+                        license.transfer_count, license.max_transfers
+                    );
                     println!("  Hardware: {}", &license.hardware_hash[..16]);
                     println!("  Activada: {}", license.activated_at);
                 }
@@ -215,21 +218,22 @@ fn main() {
             println!("  Key: {}", license.license_key);
             println!("  Tier: {:?}", license.tier);
             println!("  Nueva hardware: {}", &license.hardware_hash[..16]);
-            println!("  Migración: {}/{}", license.transfer_count, license.max_transfers);
+            println!(
+                "  Migración: {}/{}",
+                license.transfer_count, license.max_transfers
+            );
             println!("  Archivo: {output}");
         }
 
-        Commands::HardwareId => {
-            match workshop_common::hardware::get_hardware_id() {
-                Ok(hash) => {
-                    println!("Hardware ID: {hash}");
-                    println!("Código de activación: {}", &hash[..16]);
-                }
-                Err(e) => {
-                    eprintln!("Error: {e}");
-                    std::process::exit(1);
-                }
+        Commands::HardwareId => match workshop_common::hardware::get_hardware_id() {
+            Ok(hash) => {
+                println!("Hardware ID: {hash}");
+                println!("Código de activación: {}", &hash[..16]);
             }
-        }
+            Err(e) => {
+                eprintln!("Error: {e}");
+                std::process::exit(1);
+            }
+        },
     }
 }

@@ -1,4 +1,3 @@
-use dioxus::prelude::*;
 use crate::api::ApiError;
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
@@ -7,10 +6,11 @@ use crate::components::molecules::card::Card;
 use crate::components::organisms::data_table::{Column, DataTable};
 use crate::components::organisms::repair_detail_modal::RepairDetailModal;
 use crate::components::organisms::repair_form_modal::RepairFormModal;
-use crate::icons::IconName;
 use crate::i18n;
+use crate::icons::IconName;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
+use dioxus::prelude::*;
 use std::rc::Rc;
 
 #[component]
@@ -50,9 +50,14 @@ pub fn Repairs() -> Element {
                         repairs_set.set(response.items);
                         total_set.set(response.total);
                     }
-                    Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
+                    Err(ApiError::Unauthorized) => {
                         auth.logout();
                         navigator.push(Route::Login {});
+                    }
+                    Err(ApiError::Forbidden) => {
+                        error_set.set(Some(
+                            "No tienes permisos para acceder a esta sección.".to_string(),
+                        ));
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));

@@ -1,18 +1,18 @@
-use dioxus::prelude::*;
-use dioxus_router::prelude::*;
-use workshop_common::money::format_clp;
-use crate::i18n;
-use workshop_common::Sale;
 use crate::api::ApiError;
 use crate::app_state::use_auth;
 use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::organisms::data_table::{Column, DataTable};
 use crate::components::organisms::sale_detail_modal::SaleDetailModal;
+use crate::i18n;
 use crate::icons::IconName;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
+use dioxus::prelude::*;
+use dioxus_router::prelude::*;
 use std::rc::Rc;
+use workshop_common::money::format_clp;
+use workshop_common::Sale;
 
 #[component]
 pub fn Sales() -> Element {
@@ -50,9 +50,14 @@ pub fn Sales() -> Element {
                         sales_set.set(response.items);
                         total_set.set(response.total);
                     }
-                    Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
+                    Err(ApiError::Unauthorized) => {
                         auth.logout();
                         navigator.push(Route::Login {});
+                    }
+                    Err(ApiError::Forbidden) => {
+                        error_set.set(Some(
+                            "No tienes permisos para acceder a esta sección.".to_string(),
+                        ));
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));
@@ -82,7 +87,9 @@ pub fn Sales() -> Element {
         Column {
             key: "payment".to_string(),
             header: "Pago".to_string(),
-            render: Rc::new(|s: &Sale| rsx! { span { "{i18n::translate_payment(&s.payment_method)}" } }),
+            render: Rc::new(
+                |s: &Sale| rsx! { span { "{i18n::translate_payment(&s.payment_method)}" } },
+            ),
         },
         Column {
             key: "total".to_string(),
@@ -94,7 +101,9 @@ pub fn Sales() -> Element {
         Column {
             key: "status".to_string(),
             header: "Estado".to_string(),
-            render: Rc::new(|s: &Sale| rsx! { span { "{i18n::translate_sale_status(&s.status)}" } }),
+            render: Rc::new(
+                |s: &Sale| rsx! { span { "{i18n::translate_sale_status(&s.status)}" } },
+            ),
         },
         Column {
             key: "actions".to_string(),

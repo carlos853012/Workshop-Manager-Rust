@@ -48,9 +48,14 @@ pub fn DeviceKeys() -> Element {
                     Ok(data) => {
                         keys_set.set(data);
                     }
-                    Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
+                    Err(ApiError::Unauthorized) => {
                         auth.logout();
                         navigator.push(Route::Login {});
+                    }
+                    Err(ApiError::Forbidden) => {
+                        error_set.set(Some(
+                            "No tienes permisos para acceder a esta sección.".to_string(),
+                        ));
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));

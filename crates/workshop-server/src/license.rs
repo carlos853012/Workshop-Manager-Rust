@@ -8,9 +8,8 @@ use workshop_common::license as lic;
 /// IMPORTANTE: En producción, generar un par de claves y reemplazar esta constant.
 /// Usar `license-tool generate-keypair` para generar las claves.
 const VENDOR_PUBLIC_KEY: &[u8] = &[
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
 
 /// URL del servidor de validación online.
@@ -52,8 +51,7 @@ pub fn load_license(data_dir: &Path) -> LicenseStatus {
 pub fn save_license(license: &License, data_dir: &Path) -> Result<(), String> {
     let license_path = data_dir.join("license.dat");
     let data = lic::sign_license(license, &[]).map_err(|e| format!("Error firmando: {e}"))?;
-    std::fs::write(&license_path, data)
-        .map_err(|e| format!("Error guardando licencia: {e}"))?;
+    std::fs::write(&license_path, data).map_err(|e| format!("Error guardando licencia: {e}"))?;
     Ok(())
 }
 
@@ -61,15 +59,14 @@ pub fn save_license(license: &License, data_dir: &Path) -> Result<(), String> {
 #[allow(dead_code)]
 pub fn save_signed_license(data: &[u8], data_dir: &Path) -> Result<(), String> {
     let license_path = data_dir.join("license.dat");
-    std::fs::write(&license_path, data)
-        .map_err(|e| format!("Error guardando licencia: {e}"))?;
+    std::fs::write(&license_path, data).map_err(|e| format!("Error guardando licencia: {e}"))?;
     Ok(())
 }
 
 /// Valida la licencia contra el hardware actual.
 pub fn validate_license(license: &License) -> Result<(), String> {
-    let hw_hash = hardware::get_hardware_id()
-        .map_err(|e| format!("No se pudo extraer hardware: {e}"))?;
+    let hw_hash =
+        hardware::get_hardware_id().map_err(|e| format!("No se pudo extraer hardware: {e}"))?;
 
     if !lic::validate_hardware(license, &hw_hash) {
         return Err("Licencia no corresponde a este equipo".to_string());
@@ -84,10 +81,7 @@ pub fn validate_license(license: &License) -> Result<(), String> {
 
 /// Intenta validar la licencia online (para primer uso).
 /// Retorna Some(licencia) si la validación fue exitosa, None si no hay internet.
-pub async fn validate_online(
-    license_key: &str,
-    hardware_hash: &str,
-) -> Option<License> {
+pub async fn validate_online(license_key: &str, hardware_hash: &str) -> Option<License> {
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
         .timeout(std::time::Duration::from_secs(10))
@@ -99,12 +93,7 @@ pub async fn validate_online(
         "hardware_hash": hardware_hash,
     });
 
-    let resp = client
-        .post(VALIDATION_URL)
-        .json(&body)
-        .send()
-        .await
-        .ok()?;
+    let resp = client.post(VALIDATION_URL).json(&body).send().await.ok()?;
 
     if !resp.status().is_success() {
         return None;

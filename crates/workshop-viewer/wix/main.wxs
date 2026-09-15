@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="windows-1252"?>
-<!--
-  WorkshopManager Viewer — WiX v3 installer template.
-  Generated for cargo-wix. Do not edit by hand; use cargo wix init to regenerate.
--->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
 
   <Product
@@ -11,7 +7,7 @@
     UpgradeCode="D0C4E6F8-A3B5-7C9D-1E2F-4A6B8C0D2E4F"
     Language="1033"
     Codepage="1252"
-    Version="!(bind.FileVersion.inventory-viewer.exe)"
+    Version="0.1.0"
     Manufacturer="WorkshopManager">
 
     <Package
@@ -19,49 +15,50 @@
       Keywords="Installer"
       Description="WorkshopManager — Cliente de escritorio para gestión de taller"
       Manufacturer="WorkshopManager"
-      InstallerVersion="450"
+      InstallerVersion="500"
       Languages="1033"
       Compressed="yes"
       InstallScope="perMachine"
       SummaryCodepage="1252" />
 
+    <MajorUpgrade AllowDowngrades="yes" />
+
     <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" DiskPrompt="CD-ROM #1" />
     <Property Id="DiskPrompt" Value="WorkshopManager Viewer Installation" />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder" Name="PFiles">
+      <Directory Id="ProgramFiles64Folder" Name="PFiles">
         <Directory Id="INSTALLDIR" Name="WorkshopManager">
-          <Component Id="MainComponent" Guid="C3D4E5F6-A7B8-9C0D-1E2F-3A4B5C6D7E8F">
+          <Component Id="MainComponent" Guid="C3D4E5F6-A7B8-9C0D-1E2F-3A4B5C6D7E8F" Win64="yes">
             <File
-              Id="inventory-viewer.exe"
-              Name="inventory-viewer.exe"
+              Id="workshop_viewer_exe"
+              Name="workshop-viewer.exe"
               DiskId="1"
-              Source="!(bind.targetDir)\inventory-viewer.exe"
+              Source="..\..\target\release\workshop-viewer.exe"
               KeyPath="yes" />
           </Component>
         </Directory>
       </Directory>
       <Directory Id="ProgramMenuFolder">
-        <Directory Id="ApplicationProgramsFolder" Name="WorkshopManager" />
+        <Directory Id="ApplicationProgramsFolder" Name="WorkshopManager">
+          <Component Id="ShortcutRemoveComponent" Guid="F1A2B3C4-D5E6-7F8A-9B0C-1D2E3F4A5B6C" Win64="yes">
+            <RemoveFolder Id="RemoveAppProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
+            <RegistryValue Root="HKCU" Key="Software\WorkshopManager\Viewer" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+          </Component>
+        </Directory>
       </Directory>
     </Directory>
 
     <DirectoryRef Id="ApplicationProgramsFolder">
-      <Component Id="ShortcutComponent" Guid="D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F9A">
+      <Component Id="ShortcutComponent" Guid="D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F9A" Win64="yes">
         <Shortcut
           Id="ViewerStartMenuShortcut"
           Name="WorkshopManager Viewer"
           Description="Abrir cliente WorkshopManager"
-          Target="[INSTALLDIR]inventory-viewer.exe"
+          Target="[INSTALLDIR]workshop-viewer.exe"
           WorkingDirectory="INSTALLDIR"
           Icon="app.exe" />
-        <RegistryValue
-          Root="HKCU"
-          Key="Software\WorkshopManager\Viewer"
-          Name="installed"
-          Type="integer"
-          Value="1"
-          KeyPath="yes" />
+        <RegistryValue Root="HKCU" Key="Software\WorkshopManager\Viewer" Name="installed" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </DirectoryRef>
 
@@ -77,13 +74,13 @@
 
       <ComponentRef Id="MainComponent" />
       <ComponentRef Id="ShortcutComponent" />
+      <ComponentRef Id="ShortcutRemoveComponent" />
     </Feature>
 
-    <Icon Id="app.exe" SourceFile="!(bind.targetDir)\inventory-viewer.exe" />
+    <Icon Id="app.exe" SourceFile="..\..\target\release\workshop-viewer.exe" />
 
     <UI>
-      <UIRef Id="WixUI_FeatureTree" />
-      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="FeatureDlg" Order="99">1</Publish>
+      <UIRef Id="WixUI_Minimal" />
     </UI>
 
   </Product>

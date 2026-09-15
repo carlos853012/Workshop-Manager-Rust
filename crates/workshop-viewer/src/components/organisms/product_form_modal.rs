@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
+use rust_decimal::Decimal;
 use workshop_common::dto::CreateProductRequest;
 use workshop_common::Product;
-use rust_decimal::Decimal;
 
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};

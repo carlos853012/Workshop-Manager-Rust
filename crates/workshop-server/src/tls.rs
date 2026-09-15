@@ -15,6 +15,7 @@ pub fn init_crypto_provider() {
 /// Carga un certificado y clave TLS desde disco, o genera uno autofirmado si no existen.
 pub fn load_or_generate_tls_config(
     data_dir: &Path,
+    extra_sans: &[String],
 ) -> anyhow::Result<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)> {
     let cert_path = data_dir.join(CERT_FILE);
     let key_path = data_dir.join(KEY_FILE);
@@ -25,7 +26,7 @@ pub fn load_or_generate_tls_config(
         return parse_tls_files(&cert, &key);
     }
 
-    generate_self_signed_cert(data_dir)
+    generate_self_signed_cert(data_dir, extra_sans)
 }
 
 fn parse_tls_files(
@@ -55,11 +56,19 @@ fn parse_tls_files(
 
 fn generate_self_signed_cert(
     data_dir: &Path,
+    extra_sans: &[String],
 ) -> anyhow::Result<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)> {
     let key_pair =
         KeyPair::generate().map_err(|e| anyhow::anyhow!("Failed to generate key pair: {}", e))?;
 
-    let mut params = CertificateParams::new(vec!["localhost".to_string(), "127.0.0.1".to_string()])
+    let mut sans = vec!["localhost".to_string(), "127.0.0.1".to_string()];
+    for san in extra_sans {
+        if !san.is_empty() && !sans.contains(san) {
+            sans.push(san.clone());
+        }
+    }
+
+    let mut params = CertificateParams::new(sans)
         .map_err(|e| anyhow::anyhow!("Failed to create certificate params: {}", e))?;
     params.distinguished_name = DistinguishedName::new();
     params
@@ -136,11 +145,11 @@ mod tests {
         let _ = std::fs::remove_dir_all(&temp_dir);
         std::fs::create_dir_all(&temp_dir)?;
 
-        let (certs1, _key1) = generate_self_signed_cert(&temp_dir)?;
+        let (certs1, _key1) = generate_self_signed_cert(&temp_dir, &[])?;
         assert!(!certs1.is_empty());
 
         // Segunda carga debe leer desde disco
-        let (certs2, key2) = load_or_generate_tls_config(&temp_dir)?;
+        let (certs2, key2) = load_or_generate_tls_config(&temp_dir, &[])?;
         assert!(!certs2.is_empty());
 
         // Ambas claves deben ser parseables en una config

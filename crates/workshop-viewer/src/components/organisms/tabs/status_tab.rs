@@ -18,9 +18,18 @@ pub fn StatusTab(
         .technician_id
         .map(|id| id.to_string())
         .unwrap_or_default();
-    let can_start = super::super::repair_detail_modal::can_transition(&detail.repair.status, &RepairStatus::InProgress);
-    let can_complete = super::super::repair_detail_modal::can_transition(&detail.repair.status, &RepairStatus::Completed);
-    let can_cancel = super::super::repair_detail_modal::can_transition(&detail.repair.status, &RepairStatus::Cancelled);
+    let can_start = super::super::repair_detail_modal::can_transition(
+        &detail.repair.status,
+        &RepairStatus::InProgress,
+    );
+    let can_complete = super::super::repair_detail_modal::can_transition(
+        &detail.repair.status,
+        &RepairStatus::Completed,
+    );
+    let can_cancel = super::super::repair_detail_modal::can_transition(
+        &detail.repair.status,
+        &RepairStatus::Cancelled,
+    );
     let mech_options: Vec<(String, String)> = mechanics
         .read()
         .iter()

@@ -1,11 +1,11 @@
 use argon2::password_hash::{PasswordHash, PasswordHasher, SaltString};
 use argon2::{Algorithm, Argon2, Params, PasswordVerifier, Version};
 use chrono::{Duration, Utc};
-use workshop_common::UserRole;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use workshop_common::UserRole;
 
 const TOKEN_DURATION_HOURS: i64 = 24;
 

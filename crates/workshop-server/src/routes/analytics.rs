@@ -1,6 +1,6 @@
 use axum::{extract::State, routing::get, Extension, Json, Router};
-use workshop_common::dto::{ApiResponse, DashboardResponse};
 use rust_decimal::Decimal;
+use workshop_common::dto::{ApiResponse, DashboardResponse};
 
 use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;

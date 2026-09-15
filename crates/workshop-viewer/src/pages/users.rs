@@ -9,8 +9,8 @@ use crate::components::molecules::card::Card;
 use crate::components::molecules::confirm_modal::ConfirmModal;
 use crate::components::organisms::data_table::{Column, DataTable};
 use crate::components::organisms::user_form_modal::UserFormModal;
-use crate::icons::IconName;
 use crate::i18n;
+use crate::icons::IconName;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
 use std::rc::Rc;
@@ -55,9 +55,14 @@ pub fn Users() -> Element {
                         users_set.set(response.items);
                         total_set.set(response.total);
                     }
-                    Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
+                    Err(ApiError::Unauthorized) => {
                         auth.logout();
                         navigator.push(Route::Login {});
+                    }
+                    Err(ApiError::Forbidden) => {
+                        error_set.set(Some(
+                            "No tienes permisos para acceder a esta sección.".to_string(),
+                        ));
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));

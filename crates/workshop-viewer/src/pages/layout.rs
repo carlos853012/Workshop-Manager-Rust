@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
+use workshop_common::UserRole;
 
 use crate::app_state::{use_auth, use_tabs, OpenTab};
 use crate::components::organisms::header::Sidebar;
@@ -32,7 +33,10 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
         sidebar_collapsed.set(true);
     });
 
-    let nav_items = vec![
+    let user_role = auth.user_role.read().clone();
+    let role = user_role.as_ref().cloned().unwrap_or(UserRole::Seller);
+
+    let mut nav_items = vec![
         NavItem {
             label: "Dashboard".to_string(),
             route: Route::Dashboard {},
@@ -43,51 +47,61 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
             route: Route::Products {},
             icon: IconName::Package,
         },
-        NavItem {
+    ];
+
+    if matches!(role, UserRole::Admin | UserRole::Seller) {
+        nav_items.push(NavItem {
             label: "POS".to_string(),
             route: Route::Pos {},
             icon: IconName::ShoppingCart,
-        },
-        NavItem {
+        });
+        nav_items.push(NavItem {
             label: "Ventas".to_string(),
             route: Route::Sales {},
             icon: IconName::Cash,
-        },
-        NavItem {
-            label: "Reparaciones".to_string(),
-            route: Route::Repairs {},
-            icon: IconName::Wrench,
-        },
-        NavItem {
+        });
+    }
+
+    nav_items.push(NavItem {
+        label: "Reparaciones".to_string(),
+        route: Route::Repairs {},
+        icon: IconName::Wrench,
+    });
+
+    if matches!(role, UserRole::Admin | UserRole::Seller) {
+        nav_items.push(NavItem {
             label: "Proveedores".to_string(),
             route: Route::Suppliers {},
             icon: IconName::Truck,
-        },
-        NavItem {
-            label: "Reportes".to_string(),
-            route: Route::Reports {},
-            icon: IconName::ChartBar,
-        },
-        NavItem {
-            label: "Certificado Servicios".to_string(),
-            route: Route::ServiceCertificatePage {},
-            icon: IconName::DocumentText,
-        },
-        NavItem {
+        });
+    }
+
+    nav_items.push(NavItem {
+        label: "Reportes".to_string(),
+        route: Route::Reports {},
+        icon: IconName::ChartBar,
+    });
+    nav_items.push(NavItem {
+        label: "Certificado Servicios".to_string(),
+        route: Route::ServiceCertificatePage {},
+        icon: IconName::DocumentText,
+    });
+
+    if matches!(role, UserRole::Admin) {
+        nav_items.push(NavItem {
             label: "Usuarios".to_string(),
             route: Route::Users {},
             icon: IconName::Users,
-        },
-        NavItem {
+        });
+        nav_items.push(NavItem {
             label: "Claves Dispositivo".to_string(),
             route: Route::DeviceKeys {},
             icon: IconName::Key,
-        },
-    ];
+        });
+    }
 
     let user_name = auth.user_email.read().clone();
     let user_display_name = auth.user_display_name.read().clone();
-    let user_role = auth.user_role.read().clone();
     let workshop = auth.workshop.read().clone();
 
     let on_logout = move |_| {

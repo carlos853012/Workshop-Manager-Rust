@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
+use rust_decimal::Decimal;
 use workshop_common::dto::{AddRepairPartRequest, RepairDetail, RepairPartResponse};
 use workshop_common::money::format_clp;
 use workshop_common::Product;
-use rust_decimal::Decimal;
 
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
@@ -73,10 +73,8 @@ pub fn CertificateDetailModal(
             if name.is_empty() {
                 return;
             }
-            let qty: Decimal =
-                new_part_qty.read().parse().unwrap_or(Decimal::ONE);
-            let cost: Option<Decimal> =
-                new_part_cost.read().parse().ok();
+            let qty: Decimal = new_part_qty.read().parse().unwrap_or(Decimal::ONE);
+            let cost: Option<Decimal> = new_part_cost.read().parse().ok();
             let product_id = *selected_product_id.read();
             let client = auth.api_client();
             spawn(async move {
@@ -118,11 +116,7 @@ pub fn CertificateDetailModal(
         }
     };
 
-    let total_parts: Decimal = parts
-        .read()
-        .iter()
-        .filter_map(|p| p.total_cost)
-        .sum();
+    let total_parts: Decimal = parts.read().iter().filter_map(|p| p.total_cost).sum();
     let labor_val: Decimal = labor_cost_input
         .read()
         .replace(".", "")

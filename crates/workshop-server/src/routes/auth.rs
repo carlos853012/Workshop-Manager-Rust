@@ -3,20 +3,21 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use uuid::Uuid;
 use workshop_common::dto::{ApiResponse, LoginRequest, LoginResponse, RegisterRequest};
 use workshop_common::UserRole;
 use workshop_common::{User, Workshop};
-use uuid::Uuid;
 
 use crate::auth;
 use crate::error::AppError;
 use crate::state::AppState;
 
-/// Rutas públicas de autenticación: login y registro inicial.
+/// Rutas públicas de autenticación: login, registro inicial y estado de setup.
 pub fn public_routes() -> Router<AppState> {
     Router::new()
         .route("/login", post(login))
         .route("/register", post(register))
+        .route("/setup-status", get(setup_status))
 }
 
 /// Rutas protegidas de autenticación: estado del usuario autenticado y licencia.
@@ -24,6 +25,20 @@ pub fn protected_routes() -> Router<AppState> {
     Router::new()
         .route("/status", get(status))
         .route("/license", get(license_status))
+}
+
+/// Indica si ya existe al menos un usuario en el sistema.
+/// Público: no requiere autenticación.
+async fn setup_status(
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<serde_json::Value>>, AppError> {
+    let has_users: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users)")
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+    Ok(Json(ApiResponse::success(
+        serde_json::json!({ "has_users": has_users }),
+    )))
 }
 
 async fn login(

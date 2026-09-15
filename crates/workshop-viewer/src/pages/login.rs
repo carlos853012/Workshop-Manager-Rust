@@ -47,13 +47,7 @@ pub fn Login() -> Element {
                     let role = response.user.role.clone();
                     let workshop = response.workshop.clone();
 
-                    auth.login(
-                        token.clone(),
-                        email,
-                        display_name,
-                        role,
-                        workshop,
-                    );
+                    auth.login(token.clone(), email, display_name, role, workshop);
 
                     let client_with_token = client.with_token(token);
                     match client_with_token.license_status().await {
@@ -124,7 +118,7 @@ pub fn Login() -> Element {
                         Link {
                             to: Route::Setup {},
                             class: "text-muted",
-                            "Configuración inicial"
+                            "¿Primera vez? Crear primer usuario"
                         }
                     }
                 }

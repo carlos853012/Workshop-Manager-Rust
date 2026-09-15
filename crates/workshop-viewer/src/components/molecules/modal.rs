@@ -25,7 +25,7 @@ pub fn Modal(
             div {
                 class: "{modal_class}",
                 onclick: move |evt| evt.stop_propagation(),
-                
+
                 div { class: "modal-body", {children} }
                 if let Some(footer_content) = footer {
                     div { class: "modal-footer", {footer_content} }

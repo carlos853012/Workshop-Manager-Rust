@@ -4,10 +4,10 @@ use axum::{
     Extension, Json, Router,
 };
 use chrono::Utc;
-use workshop_common::dto::{ApiResponse, PaginatedResponse};
-use workshop_common::{User, UserRole};
 use serde::Deserialize;
 use uuid::Uuid;
+use workshop_common::dto::{ApiResponse, PaginatedResponse};
+use workshop_common::{User, UserRole};
 
 use crate::audit::{self, redact_sensitive};
 use crate::auth;

@@ -5,11 +5,11 @@ use axum::{
     routing::get,
     Extension, Json, Router,
 };
-use workshop_common::dto::ApiResponse;
-use workshop_common::{PaymentMethod, RepairStatus};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
+use workshop_common::dto::ApiResponse;
+use workshop_common::{PaymentMethod, RepairStatus};
 
 use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
@@ -358,73 +358,63 @@ async fn fetch_repairs_for_certificate(
     wid: uuid::Uuid,
 ) -> Result<Vec<sqlx::postgres::PgRow>, sqlx::Error> {
     let query_sql = match (email, name, plate) {
-        (Some(e), _, Some(p)) if !e.is_empty() => {
-            sqlx::query(
-                "SELECT r.customer_name, r.customer_email, r.customer_phone, \
+        (Some(e), _, Some(p)) if !e.is_empty() => sqlx::query(
+            "SELECT r.customer_name, r.customer_email, r.customer_phone, \
                         r.vehicle, r.license_plate, r.description, r.diagnosis, \
                         r.status, r.created_at \
                  FROM repairs r \
                  WHERE r.customer_email = $1 AND r.license_plate = $2 \
                    AND r.workshop_id = $3 AND r.status != 'deleted' \
                  ORDER BY r.created_at DESC",
-            )
-            .bind(e)
-            .bind(p)
-            .bind(wid)
-        }
-        (Some(e), _, _) if !e.is_empty() => {
-            sqlx::query(
-                "SELECT r.customer_name, r.customer_email, r.customer_phone, \
+        )
+        .bind(e)
+        .bind(p)
+        .bind(wid),
+        (Some(e), _, _) if !e.is_empty() => sqlx::query(
+            "SELECT r.customer_name, r.customer_email, r.customer_phone, \
                         r.vehicle, r.license_plate, r.description, r.diagnosis, \
                         r.status, r.created_at \
                  FROM repairs r \
                  WHERE r.customer_email = $1 AND r.workshop_id = $2 \
                    AND r.status != 'deleted' \
                  ORDER BY r.created_at DESC",
-            )
-            .bind(e)
-            .bind(wid)
-        }
-        (_, Some(n), Some(p)) => {
-            sqlx::query(
-                "SELECT r.customer_name, r.customer_email, r.customer_phone, \
+        )
+        .bind(e)
+        .bind(wid),
+        (_, Some(n), Some(p)) => sqlx::query(
+            "SELECT r.customer_name, r.customer_email, r.customer_phone, \
                         r.vehicle, r.license_plate, r.description, r.diagnosis, \
                         r.status, r.created_at \
                  FROM repairs r \
                  WHERE r.customer_name = $1 AND r.license_plate = $2 \
                    AND r.workshop_id = $3 AND r.status != 'deleted' \
                  ORDER BY r.created_at DESC",
-            )
-            .bind(n)
-            .bind(p)
-            .bind(wid)
-        }
-        (_, Some(n), _) => {
-            sqlx::query(
-                "SELECT r.customer_name, r.customer_email, r.customer_phone, \
+        )
+        .bind(n)
+        .bind(p)
+        .bind(wid),
+        (_, Some(n), _) => sqlx::query(
+            "SELECT r.customer_name, r.customer_email, r.customer_phone, \
                         r.vehicle, r.license_plate, r.description, r.diagnosis, \
                         r.status, r.created_at \
                  FROM repairs r \
                  WHERE r.customer_name = $1 AND r.workshop_id = $2 \
                    AND r.status != 'deleted' \
                  ORDER BY r.created_at DESC",
-            )
-            .bind(n)
-            .bind(wid)
-        }
-        (_, _, Some(p)) => {
-            sqlx::query(
-                "SELECT r.customer_name, r.customer_email, r.customer_phone, \
+        )
+        .bind(n)
+        .bind(wid),
+        (_, _, Some(p)) => sqlx::query(
+            "SELECT r.customer_name, r.customer_email, r.customer_phone, \
                         r.vehicle, r.license_plate, r.description, r.diagnosis, \
                         r.status, r.created_at \
                  FROM repairs r \
                  WHERE r.license_plate = $1 AND r.workshop_id = $2 \
                    AND r.status != 'deleted' \
                  ORDER BY r.created_at DESC",
-            )
-            .bind(p)
-            .bind(wid)
-        }
+        )
+        .bind(p)
+        .bind(wid),
         _ => {
             return Ok(Vec::new());
         }
@@ -452,15 +442,10 @@ async fn client_certificate(
         city: workshop_row.try_get("city").unwrap_or_default(),
     };
 
-    let repair_rows = fetch_repairs_for_certificate(
-        &state.pool,
-        &params.email,
-        &params.name,
-        &params.plate,
-        wid,
-    )
-    .await
-    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+    let repair_rows =
+        fetch_repairs_for_certificate(&state.pool, &params.email, &params.name, &params.plate, wid)
+            .await
+            .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     if repair_rows.is_empty() {
         return Err(AppError::Internal(
@@ -553,15 +538,10 @@ async fn download_certificate(
         city: workshop_row.try_get("city").unwrap_or_default(),
     };
 
-    let repair_rows = fetch_repairs_for_certificate(
-        &state.pool,
-        &params.email,
-        &params.name,
-        &params.plate,
-        wid,
-    )
-    .await
-    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+    let repair_rows =
+        fetch_repairs_for_certificate(&state.pool, &params.email, &params.name, &params.plate, wid)
+            .await
+            .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     if repair_rows.is_empty() {
         return Err(AppError::Internal(

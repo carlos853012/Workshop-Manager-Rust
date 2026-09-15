@@ -37,21 +37,22 @@ impl DbManager {
     /// Descarga/instala PostgreSQL si es necesario, inicia el servidor, crea la base de datos y retorna el connection string.
     pub async fn start(&mut self) -> anyhow::Result<String> {
         tracing::info!("PostgreSQL setup starting...");
-        self.postgresql.setup().await
-            .map_err(|e| {
-                tracing::error!(error = %e, "PostgreSQL setup failed");
-                e
-            })?;
+        self.postgresql.setup().await.map_err(|e| {
+            tracing::error!(error = %e, "PostgreSQL setup failed");
+            e
+        })?;
         tracing::info!("PostgreSQL setup complete, starting...");
-        self.postgresql.start().await
-            .map_err(|e| {
-                tracing::error!(error = %e, "PostgreSQL start failed");
-                e
-            })?;
+        self.postgresql.start().await.map_err(|e| {
+            tracing::error!(error = %e, "PostgreSQL start failed");
+            e
+        })?;
         tracing::info!("PostgreSQL started, checking database...");
 
         if !self.postgresql.database_exists(&self.database_name).await? {
-            tracing::info!("Database '{}' does not exist, creating...", self.database_name);
+            tracing::info!(
+                "Database '{}' does not exist, creating...",
+                self.database_name
+            );
             self.postgresql.create_database(&self.database_name).await?;
         }
 

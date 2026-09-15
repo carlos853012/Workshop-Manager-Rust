@@ -190,13 +190,6 @@ pub fn Setup() -> Element {
                         onclick: on_submit,
                         "Crear cuenta admin"
                     }
-                    div { class: "mt-md text-center",
-                        Link {
-                            to: Route::Login {},
-                            class: "text-muted",
-                            "Ya tengo una cuenta"
-                        }
-                    }
                 }
             }
         }

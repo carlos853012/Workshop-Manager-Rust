@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
+use rust_decimal::Decimal;
 use workshop_common::dto::SaleDetailResponse;
 use workshop_common::money::format_clp;
-use rust_decimal::Decimal;
 
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
@@ -9,11 +9,7 @@ use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::modal::Modal;
 
 #[component]
-pub fn SaleDetailModal(
-    show: bool,
-    sale_id: uuid::Uuid,
-    on_close: EventHandler<()>,
-) -> Element {
+pub fn SaleDetailModal(show: bool, sale_id: uuid::Uuid, on_close: EventHandler<()>) -> Element {
     let auth = use_auth();
     let mut loading = use_signal(|| true);
     let mut error = use_signal(|| None::<String>);
@@ -88,20 +84,23 @@ fn SaleDetailBody(data: SaleDetailResponse) -> Element {
     let sale = &data.sale;
     let items = &data.items;
 
-    let rows: Vec<Element> = items.iter().map(|item| {
-        let name = item.product_name.as_deref().unwrap_or("-").to_string();
-        let qty = item.quantity.to_string();
-        let uprice = format_clp(item.unit_price);
-        let itotal = format_clp(item.total);
-        rsx! {
-            tr {
-                td { "{name}" }
-                td { class: "text-right", "{qty}" }
-                td { class: "text-right", "{uprice}" }
-                td { class: "text-right", "{itotal}" }
+    let rows: Vec<Element> = items
+        .iter()
+        .map(|item| {
+            let name = item.product_name.as_deref().unwrap_or("-").to_string();
+            let qty = item.quantity.to_string();
+            let uprice = format_clp(item.unit_price);
+            let itotal = format_clp(item.total);
+            rsx! {
+                tr {
+                    td { "{name}" }
+                    td { class: "text-right", "{qty}" }
+                    td { class: "text-right", "{uprice}" }
+                    td { class: "text-right", "{itotal}" }
+                }
             }
-        }
-    }).collect();
+        })
+        .collect();
 
     let has_items = !items.is_empty();
     let subtotal = format_clp(sale.subtotal);
@@ -110,7 +109,11 @@ fn SaleDetailBody(data: SaleDetailResponse) -> Element {
     let total = format_clp(sale.total);
     let has_discount = sale.discount_amount > Decimal::ZERO;
 
-    let customer = sale.customer_name.as_deref().unwrap_or("Sin nombre").to_string();
+    let customer = sale
+        .customer_name
+        .as_deref()
+        .unwrap_or("Sin nombre")
+        .to_string();
     let email = sale.customer_email.as_deref().unwrap_or("-").to_string();
     let phone = sale.customer_phone.as_deref().unwrap_or("-").to_string();
     let payment = crate::i18n::translate_payment(&sale.payment_method).to_string();

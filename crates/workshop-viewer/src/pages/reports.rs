@@ -7,8 +7,8 @@ use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
-use crate::icons::IconName;
 use crate::i18n;
+use crate::icons::IconName;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
 
@@ -41,9 +41,14 @@ pub fn Reports() -> Element {
                     Ok(data) => {
                         clients_set.set(data);
                     }
-                    Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
+                    Err(ApiError::Unauthorized) => {
                         auth.logout();
                         navigator.push(Route::Login {});
+                    }
+                    Err(ApiError::Forbidden) => {
+                        error_set.set(Some(
+                            "No tienes permisos para acceder a esta sección.".to_string(),
+                        ));
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));

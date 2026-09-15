@@ -29,7 +29,13 @@ pub fn PartsTab(
                 .total_cost
                 .map(workshop_common::money::format_clp)
                 .unwrap_or_else(|| "-".to_string());
-            (p.id, p.name.clone(), p.quantity.normalize().to_string(), unit, total)
+            (
+                p.id,
+                p.name.clone(),
+                p.quantity.normalize().to_string(),
+                unit,
+                total,
+            )
         })
         .collect();
     let is_empty = parts_data.is_empty();

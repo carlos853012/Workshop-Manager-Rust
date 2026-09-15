@@ -46,6 +46,11 @@ fn main() {
             .expect("Failed to create window icon")
     };
 
+    let data_dir = dirs::data_local_dir()
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_default())
+        .join("WorkshopManager")
+        .join("viewer_data");
+
     dioxus::LaunchBuilder::new()
         .with_cfg(
             Config::new()
@@ -58,7 +63,8 @@ fn main() {
                         ))
                         .with_position(dioxus_desktop::tao::dpi::LogicalPosition::new(210.0, 1.0)),
                 )
-                .with_icon(icon),
+                .with_icon(icon)
+                .with_data_directory(data_dir),
         )
         .launch(App);
 }

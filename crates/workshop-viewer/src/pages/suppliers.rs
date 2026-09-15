@@ -48,9 +48,14 @@ pub fn Suppliers() -> Element {
                         suppliers_set.set(response.items);
                         total_set.set(response.total);
                     }
-                    Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
+                    Err(ApiError::Unauthorized) => {
                         auth.logout();
                         navigator.push(Route::Login {});
+                    }
+                    Err(ApiError::Forbidden) => {
+                        error_set.set(Some(
+                            "No tienes permisos para acceder a esta sección.".to_string(),
+                        ));
                     }
                     Err(e) => {
                         error_set.set(Some(e.user_message().to_string()));
@@ -106,9 +111,7 @@ pub fn Suppliers() -> Element {
         Column {
             key: "updated_at".to_string(),
             header: "Actualizado".to_string(),
-            render: Rc::new(
-                |s: &Supplier| rsx! { span { "{s.updated_at}" } },
-            ),
+            render: Rc::new(|s: &Supplier| rsx! { span { "{s.updated_at}" } }),
         },
     ];
 

@@ -1,5 +1,5 @@
-use rand::Rng;
 use rand::rngs::OsRng;
+use rand::Rng;
 use std::path::Path;
 
 use super::state::Secrets;

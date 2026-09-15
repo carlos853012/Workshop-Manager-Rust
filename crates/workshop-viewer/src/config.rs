@@ -23,7 +23,7 @@ fn default_true() -> bool {
 }
 
 fn default_base_url() -> String {
-    "https://127.0.0.1:8443".to_string()
+    "127.0.0.1".to_string()
 }
 
 fn default_api_key() -> String {
@@ -46,8 +46,9 @@ impl Default for ViewerConfig {
 static CONFIG: OnceLock<RwLock<ViewerConfig>> = OnceLock::new();
 
 fn load_config() -> ViewerConfig {
-    let config_path = std::env::current_dir()
-        .unwrap_or_default()
+    let config_path = dirs::data_local_dir()
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_default())
+        .join("WorkshopManager")
         .join("config")
         .join("viewer.toml");
 
@@ -56,6 +57,18 @@ fn load_config() -> ViewerConfig {
         toml::from_str(&content).unwrap_or_default()
     } else {
         ViewerConfig::default()
+    }
+}
+
+/// Resuelve una IP o hostname a la URL completa del servidor.
+/// Si el valor ya contiene `http://` o `https://`, se devuelve tal cual.
+/// Si es solo una IP o hostname, se construye `https://{value}:8443`.
+pub fn resolve_base_url(raw: &str) -> String {
+    let trimmed = raw.trim();
+    if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
+        trimmed.trim_end_matches('/').to_string()
+    } else {
+        format!("https://{}:8443", trimmed.trim_end_matches('/'))
     }
 }
 
@@ -69,8 +82,9 @@ pub fn config() -> ViewerConfig {
 }
 
 pub fn save_config(new_config: ViewerConfig) -> Result<(), String> {
-    let config_path = std::env::current_dir()
-        .map_err(|error| format!("No se pudo localizar la configuración: {error}"))?
+    let config_path = dirs::data_local_dir()
+        .ok_or_else(|| "No se pudo localizar el directorio de datos".to_string())?
+        .join("WorkshopManager")
         .join("config")
         .join("viewer.toml");
     let content = toml::to_string_pretty(&new_config)

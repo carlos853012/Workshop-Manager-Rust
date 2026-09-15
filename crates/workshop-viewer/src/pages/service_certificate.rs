@@ -1,13 +1,13 @@
 use dioxus::prelude::*;
-use workshop_common::{Repair};
+use workshop_common::Repair;
 
 use crate::api::ApiError;
 use crate::app_state::use_auth;
 use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::organisms::certificate_detail_modal::CertificateDetailModal;
-use crate::icons::IconName;
 use crate::i18n;
+use crate::icons::IconName;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
 
@@ -42,9 +42,15 @@ pub fn ServiceCertificatePage() -> Element {
                     Ok(page) => {
                         repairs_set.set(page.items);
                     }
-                    Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
+                    Err(ApiError::Unauthorized) => {
                         auth.logout();
                         navigator.push(Route::Login {});
+                        return;
+                    }
+                    Err(ApiError::Forbidden) => {
+                        error_set.set(Some(
+                            "No tienes permisos para acceder a esta sección.".to_string(),
+                        ));
                         return;
                     }
                     Err(e) => {
@@ -70,50 +76,60 @@ pub fn ServiceCertificatePage() -> Element {
                     let plate = r.license_plate.as_deref().unwrap_or("").to_lowercase();
                     let vehicle = r.vehicle.as_deref().unwrap_or("").to_lowercase();
                     let desc = r.description.as_deref().unwrap_or("").to_lowercase();
-                    name.contains(q)
-                        || plate.contains(q)
-                        || vehicle.contains(q)
-                        || desc.contains(q)
+                    name.contains(q) || plate.contains(q) || vehicle.contains(q) || desc.contains(q)
                 })
                 .cloned()
                 .collect()
         }
     };
 
-    let download_cert = move |(email, name, plate): (Option<String>, Option<String>, Option<String>)| {
-        let client = auth.api_client();
-        let mut generating_set = generating;
-        let mut error_set = error;
-        let mut success_set = success_msg;
-        generating_set.set(true);
-        error_set.set(None);
-        success_set.set(None);
-        let mut auth = auth;
-        spawn(async move {
-            if let Some(api) = client {
-                match api.download_certificate(email.as_deref(), name.as_deref(), plate.as_deref()).await {
-                    Ok(pdf_bytes) => {
-                        let label = email.as_deref().or(name.as_deref()).unwrap_or("cliente");
-                        let filename = format!("certificado_{}.pdf", label.replace('@', "_at_"));
-                        let path = std::path::PathBuf::from(&filename);
-                        if let Err(e) = std::fs::write(&path, &pdf_bytes) {
-                            error_set.set(Some(format!("Error al guardar: {}", e)));
-                        } else {
-                            success_set.set(Some(format!("Certificado guardado en {}", path.display())));
+    let download_cert =
+        move |(email, name, plate): (Option<String>, Option<String>, Option<String>)| {
+            let client = auth.api_client();
+            let mut generating_set = generating;
+            let mut error_set = error;
+            let mut success_set = success_msg;
+            generating_set.set(true);
+            error_set.set(None);
+            success_set.set(None);
+            let mut auth = auth;
+            spawn(async move {
+                if let Some(api) = client {
+                    match api
+                        .download_certificate(email.as_deref(), name.as_deref(), plate.as_deref())
+                        .await
+                    {
+                        Ok(pdf_bytes) => {
+                            let label = email.as_deref().or(name.as_deref()).unwrap_or("cliente");
+                            let filename =
+                                format!("certificado_{}.pdf", label.replace('@', "_at_"));
+                            let path = std::path::PathBuf::from(&filename);
+                            if let Err(e) = std::fs::write(&path, &pdf_bytes) {
+                                error_set.set(Some(format!("Error al guardar: {}", e)));
+                            } else {
+                                success_set.set(Some(format!(
+                                    "Certificado guardado en {}",
+                                    path.display()
+                                )));
+                            }
+                        }
+                        Err(ApiError::Unauthorized) => {
+                            auth.logout();
+                            navigator.push(Route::Login {});
+                        }
+                        Err(ApiError::Forbidden) => {
+                            error_set.set(Some(
+                                "No tienes permisos para acceder a esta sección.".to_string(),
+                            ));
+                        }
+                        Err(e) => {
+                            error_set.set(Some(e.user_message().to_string()));
                         }
                     }
-                    Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
-                        auth.logout();
-                        navigator.push(Route::Login {});
-                    }
-                    Err(e) => {
-                        error_set.set(Some(e.user_message().to_string()));
-                    }
                 }
-            }
-            generating_set.set(false);
-        });
-    };
+                generating_set.set(false);
+            });
+        };
 
     rsx! {
         AppShell { title: "Certificado de Servicios".to_string(), active_route: Route::ServiceCertificatePage {},
@@ -257,9 +273,12 @@ pub fn ServiceCertificatePage() -> Element {
                                                 success_set.set(Some(format!("Certificado guardado en {}", path.display())));
                                             }
                                         }
-                                        Err(ApiError::Unauthorized) | Err(ApiError::Forbidden) => {
+                                        Err(ApiError::Unauthorized) => {
                                             auth.logout();
                                             navigator.push(Route::Login {});
+                                        }
+                                        Err(ApiError::Forbidden) => {
+                                            error_set.set(Some("No tienes permisos para acceder a esta sección.".to_string()));
                                         }
                                         Err(e) => {
                                             error_set.set(Some(e.user_message().to_string()));

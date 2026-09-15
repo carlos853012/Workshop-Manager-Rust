@@ -1,8 +1,9 @@
 [server]
-host = "127.0.0.1"
+host = "0.0.0.0"
 port = 8443
 api_key = "dev-key-change-in-production"
 require_device_key = false
+cors_origins = []
 
 [tax]
 iva_rate = 0.19

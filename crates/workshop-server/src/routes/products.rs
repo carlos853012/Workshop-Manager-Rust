@@ -4,11 +4,11 @@ use axum::{
     Extension, Json, Router,
 };
 use chrono::Utc;
+use rust_decimal::Decimal;
 use workshop_common::dto::{
     ApiResponse, CreateProductRequest, PaginatedResponse, PosLookupRequest, PosProductResponse,
 };
 use workshop_common::{Product, UserRole};
-use rust_decimal::Decimal;
 
 use uuid::Uuid;
 

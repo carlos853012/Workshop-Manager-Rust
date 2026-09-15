@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
-use workshop_common::Priority;
 use rust_decimal::Decimal;
+use workshop_common::Priority;
 
 use crate::app_state::use_auth;
 use crate::components::atoms::button::{Button, ButtonVariant};
@@ -8,7 +8,11 @@ use crate::components::atoms::input::Input;
 use crate::components::molecules::modal::Modal;
 
 #[component]
-pub fn RepairFormModal(show: bool, on_close: EventHandler<()>, on_saved: EventHandler<()>) -> Element {
+pub fn RepairFormModal(
+    show: bool,
+    on_close: EventHandler<()>,
+    on_saved: EventHandler<()>,
+) -> Element {
     let auth = use_auth();
     let mut customer_name = use_signal(|| "".to_string());
     let mut customer_email = use_signal(|| "".to_string());
