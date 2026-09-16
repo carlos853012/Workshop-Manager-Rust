@@ -22,7 +22,7 @@ toml = "0.8"
 rust_decimal = "1.35"
 dirs = "6"
 tracing = "0.1"
-plotters = { version = "0.3", default-features = false, features = ["svg_backend"] }
+plotters = { version = "0.3", default-features = false, features = ["svg_backend", "line_series", "area_series"] }
 
 [package.metadata.wix]
 name = "WorkshopManagerViewer"
