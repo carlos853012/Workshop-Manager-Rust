@@ -4,8 +4,8 @@ use workshop_common::dto::{
     CreateProductRequest, CreateRepairRequest, CreateSaleRequest, CreateSupplierRequest,
     CreateUserRequest, DashboardResponse, DeviceKeySummary, KpisResponse, LoginRequest,
     LoginResponse, PaginatedResponse, PosProductResponse, RegisterRequest, RepairDetail,
-    RepairPartResponse, RevenueResponse, SaleDetailResponse, UpdateRepairRequest,
-    UpdateUserRequest,
+    RepairPartResponse, RevenueResponse, SaleDetailResponse, TopProductResponse,
+    UpdateRepairRequest, UpdateUserRequest,
 };
 use workshop_common::{AuditLog, Product, Repair, Sale, Supplier, User};
 
@@ -379,6 +379,11 @@ impl ApiClient {
             params.push(("end_date", e.to_string()));
         }
         self.get_with_query("/api/analytics/revenue", &params).await
+    }
+
+    /// GET /api/analytics/top-products
+    pub async fn get_top_products(&self) -> Result<TopProductResponse, ApiError> {
+        self.get("/api/analytics/top-products").await
     }
 
     // ==================== REPORTS ====================

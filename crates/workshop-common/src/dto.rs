@@ -371,3 +371,16 @@ pub struct RevenueResponse {
     pub data: Vec<RevenueDataPoint>,
     pub grouping: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopProductItem {
+    pub product_id: uuid::Uuid,
+    pub product_name: String,
+    pub total_quantity: i64,
+    pub total_revenue: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopProductResponse {
+    pub data: Vec<TopProductItem>,
+}

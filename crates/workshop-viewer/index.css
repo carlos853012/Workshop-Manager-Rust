@@ -1175,6 +1175,11 @@ body {
   margin-bottom: var(--space-lg);
 }
 
+.revenue-chart svg {
+  width: 100%;
+  height: auto;
+}
+
 .revenue-ranking {
   display: flex;
   flex-direction: column;

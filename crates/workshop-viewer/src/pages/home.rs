@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 use rust_decimal::Decimal;
-use workshop_common::dto::RevenueDataPoint;
+use workshop_common::dto::{RevenueDataPoint, TopProductItem};
 use workshop_common::money::format_clp;
 
 use crate::api::ApiError;
@@ -36,6 +36,7 @@ pub fn Dashboard() -> Element {
 
     let revenue_data = use_signal(Vec::<RevenueDataPoint>::new);
     let revenue_loading = use_signal(|| false);
+    let top_products = use_signal(Vec::<TopProductItem>::new);
 
     let load_data = move || {
         let client = auth.api_client();
@@ -93,6 +94,7 @@ pub fn Dashboard() -> Element {
         let client = auth.api_client();
         let mut revenue_data_set = revenue_data;
         let mut revenue_loading_set = revenue_loading;
+        let mut top_products_set = top_products;
 
         revenue_loading_set.set(true);
 
@@ -114,6 +116,14 @@ pub fn Dashboard() -> Element {
                     }
                     Err(_) => {
                         revenue_data_set.set(Vec::new());
+                    }
+                }
+                match client.get_top_products().await {
+                    Ok(response) => {
+                        top_products_set.set(response.data);
+                    }
+                    Err(_) => {
+                        top_products_set.set(Vec::new());
                     }
                 }
             }
@@ -138,7 +148,7 @@ pub fn Dashboard() -> Element {
             if *loading.read() {
                 div { class: "empty-state", Spinner {} }
             } else {
-                div { class: "grid grid-4",
+                div { class: "grid grid-4 mb-lg",
                     DashboardCard {
                         title: "Ingresos".to_string(),
                         value: format_clp(*total_revenue.read()),
@@ -176,8 +186,7 @@ pub fn Dashboard() -> Element {
                         .iter()
                         .map(|d| {
                             let sales = d.sales.to_string().parse::<f64>().unwrap_or(0.0);
-                            let repairs = d.repairs.to_string().parse::<f64>().unwrap_or(0.0);
-                            (d.period.clone(), sales + repairs)
+                            (d.period.clone(), sales)
                         })
                         .collect();
 
@@ -189,12 +198,22 @@ pub fn Dashboard() -> Element {
                                     data: chart_data,
                                     width: 700,
                                     height: 350,
+                                    class: Some("revenue-chart".to_string()),
                                 }
                             }
                             div { class: "card",
                                 h3 { class: "text-lg font-semibold mb-md", "Top Productos" }
                                 div { class: "revenue-ranking",
-                                    p { class: "text-muted text-sm", "Próximamente" }
+                                    if top_products.read().is_empty() {
+                                        p { class: "text-muted text-sm", "Sin ventas en este período" }
+                                    } else {
+                                        for item in top_products.read().iter() {
+                                            div { class: "revenue-ranking-item",
+                                                span { class: "revenue-ranking-label", "{item.product_name}" }
+                                                span { class: "revenue-ranking-value", "{item.total_quantity} uds" }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

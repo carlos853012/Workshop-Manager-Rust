@@ -5,7 +5,10 @@ use axum::{
 };
 use rust_decimal::Decimal;
 use serde::Deserialize;
-use workshop_common::dto::{ApiResponse, DashboardResponse, RevenueDataPoint, RevenueResponse};
+use workshop_common::dto::{
+    ApiResponse, DashboardResponse, RevenueDataPoint, RevenueResponse, TopProductItem,
+    TopProductResponse,
+};
 
 use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
@@ -16,6 +19,7 @@ pub fn routes() -> Router<AppState> {
         .route("/dashboard", get(dashboard))
         .route("/kpis", get(kpis))
         .route("/revenue", get(revenue))
+        .route("/top-products", get(top_products))
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -259,4 +263,40 @@ async fn revenue(
         data,
         grouping: grouping_label,
     })))
+}
+
+async fn top_products(
+    State(state): State<AppState>,
+    Extension(user): Extension<AuthenticatedUser>,
+) -> Result<Json<ApiResponse<TopProductResponse>>, AppError> {
+    let wid = user.workshop_id;
+
+    let rows: Vec<(uuid::Uuid, String, i64, Decimal)> = sqlx::query_as(
+        "SELECT si.product_id, p.name AS product_name, SUM(si.quantity) AS total_quantity, SUM(si.quantity * si.unit_price) AS total_revenue \
+         FROM sale_items si \
+         JOIN sales s ON si.sale_id = s.id \
+         JOIN products p ON si.product_id = p.id \
+         WHERE s.status = 'completed' AND s.workshop_id = $1 \
+         GROUP BY si.product_id, p.name \
+         ORDER BY total_quantity DESC \
+         LIMIT 5",
+    )
+    .bind(wid)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    let data: Vec<TopProductItem> = rows
+        .into_iter()
+        .map(
+            |(product_id, product_name, total_quantity, total_revenue)| TopProductItem {
+                product_id,
+                product_name,
+                total_quantity,
+                total_revenue,
+            },
+        )
+        .collect();
+
+    Ok(Json(ApiResponse::success(TopProductResponse { data })))
 }
