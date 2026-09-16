@@ -140,6 +140,22 @@ pub fn Dashboard() -> Element {
         load_revenue(range);
     };
 
+    let chart_data = use_signal(Vec::<(String, f64)>::new);
+    {
+        let mut chart_data_set = chart_data;
+        use_effect(move || {
+            let new_data: Vec<(String, f64)> = revenue_data
+                .read()
+                .iter()
+                .map(|d| {
+                    let sales = d.sales.to_string().parse::<f64>().unwrap_or(0.0);
+                    (d.period.clone(), sales)
+                })
+                .collect();
+            chart_data_set.set(new_data);
+        });
+    }
+
     rsx! {
         AppShell { title: "Dashboard".to_string(), active_route: Route::Dashboard {},
             if let Some(err) = error.read().as_ref() {
@@ -180,38 +196,25 @@ pub fn Dashboard() -> Element {
 
                 DateFilter { on_change: on_date_change }
 
-                {
-                    let chart_data: Vec<(String, f64)> = revenue_data
-                        .read()
-                        .iter()
-                        .map(|d| {
-                            let sales = d.sales.to_string().parse::<f64>().unwrap_or(0.0);
-                            (d.period.clone(), sales)
-                        })
-                        .collect();
-
-                    rsx! {
-                        div { class: "revenue-grid",
-                            Card { title: "Ingresos por período".to_string(),
-                                class: if *revenue_loading.read() { "chart-loading".to_string() } else { String::new() },
-                                LineChart {
-                                    data: chart_data,
-                                    width: 700,
-                                    height: 350,
-                                    class: Some("revenue-chart".to_string()),
-                                }
-                            }
-                            Card { title: "Top Productos".to_string(),
-                                div { class: "revenue-ranking",
-                                    if top_products.read().is_empty() {
-                                        p { class: "text-muted text-sm", "Sin ventas en este período" }
-                                    } else {
-                                        for item in top_products.read().iter() {
-                                            div { class: "revenue-ranking-item",
-                                                span { class: "revenue-ranking-label", "{item.product_name}" }
-                                                span { class: "revenue-ranking-value", "{item.total_quantity} uds" }
-                                            }
-                                        }
+                div { class: "revenue-grid",
+                    Card { title: "Ingresos por período".to_string(),
+                        class: if *revenue_loading.read() { "chart-loading".to_string() } else { String::new() },
+                        LineChart {
+                            data: chart_data,
+                            width: 700,
+                            height: 350,
+                            class: Some("revenue-chart".to_string()),
+                        }
+                    }
+                    Card { title: "Top Productos".to_string(),
+                        div { class: "revenue-ranking",
+                            if top_products.read().is_empty() {
+                                p { class: "text-muted text-sm", "Sin ventas en este período" }
+                            } else {
+                                for item in top_products.read().iter() {
+                                    div { class: "revenue-ranking-item",
+                                        span { class: "revenue-ranking-label", "{item.product_name}" }
+                                        span { class: "revenue-ranking-value", "{item.total_quantity} uds" }
                                     }
                                 }
                             }

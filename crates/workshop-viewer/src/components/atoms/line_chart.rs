@@ -24,7 +24,7 @@ fn parse_hex(hex: &str) -> RGBColor {
 /// Recalcula automáticamente cuando cambian los datos o el tema (claro/oscuro).
 #[component]
 pub fn LineChart(
-    data: Vec<(String, f64)>,
+    data: Signal<Vec<(String, f64)>>,
     #[props(default = 600)] width: u32,
     #[props(default = 400)] height: u32,
     #[props(default)] class: Option<String>,
@@ -32,9 +32,10 @@ pub fn LineChart(
     let theme = use_theme();
 
     let svg_html = use_memo(move || {
+        let d = data.read();
         let tokens = theme.tokens();
         let color = parse_hex(&tokens.colors.primary);
-        match render_line_chart(&data, color, width, height) {
+        match render_line_chart(&d, color, width, height) {
             Ok(svg) => svg,
             Err(_) => "<svg></svg>".to_string(),
         }
