@@ -1,5 +1,6 @@
 mod api;
 mod app_state;
+mod charts;
 mod components;
 mod config;
 mod i18n;
@@ -12,7 +13,7 @@ use dioxus::prelude::*;
 use dioxus_desktop::{Config, WindowBuilder};
 use dioxus_router::prelude::*;
 
-use crate::app_state::{AuthProvider, TabsProvider};
+use crate::app_state::{AuthProvider, SidebarProvider, TabsProvider};
 use crate::routes::Route;
 use crate::theme::{DesignTokens, ThemeProvider};
 
@@ -76,7 +77,9 @@ fn App() -> Element {
         ThemeProvider {
             AuthProvider {
                 TabsProvider {
-                    Router::<Route> {}
+                    SidebarProvider {
+                        Router::<Route> {}
+                    }
                 }
             }
         }

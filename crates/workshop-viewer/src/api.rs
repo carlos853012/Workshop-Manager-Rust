@@ -4,7 +4,8 @@ use workshop_common::dto::{
     CreateProductRequest, CreateRepairRequest, CreateSaleRequest, CreateSupplierRequest,
     CreateUserRequest, DashboardResponse, DeviceKeySummary, KpisResponse, LoginRequest,
     LoginResponse, PaginatedResponse, PosProductResponse, RegisterRequest, RepairDetail,
-    RepairPartResponse, SaleDetailResponse, UpdateRepairRequest, UpdateUserRequest,
+    RepairPartResponse, RevenueResponse, SaleDetailResponse, UpdateRepairRequest,
+    UpdateUserRequest,
 };
 use workshop_common::{AuditLog, Product, Repair, Sale, Supplier, User};
 
@@ -362,6 +363,22 @@ impl ApiClient {
     /// GET /api/analytics/kpis
     pub async fn get_kpis(&self) -> Result<KpisResponse, ApiError> {
         self.get("/api/analytics/kpis").await
+    }
+
+    /// GET /api/analytics/revenue?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+    pub async fn get_revenue(
+        &self,
+        start_date: Option<&str>,
+        end_date: Option<&str>,
+    ) -> Result<RevenueResponse, ApiError> {
+        let mut params: Vec<(&str, String)> = Vec::new();
+        if let Some(s) = start_date {
+            params.push(("start_date", s.to_string()));
+        }
+        if let Some(e) = end_date {
+            params.push(("end_date", e.to_string()));
+        }
+        self.get_with_query("/api/analytics/revenue", &params).await
     }
 
     // ==================== REPORTS ====================

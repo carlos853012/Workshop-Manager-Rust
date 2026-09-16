@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 use workshop_common::UserRole;
 
-use crate::app_state::{use_auth, use_tabs, OpenTab};
+use crate::app_state::{use_auth, use_sidebar, use_tabs, OpenTab};
 use crate::components::organisms::header::Sidebar;
 use crate::components::organisms::header::{Header, NavItem};
 use crate::icons::IconName;
@@ -14,7 +14,7 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
     let mut auth = use_auth();
     let navigator = use_navigator();
     let mut tabs_state = use_tabs();
-    let mut sidebar_collapsed = use_signal(|| false);
+    let mut sidebar = use_sidebar();
 
     let route_for_tab = active_route.clone();
     let title_for_tab = title.clone();
@@ -26,11 +26,6 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
                 route: route_for_tab.clone(),
             });
         }
-    });
-
-    use_future(move || async move {
-        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-        sidebar_collapsed.set(true);
     });
 
     let user_role = auth.user_role.read().clone();
@@ -110,6 +105,8 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
             title: "Dashboard".to_string(),
             route: Route::Dashboard {},
         });
+        sidebar.collapsed.set(false);
+        sidebar.hovered.set(false);
         auth.logout();
         navigator.push(Route::Login {});
     };
@@ -119,7 +116,6 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
             Sidebar {
                 items: nav_items,
                 active_route: active_route.clone(),
-                collapsed: sidebar_collapsed(),
                 user_name: user_name.clone(),
                 user_display_name,
                 user_role,

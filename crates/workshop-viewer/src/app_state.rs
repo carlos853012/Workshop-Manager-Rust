@@ -121,3 +121,28 @@ pub fn TabsProvider(children: Element) -> Element {
 pub fn use_tabs() -> TabsState {
     use_context::<TabsState>()
 }
+
+#[derive(Clone, Copy)]
+pub struct SidebarState {
+    pub collapsed: Signal<bool>,
+    pub hovered: Signal<bool>,
+}
+
+impl SidebarState {
+    pub fn toggle(&mut self) {
+        let current = *self.collapsed.read();
+        self.collapsed.set(!current);
+    }
+}
+
+#[component]
+pub fn SidebarProvider(children: Element) -> Element {
+    let collapsed = use_signal(|| false);
+    let hovered = use_signal(|| false);
+    use_context_provider(|| SidebarState { collapsed, hovered });
+    rsx! { {children} }
+}
+
+pub fn use_sidebar() -> SidebarState {
+    use_context::<SidebarState>()
+}

@@ -356,3 +356,18 @@ pub struct DeviceKeySummary {
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub last_seen_at: Option<chrono::DateTime<chrono::Utc>>,
 }
+
+// ==================== ANALYTICS / REVENUE CHART ====================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RevenueDataPoint {
+    pub period: String,
+    pub sales: Decimal,
+    pub repairs: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RevenueResponse {
+    pub data: Vec<RevenueDataPoint>,
+    pub grouping: String,
+}

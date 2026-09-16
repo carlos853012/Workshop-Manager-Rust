@@ -1,12 +1,15 @@
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 use rust_decimal::Decimal;
+use workshop_common::dto::RevenueDataPoint;
 use workshop_common::money::format_clp;
 
 use crate::api::ApiError;
 use crate::app_state::use_auth;
+use crate::components::atoms::bar_chart::BarChart;
 use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
+use crate::components::molecules::date_filter::{DateFilter, DateRange};
 use crate::icons::IconName;
 use crate::pages::layout::{require_auth, AppShell};
 use crate::routes::Route;
@@ -30,6 +33,9 @@ pub fn Dashboard() -> Element {
     let average_sale = use_signal(|| Decimal::ZERO);
     let total_customers = use_signal(|| 0i64);
     let in_progress_repairs = use_signal(|| 0i64);
+
+    let revenue_data = use_signal(Vec::<RevenueDataPoint>::new);
+    let revenue_loading = use_signal(|| false);
 
     let load_data = move || {
         let client = auth.api_client();
@@ -83,9 +89,46 @@ pub fn Dashboard() -> Element {
         });
     };
 
+    let load_revenue = move |range: DateRange| {
+        let client = auth.api_client();
+        let mut revenue_data_set = revenue_data;
+        let mut revenue_loading_set = revenue_loading;
+
+        revenue_loading_set.set(true);
+
+        spawn(async move {
+            if let Some(client) = client {
+                let start = if range.start.is_empty() {
+                    None
+                } else {
+                    Some(range.start.as_str())
+                };
+                let end = if range.end.is_empty() {
+                    None
+                } else {
+                    Some(range.end.as_str())
+                };
+                match client.get_revenue(start, end).await {
+                    Ok(response) => {
+                        revenue_data_set.set(response.data);
+                    }
+                    Err(_) => {
+                        revenue_data_set.set(Vec::new());
+                    }
+                }
+            }
+            revenue_loading_set.set(false);
+        });
+    };
+
     use_effect(move || {
         load_data();
+        load_revenue(DateRange::default());
     });
+
+    let on_date_change = move |range: DateRange| {
+        load_revenue(range);
+    };
 
     rsx! {
         AppShell { title: "Dashboard".to_string(), active_route: Route::Dashboard {},
@@ -106,7 +149,6 @@ pub fn Dashboard() -> Element {
                         title: "Ventas".to_string(),
                         value: total_sales.read().to_string(),
                         icon: IconName::ShoppingCart,
-
                     }
                     DashboardCard {
                         title: "Productos".to_string(),
@@ -124,8 +166,39 @@ pub fn Dashboard() -> Element {
                         value: total_customers.read().to_string(),
                         icon: IconName::User,
                     }
+                }
 
+                DateFilter { on_change: on_date_change }
 
+                {
+                    let chart_data: Vec<(String, f64)> = revenue_data
+                        .read()
+                        .iter()
+                        .map(|d| {
+                            let sales = d.sales.to_string().parse::<f64>().unwrap_or(0.0);
+                            let repairs = d.repairs.to_string().parse::<f64>().unwrap_or(0.0);
+                            (d.period.clone(), sales + repairs)
+                        })
+                        .collect();
+
+                    rsx! {
+                        div { class: "revenue-grid",
+                            div { class: if *revenue_loading.read() { "card chart-loading" } else { "card" },
+                                h3 { class: "text-lg font-semibold mb-md", "Ingresos por período" }
+                                BarChart {
+                                    data: chart_data,
+                                    width: 700,
+                                    height: 350,
+                                }
+                            }
+                            div { class: "card",
+                                h3 { class: "text-lg font-semibold mb-md", "Top Productos" }
+                                div { class: "revenue-ranking",
+                                    p { class: "text-muted text-sm", "Próximamente" }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

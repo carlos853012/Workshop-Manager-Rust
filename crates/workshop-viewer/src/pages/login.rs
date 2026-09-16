@@ -17,7 +17,8 @@ pub fn Login() -> Element {
     let mut loading = use_signal(|| false);
     let navigator = use_navigator();
 
-    let on_submit = move |_| {
+    let on_submit = move |evt: Event<FormData>| {
+        evt.prevent_default();
         error.set(None);
         loading.set(true);
 
@@ -89,30 +90,32 @@ pub fn Login() -> Element {
                         div { class: "alert alert-danger mb-md", "{err}" }
                     }
 
-                    Input {
-                        label: Some("Email".to_string()),
-                        r#type: "email".to_string(),
-                        value: email.read().clone(),
-                        oninput: move |evt: FormEvent| email.set(evt.value().clone()),
-                        placeholder: Some("usuario@taller.com".to_string()),
-                        required: true,
-                    }
-                    div { class: "mt-md" }
-                    Input {
-                        label: Some("Contraseña".to_string()),
-                        r#type: "password".to_string(),
-                        value: password.read().clone(),
-                        oninput: move |evt: FormEvent| password.set(evt.value().clone()),
-                        placeholder: Some("*******".to_string()),
-                        required: true,
-                    }
-                    div { class: "mt-lg" }
-                    Button {
-                        variant: ButtonVariant::Primary,
-                        class: Some("w-full".to_string()),
-                        loading: *loading.read(),
-                        onclick: on_submit,
-                        "Ingresar"
+                    form {
+                        onsubmit: on_submit,
+                        Input {
+                            label: Some("Email".to_string()),
+                            r#type: "email".to_string(),
+                            value: email.read().clone(),
+                            oninput: move |evt: FormEvent| email.set(evt.value().clone()),
+                            placeholder: Some("usuario@taller.com".to_string()),
+                            required: true,
+                        }
+                        div { class: "mt-md" }
+                        Input {
+                            label: Some("Contraseña".to_string()),
+                            r#type: "password".to_string(),
+                            value: password.read().clone(),
+                            oninput: move |evt: FormEvent| password.set(evt.value().clone()),
+                            placeholder: Some("*******".to_string()),
+                            required: true,
+                        }
+                        div { class: "mt-lg" }
+                        Button {
+                            variant: ButtonVariant::Primary,
+                            class: Some("w-full".to_string()),
+                            loading: *loading.read(),
+                            "Ingresar"
+                        }
                     }
                     div { class: "mt-md text-center",
                         Link {

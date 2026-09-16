@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 use workshop_common::UserRole;
 
-use crate::app_state::{use_auth, use_tabs};
+use crate::app_state::{use_auth, use_sidebar, use_tabs};
 use crate::components::atoms::button::{Button, ButtonVariant};
 use crate::icons::IconName;
 use crate::routes::Route;
@@ -100,7 +100,6 @@ pub struct NavItem {
 pub fn Sidebar(
     items: Vec<NavItem>,
     active_route: Route,
-    collapsed: bool,
     user_name: Option<String>,
     user_display_name: Option<String>,
     user_role: Option<UserRole>,
@@ -108,10 +107,19 @@ pub fn Sidebar(
     workshop_city: Option<String>,
     on_logout: Option<EventHandler<()>>,
 ) -> Element {
-    let sidebar_class = if collapsed {
-        "sidebar collapsed"
+    let mut sidebar = use_sidebar();
+    let collapsed = *sidebar.collapsed.read();
+    let hovered = *sidebar.hovered.read();
+
+    let sidebar_class = match (collapsed, hovered) {
+        (true, true) => "sidebar collapsed hovered",
+        (true, false) => "sidebar collapsed",
+        (false, _) => "sidebar",
+    };
+    let chevron_style = if collapsed {
+        "transform: rotate(180deg);"
     } else {
-        "sidebar"
+        ""
     };
     let avatar_initial = match user_display_name
         .as_deref()
@@ -122,9 +130,30 @@ pub fn Sidebar(
         None => "U".to_string(),
     };
 
+    let mut prev_route = use_signal(|| active_route.clone());
+    let route_for_effect = active_route.clone();
+    use_effect(move || {
+        let current = route_for_effect.clone();
+        if *prev_route.read() != current {
+            prev_route.set(current);
+            sidebar.hovered.set(false);
+        }
+    });
+
     rsx! {
-        aside { class: "{sidebar_class}",
+        aside {
+            class: "{sidebar_class}",
+            onmouseenter: move |_| { sidebar.hovered.set(true); },
+            onmouseleave: move |_| { sidebar.hovered.set(false); },
             div { class: "sidebar-logo",
+                button {
+                    class: "sidebar-toggle",
+                    title: if collapsed { "Expandir menú" } else { "Colapsar menú" },
+                    onclick: move |_| { sidebar.toggle(); },
+                    span { class: "sidebar-toggle-icon", style: "{chevron_style}",
+                        {IconName::ChevronLeft.render()}
+                    }
+                }
                 div { class: "sidebar-user",
                     span { class: "user-avatar", "{avatar_initial}" }
                     div { class: "user-details",
