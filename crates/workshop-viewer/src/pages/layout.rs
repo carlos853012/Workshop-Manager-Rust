@@ -105,6 +105,11 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
     let workshop = auth.workshop.read().clone();
 
     let on_logout = move |_| {
+        tabs_state.tabs.write().clear();
+        tabs_state.tabs.write().push(OpenTab {
+            title: "Dashboard".to_string(),
+            route: Route::Dashboard {},
+        });
         auth.logout();
         navigator.push(Route::Login {});
     };

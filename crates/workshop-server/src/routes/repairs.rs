@@ -465,7 +465,16 @@ async fn add_repair_part(
     .await
     .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
-    let _repair = repair.ok_or(AppError::NotFound("Repair not found".to_string()))?;
+    let repair = repair.ok_or(AppError::NotFound("Repair not found".to_string()))?;
+
+    if matches!(
+        repair.status,
+        RepairStatus::Completed | RepairStatus::Cancelled
+    ) {
+        return Err(AppError::Validation(
+            "No se pueden agregar insumos a una reparación finalizada o cancelada".to_string(),
+        ));
+    }
 
     if let Some(pid) = req.product_id {
         let rows = sqlx::query(
@@ -567,6 +576,16 @@ async fn remove_repair_part(
 
     if repair.is_none() {
         return Err(AppError::NotFound("Repair not found".to_string()));
+    }
+
+    let repair = repair.unwrap();
+    if matches!(
+        repair.status,
+        RepairStatus::Completed | RepairStatus::Cancelled
+    ) {
+        return Err(AppError::Validation(
+            "No se pueden eliminar insumos de una reparación finalizada o cancelada".to_string(),
+        ));
     }
 
     let part: Option<RepairPart> = sqlx::query_as(

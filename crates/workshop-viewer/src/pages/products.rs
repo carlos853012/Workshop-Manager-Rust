@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use workshop_common::dto::PosProductResponse;
 use workshop_common::money::format_clp;
-use workshop_common::Product;
+use workshop_common::{Product, UserRole};
 
 use crate::api::ApiError;
 use crate::app_state::use_auth;
@@ -23,6 +23,8 @@ pub fn Products() -> Element {
 
     let auth = use_auth();
     let navigator = dioxus_router::prelude::use_navigator();
+    let role = auth.user_role.read().clone().unwrap_or(UserRole::Seller);
+    let can_write = matches!(role, UserRole::Admin | UserRole::Seller);
     let products = use_signal(Vec::<Product>::new);
     let mut page = use_signal(|| 1);
     let total = use_signal(|| 0);
@@ -126,13 +128,17 @@ pub fn Products() -> Element {
                                 spawn(async move {
                                     match client.lookup_product_by_barcode(&code).await {
                                         Ok(product) => {
-                                            stock_product.set(Some(product));
-                                            show_stock_modal.set(true);
+                                            if can_write {
+                                                stock_product.set(Some(product));
+                                                show_stock_modal.set(true);
+                                            }
                                             barcode_search.set(String::new());
                                         }
                                         Err(ApiError::NotFound(_)) => {
                                             barcode_search.set(String::new());
-                                            show_create_modal.set(true);
+                                            if can_write {
+                                                show_create_modal.set(true);
+                                            }
                                         }
                                         Err(e) => {
                                             error.set(Some(e.user_message().to_string()));
@@ -147,12 +153,16 @@ pub fn Products() -> Element {
             }
             Card {
                 title: "Listado de productos".to_string(),
-                header_action: rsx! {
-                    Button {
-                        variant: ButtonVariant::Primary,
-                        onclick: move |_| show_create_modal.set(true),
-                        "Nuevo producto"
-                    }
+                header_action: if can_write {
+                    Some(rsx! {
+                        Button {
+                            variant: ButtonVariant::Primary,
+                            onclick: move |_| show_create_modal.set(true),
+                            "Nuevo producto"
+                        }
+                    })
+                } else {
+                    None
                 },
                 if *loading.read() {
                     div { class: "empty-state", Spinner {} }
@@ -190,33 +200,37 @@ pub fn Products() -> Element {
                                             }
                                             td { class: "col-actions",
                                                 div { class: "table-actions",
-                                                    button {
-                                                        class: "btn-icon btn-edit",
-                                                        title: "Editar",
-                                                        onclick: {
-                                                            let p = p.clone();
-                                                            let mut editing_product = editing_product;
-                                                            let mut show_edit_modal = show_edit_modal;
-                                                            move |_| {
-                                                                editing_product.set(Some(p.clone()));
-                                                                show_edit_modal.set(true);
-                                                            }
-                                                        },
-                                                        {IconName::Edit.render()}
+                                                    if can_write {
+                                                        button {
+                                                            class: "btn-icon btn-edit",
+                                                            title: "Editar",
+                                                            onclick: {
+                                                                let p = p.clone();
+                                                                let mut editing_product = editing_product;
+                                                                let mut show_edit_modal = show_edit_modal;
+                                                                move |_| {
+                                                                    editing_product.set(Some(p.clone()));
+                                                                    show_edit_modal.set(true);
+                                                                }
+                                                            },
+                                                            {IconName::Edit.render()}
+                                                        }
                                                     }
-                                                    button {
-                                                        class: "btn-icon btn-danger",
-                                                        title: "Borrar",
-                                                        onclick: {
-                                                            let p = p.clone();
-                                                            let mut deleting_product = deleting_product;
-                                                            let mut show_delete_confirm = show_delete_confirm;
-                                                            move |_| {
-                                                                deleting_product.set(Some(p.clone()));
-                                                                show_delete_confirm.set(true);
-                                                            }
-                                                        },
-                                                        {IconName::Trash.render()}
+                                                    if can_write {
+                                                        button {
+                                                            class: "btn-icon btn-danger",
+                                                            title: "Borrar",
+                                                            onclick: {
+                                                                let p = p.clone();
+                                                                let mut deleting_product = deleting_product;
+                                                                let mut show_delete_confirm = show_delete_confirm;
+                                                                move |_| {
+                                                                    deleting_product.set(Some(p.clone()));
+                                                                    show_delete_confirm.set(true);
+                                                                }
+                                                            },
+                                                            {IconName::Trash.render()}
+                                                        }
                                                     }
                                                 }
                                             }

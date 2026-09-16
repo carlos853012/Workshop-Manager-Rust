@@ -300,6 +300,7 @@ pub fn RepairDetailModal(
                         products: products,
                         add_part: add_part,
                         remove_part: remove_part,
+                        repair_status: d.repair.status.clone(),
                     }
                 }
                 }}
