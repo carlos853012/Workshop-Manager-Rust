@@ -6,7 +6,7 @@ use workshop_common::money::format_clp;
 
 use crate::api::ApiError;
 use crate::app_state::use_auth;
-use crate::components::atoms::bar_chart::BarChart;
+use crate::components::atoms::line_chart::LineChart;
 use crate::components::atoms::spinner::Spinner;
 use crate::components::molecules::card::Card;
 use crate::components::molecules::date_filter::{DateFilter, DateRange};
@@ -192,17 +192,16 @@ pub fn Dashboard() -> Element {
 
                     rsx! {
                         div { class: "revenue-grid",
-                            div { class: if *revenue_loading.read() { "card chart-loading" } else { "card" },
-                                h3 { class: "text-lg font-semibold mb-md", "Ingresos por período" }
-                                BarChart {
+                            Card { title: "Ingresos por período".to_string(),
+                                class: if *revenue_loading.read() { "chart-loading".to_string() } else { String::new() },
+                                LineChart {
                                     data: chart_data,
                                     width: 700,
                                     height: 350,
                                     class: Some("revenue-chart".to_string()),
                                 }
                             }
-                            div { class: "card",
-                                h3 { class: "text-lg font-semibold mb-md", "Top Productos" }
+                            Card { title: "Top Productos".to_string(),
                                 div { class: "revenue-ranking",
                                     if top_products.read().is_empty() {
                                         p { class: "text-muted text-sm", "Sin ventas en este período" }
