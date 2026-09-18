@@ -143,5 +143,4 @@ mod tests {
         assert!(svg.is_ok());
         assert!(!svg.unwrap().contains("<circle"));
     }
-
 }
