@@ -31,22 +31,30 @@ pub fn LineChart(
 ) -> Element {
     let theme = use_theme();
 
-    let svg_html = use_memo(move || {
-        let d = data.read();
-        let tokens = theme.tokens();
-        let color = parse_hex(&tokens.colors.primary);
-        match render_line_chart(&d, color, width, height) {
-            Ok(svg) => svg,
-            Err(_) => "<svg></svg>".to_string(),
-        }
-    });
+    let svg_string = use_signal(|| "<svg></svg>".to_string());
+    {
+        let mut svg_set = svg_string;
+        use_effect(move || {
+            let d = data.read();
+            let tokens = theme.tokens();
+            let color = parse_hex(&tokens.colors.primary);
+            let svg = match render_line_chart(&d, color, width, height) {
+                Ok(s) => s,
+                Err(e) => {
+                    let msg = format!("Error chart: {e}");
+                    format!("<div style='padding:1rem;color:red;'>{msg}</div>")
+                }
+            };
+            svg_set.set(svg);
+        });
+    }
 
     let class_str = class.unwrap_or_default();
 
     rsx! {
         div {
             class: "{class_str}",
-            dangerous_inner_html: "{svg_html}"
+            dangerous_inner_html: "{svg_string}"
         }
     }
 }

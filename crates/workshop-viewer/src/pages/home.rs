@@ -199,6 +199,7 @@ pub fn Dashboard() -> Element {
                 div { class: "revenue-grid",
                     Card { title: "Ingresos por período".to_string(),
                         class: if *revenue_loading.read() { "chart-loading".to_string() } else { String::new() },
+                        p { class: "text-muted text-sm mb-sm", "Puntos: {chart_data.read().len()}" }
                         LineChart {
                             data: chart_data,
                             width: 700,

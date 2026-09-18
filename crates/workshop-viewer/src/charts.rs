@@ -7,7 +7,7 @@ use plotters::prelude::*;
 /// * `width` - Ancho del gráfico en píxeles.
 /// * `height` - Alto del gráfico en píxeles.
 ///
-/// Devuelve un `String` con el SVG completo, incluyendo etiquetas de valor.
+/// Devuelve un `String` con el SVG completo. Cada punto incluye un tooltip nativo.
 #[allow(dead_code)]
 pub fn render_line_chart(
     data: &[(String, f64)],
@@ -78,22 +78,40 @@ pub fn render_line_chart(
         root.present()?;
     }
 
-    for (i, (_, v)) in data.iter().enumerate() {
-        let label = format!("${:.0}", v);
-        let x_pct = ((i as f64 + 0.5) / x_max * 100.0) as u32;
-        let y_pct = if y_max > 0.0 {
-            (100.0 - (*v / y_max * 100.0)) as u32
-        } else {
-            50
-        };
-        let svg_text = format!(
-            r#"<text x="{}%" y="{}%" text-anchor="middle" font-family="sans-serif" font-size="11" dy="-8">{}</text>"#,
-            x_pct, y_pct, label
-        );
-        buf.insert_str(buf.rfind("</svg>").unwrap_or(buf.len()), &svg_text);
-    }
+    inject_tooltips(&buf, data)
+}
 
-    Ok(buf)
+/// Inyecta `<title>` dentro de cada `<circle>` del SVG para tooltips nativos.
+fn inject_tooltips(
+    svg: &str,
+    data: &[(String, f64)],
+) -> Result<String, Box<dyn std::error::Error>> {
+    let mut result = String::with_capacity(svg.len() + data.len() * 64);
+    let mut circle_idx = 0usize;
+    let mut remaining = svg;
+
+    while let Some(circle_pos) = remaining.find("<circle") {
+        result.push_str(&remaining[..circle_pos]);
+        let after_circle = &remaining[circle_pos..];
+
+        if let Some(tag_end) = after_circle.find("/>") {
+            let full_tag = &after_circle[..tag_end + 2];
+            result.push_str(full_tag);
+
+            if circle_idx < data.len() {
+                let value = data[circle_idx].1;
+                let label = format!("${:.0}", value);
+                result.push_str(&format!("<title>{label}</title>"));
+            }
+            circle_idx += 1;
+            remaining = &after_circle[tag_end + 2..];
+        } else {
+            result.push_str(after_circle);
+            remaining = "";
+        }
+    }
+    result.push_str(remaining);
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -112,9 +130,10 @@ mod tests {
         let svg = svg.unwrap();
         assert!(svg.contains("<svg"));
         assert!(svg.contains("</svg>"));
-        assert!(svg.contains("$15000"));
-        assert!(svg.contains("$22000"));
-        assert!(svg.contains("$18000"));
+        assert!(svg.contains("<circle"));
+        assert!(svg.contains("<title>$15000</title>"));
+        assert!(svg.contains("<title>$22000</title>"));
+        assert!(svg.contains("<title>$18000</title>"));
     }
 
     #[test]
@@ -122,5 +141,7 @@ mod tests {
         let data: Vec<(String, f64)> = vec![];
         let svg = render_line_chart(&data, RGBColor(245, 158, 11), 700, 350);
         assert!(svg.is_ok());
+        assert!(!svg.unwrap().contains("<circle"));
     }
+
 }

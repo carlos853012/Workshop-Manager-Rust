@@ -1182,11 +1182,7 @@ body {
 }
 
 .revenue-chart svg text {
-  fill: var(--text-primary, #1a1a2e);
-}
-
-.dark .revenue-chart svg text {
-  fill: var(--text-primary, #e0e0e0);
+  fill: var(--text);
 }
 
 .revenue-ranking {

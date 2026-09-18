@@ -180,15 +180,15 @@ async fn revenue(
     let days_diff = (end_naive - start_naive).num_days();
 
     let (group_expr, grouping_label) = if days_diff <= 31 {
-        ("TO_CHAR(s.created_at, 'YYYY-MM-DD')", "day".to_string())
+        ("TO_CHAR(created_at, 'YYYY-MM-DD')", "day".to_string())
     } else if days_diff <= 365 {
         (
-            "TO_CHAR(DATE_TRUNC('week', s.created_at), 'YYYY-MM-DD')",
+            "TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD')",
             "week".to_string(),
         )
     } else {
         (
-            "TO_CHAR(DATE_TRUNC('month', s.created_at), 'YYYY-MM')",
+            "TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM')",
             "month".to_string(),
         )
     };

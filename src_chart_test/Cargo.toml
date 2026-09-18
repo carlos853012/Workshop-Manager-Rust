@@ -1,0 +1,12 @@
+[package]
+name = "chart-debug"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "chart-debug"
+path = "main.rs"
+
+[dependencies]
+workshop-viewer = { path = "../crates/workshop-viewer" }
+plotters = "0.3"

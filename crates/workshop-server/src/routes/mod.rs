@@ -11,6 +11,7 @@ mod products;
 mod repairs;
 pub(crate) mod reports;
 mod sales;
+mod seed;
 mod suppliers;
 mod users;
 
@@ -37,4 +38,5 @@ pub fn admin_routes() -> Router<AppState> {
         .nest("/users", users::routes())
         .nest("/device-keys", device_keys::routes())
         .nest("/audit", audit::routes())
+        .nest("/seed", seed::routes())
 }
