@@ -63,7 +63,6 @@ eula = false
 name = "workshop-server"
 maintainer = "WorkshopManager <contact@workshopmanager.com>"
 copyright = "2026 WorkshopManager"
-license-file = ["../../LICENSE", 0]
 extended-description = "WorkshopManager — Servidor de gestión de taller mecánico. Incluye PostgreSQL embebido, TLS, autenticación JWT y backup automático."
 section = "utils"
 priority = "optional"
