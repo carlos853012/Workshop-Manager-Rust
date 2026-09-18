@@ -3,7 +3,6 @@
 use axum::http::{header, Method};
 use axum::{middleware as axum_middleware, routing::get, Router};
 use std::net::SocketAddr;
-use tokio::sync::oneshot;
 use tower_http::cors::{AllowHeaders, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::set_header::SetResponseHeaderLayer;
@@ -26,6 +25,7 @@ mod rate_limiter;
 mod routes;
 mod schema;
 mod secrets;
+#[cfg(target_os = "windows")]
 mod splash;
 mod state;
 mod tls;
@@ -277,7 +277,7 @@ async fn main() -> anyhow::Result<()> {
 
     #[cfg(target_os = "windows")]
     {
-        let (shutdown_tx, shutdown_rx) = oneshot::channel();
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
         let tray_pool = state.pool.clone();
         let tray_config = state.config.clone();
         let tray_license = license
