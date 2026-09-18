@@ -6,9 +6,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=workshopmanager
-Group=workshopmanager
-ExecStart=/usr/bin/inventory-server
+User=workshop-server
+Group=workshop-server
+ExecStart=/usr/bin/workshop-server
 Restart=on-failure
 RestartSec=5
 StartLimitBurst=5
@@ -18,7 +18,7 @@ StartLimitIntervalSec=60
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/var/lib/inventory-server
+ReadWritePaths=/var/lib/workshop-server
 PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
