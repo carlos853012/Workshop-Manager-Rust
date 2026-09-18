@@ -110,7 +110,9 @@ async fn main() -> anyhow::Result<()> {
         }
         license::LicenseStatus::FirstRun(hw_hash) => {
             tracing::info!("Primer uso — Hardware ID: {}", hw_hash);
-            tracing::info!("Código de activación: {}", &hw_hash[..16]);
+            if hw_hash.len() >= 16 {
+                tracing::info!("Código de activación: {}", &hw_hash[..16]);
+            }
             tracing::info!("Contacte al proveedor para activar la licencia");
 
             // Intentar validación online

@@ -91,11 +91,9 @@ mod tests {
         std::fs::create_dir_all(&test_dir)?;
 
         let key_path = test_dir.join(".crypto_key");
-        if !key_path.exists() {
-            let mut key = vec![0u8; 32];
-            OsRng.fill_bytes(&mut key);
-            std::fs::write(&key_path, &key)?;
-        }
+        let mut key = vec![0u8; 32];
+        OsRng.fill_bytes(&mut key);
+        std::fs::write(&key_path, &key)?;
 
         init(&test_dir)?;
         Ok(())

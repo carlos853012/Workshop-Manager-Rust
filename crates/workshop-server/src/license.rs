@@ -31,11 +31,8 @@ pub fn load_license(data_dir: &Path) -> LicenseStatus {
     let license_path = data_dir.join("license.dat");
 
     if !license_path.exists() {
-        // Primer uso: extraer hardware hash y crear trial
-        match hardware::get_hardware_id() {
-            Ok(hw_hash) => LicenseStatus::FirstRun(hw_hash),
-            Err(e) => LicenseStatus::Invalid(format!("No se pudo extraer hardware: {e}")),
-        }
+        let hw_hash = hardware::get_hardware_id().unwrap_or_default();
+        LicenseStatus::FirstRun(hw_hash)
     } else {
         match std::fs::read(&license_path) {
             Ok(data) => match lic::verify_license(&data, VENDOR_PUBLIC_KEY) {
