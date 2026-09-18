@@ -1,25 +1,78 @@
 use sha2::{Digest, Sha256};
 use std::process::Command;
 
-/// Extrae un identificador de hardware del PC actual usando comandos de Windows.
+/// Extrae un identificador de hardware del PC actual.
+/// En Windows usa `wmic`, en Linux lee `/sys/class/dmi/id/`.
 /// Retorna un hash SHA-256 de CPU + Motherboard + Disk.
 pub fn get_hardware_id() -> Result<String, String> {
-    let cpu = wmic_value("cpu", "ProcessorId").unwrap_or_default();
-    let mb = wmic_value("baseboard", "SerialNumber").unwrap_or_default();
-    let disk = wmic_value("diskdrive", "SerialNumber").unwrap_or_default();
+    #[cfg(target_os = "windows")]
+    {
+        let cpu = wmic_value("cpu", "ProcessorId").unwrap_or_default();
+        let mb = wmic_value("baseboard", "SerialNumber").unwrap_or_default();
+        let disk = wmic_value("diskdrive", "SerialNumber").unwrap_or_default();
 
-    if cpu.is_empty() && mb.is_empty() && disk.is_empty() {
-        return Err("No se pudo extraer información de hardware".to_string());
+        if cpu.is_empty() && mb.is_empty() && disk.is_empty() {
+            return Err("No se pudo extraer información de hardware".to_string());
+        }
+
+        let mut hasher = Sha256::new();
+        hasher.update(cpu.as_bytes());
+        hasher.update(mb.as_bytes());
+        hasher.update(disk.as_bytes());
+        Ok(format!("{:x}", hasher.finalize()))
     }
 
-    let mut hasher = Sha256::new();
-    hasher.update(cpu.as_bytes());
-    hasher.update(mb.as_bytes());
-    hasher.update(disk.as_bytes());
-    Ok(format!("{:x}", hasher.finalize()))
+    #[cfg(target_os = "linux")]
+    {
+        let cpu = std::fs::read_to_string("/sys/class/dmi/id/board_serial")
+            .or_else(|_| std::fs::read_to_string("/sys/class/dmi/id/product_serial"))
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let mb = std::fs::read_to_string("/sys/class/dmi/id/board_name")
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let disk = disk_serial_linux();
+
+        if cpu.is_empty() && mb.is_empty() && disk.is_empty() {
+            return Err("No se pudo extraer información de hardware".to_string());
+        }
+
+        let mut hasher = Sha256::new();
+        hasher.update(cpu.as_bytes());
+        hasher.update(mb.as_bytes());
+        hasher.update(disk.as_bytes());
+        Ok(format!("{:x}", hasher.finalize()))
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        Err("Plataforma no soportada para extracción de hardware".to_string())
+    }
+}
+
+/// Intenta obtener el serial del disco principal en Linux.
+#[cfg(target_os = "linux")]
+fn disk_serial_linux() -> String {
+    if let Ok(output) = Command::new("lsblk")
+        .args(["-dno", "SERIAL", "/dev/sda"])
+        .output()
+    {
+        let serial = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !serial.is_empty() {
+            return serial;
+        }
+    }
+    std::fs::read_to_string("/sys/block/sda/device/../serial")
+        .or_else(|_| std::fs::read_to_string("/sys/class/block/sda/device/serial"))
+        .unwrap_or_default()
+        .trim()
+        .to_string()
 }
 
 /// Ejecuta `wmic <class> get <field>` y limpia el resultado.
+#[cfg(target_os = "windows")]
 fn wmic_value(class: &str, field: &str) -> Option<String> {
     let output = Command::new("wmic")
         .args([class, "get", field])
