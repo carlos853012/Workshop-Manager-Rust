@@ -109,8 +109,8 @@ El server gestiona PostgreSQL automáticamente. Para depuración manual:
 # Ruta de los binarios de PostgreSQL usados por el MSI (Windows)
 C:\Users\carlos\.theseus\postgresql\18.3.0\bin\
 
-# Ruta equivalente en el server Linux (servicio equipos-server)
-/var/lib/equipos-server/.theseus/postgresql/18.3.0/bin/
+# Ruta equivalente en el server Linux (servicio workshop-server)
+/var/lib/workshop-server/.theseus/postgresql/18.3.0/bin/
 
 # Ruta de datos en desarrollo (relativa al dir de trabajo)
 crates\workshop-server\data\pgdata\
@@ -120,10 +120,6 @@ crates\workshop-server\data\pgdata\
 
 # Conectarse a la base (mientras el server corre)
 & "C:\Users\carlos\.theseus\postgresql\18.3.0\bin\psql.exe" -h localhost -U postgres -d workshop_manager
-
-# Verificar que las credenciales están cifradas en DB
-& "C:\Users\carlos\.theseus\postgresql\18.3.0\bin\psql.exe" -h localhost -U postgres -d workshop_manager -c "SELECT id, ip_address, LEFT(clave_windows, 40) AS clave_hex FROM equipos WHERE clave_windows IS NOT NULL;"
-# Si está cifrado, clave_hex se ve como: 1a2b3c4d... (hexadecimal)
 
 # Limpiar datos corruptos (detener server primero)
 Remove-Item -Recurse -Force "%LOCALAPPDATA%\WorkshopManager\data\pgdata"

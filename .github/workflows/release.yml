@@ -255,10 +255,10 @@ jobs:
         run: |
           VER="${GITHUB_REF_NAME}"
           mkdir -p dist
-          cp server-linux-x86_64/*.deb "dist/equipos-server_${VER}_amd64.deb"
-          cp server-aarch64/*.deb "dist/equipos-server_${VER}_arm64.deb"
-          cp server-linux-x86_64/workshop-server "dist/equipos-server-linux-x86_64"
-          cp server-aarch64/workshop-server "dist/equipos-server-aarch64"
+          cp server-linux-x86_64/*.deb "dist/workshop-server_${VER}_amd64.deb"
+          cp server-aarch64/*.deb "dist/workshop-server_${VER}_arm64.deb"
+          cp server-linux-x86_64/workshop-server "dist/workshop-server-linux-x86_64"
+          cp server-aarch64/workshop-server "dist/workshop-server-aarch64"
           ls -la dist
 
       - name: Publish GitHub Release
@@ -273,12 +273,12 @@ jobs:
 
             | Archivo | Plataforma |
             |---|---|
-            | `equipos-server_${{ github.ref_name }}_amd64.deb` | Ubuntu/Debian x86_64 (servidores Intel/AMD) |
-            | `equipos-server_${{ github.ref_name }}_arm64.deb` | Raspberry Pi OS 64-bit |
+            | `workshop-server_${{ github.ref_name }}_amd64.deb` | Ubuntu/Debian x86_64 (servidores Intel/AMD) |
+            | `workshop-server_${{ github.ref_name }}_arm64.deb` | Raspberry Pi OS 64-bit |
             | `*.msi` | Windows (server + viewer) |
-            | `equipos-server-linux-*` | Binarios crudos (cualquier distro) |
+            | `workshop-server-linux-*` | Binarios crudos (cualquier distro) |
 
             Para saber cuál usar en cada máquina: `uname -m` → `x86_64` = amd64, `aarch64` = arm64.
             Raspberry Pi: requiere SO 64-bit (el 32-bit ya no está soportado).
 
-            Instalación: `sudo dpkg -i equipos-server_*.deb` (habilita el servicio systemd `equipos-server` automáticamente).
+            Instalación: `sudo dpkg -i workshop-server_*.deb` (habilita el servicio systemd `workshop-server` automáticamente).
