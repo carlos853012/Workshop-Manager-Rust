@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-09-19
 **Autor:** Auditoría automática (seguridad + código + QA)
-**Estado:** Planificación
+**Estado:** En Progreso (FASE 1 y 2 completadas)
 
 ---
 
@@ -21,70 +21,69 @@ Auditoría completa de WorkshopManager v0.1.0 revela **19 hallazgos de seguridad
 
 ---
 
-## FASE 1 — Seguridad Crítica (2-3 días)
+## FASE 1 — Seguridad Crítica ✅ COMPLETADA
 
-### C-1: SQL Injection en analytics.rs
+### C-1: SQL Injection en analytics.rs ✅
 **Archivo:** `crates/workshop-server/src/routes/analytics.rs:201-215`
 **Problema:** `format!()` interpola `group_expr` directamente en SQL.
-**Remediación:** Usar `match` con expresiones constantes o reestructurar queries.
-**Esfuerzo:** Medio
+**Remediación:** Reemplazado por `match` con expresiones constantes.
+**Estado:** Resuelto — commit `7632dea`
 
-### C-2: TLS deshabilitado en validación de licencia
+### C-2: TLS deshabilitado en validación de licencia ✅
 **Archivo:** `crates/workshop-server/src/license.rs:83`
 **Problema:** `danger_accept_invalid_certs(true)` permite MITM.
-**Remediación:** Eliminar o usar feature flag para development.
-**Esfuerzo:** Bajo
+**Remediación:** Eliminado `danger_accept_invalid_certs`.
+**Estado:** Resuelto — commit `7632dea`
 
-### C-3: API key hardcoded en config de ejemplo
+### C-3: API key hardcoded en config de ejemplo ✅
 **Archivo:** `config/server.toml:4`
 **Problema:** `api_key = "dev-key-change-in-production"` commiteado.
-**Remediación:** Generar siempre al primer arranque, remover valor hardcoded.
-**Esfuerzo:** Bajo
+**Remediación:** Valor removido, auto-generación en config.rs.
+**Estado:** Resuelto — commit `7632dea`
 
-### C-4: unwrap() en código de producción (3 instancias)
+### C-4: unwrap() en código de producción (3 instancias) ✅
 **Archivos:**
-- `routes/repairs.rs:581`
-- `routes/analytics.rs:196-199`
-- `components/organisms/user_form_modal.rs:79`
+- `routes/repairs.rs:581` → `ok_or_else()`
+- `routes/analytics.rs:196-199` → `ok_or_else()`
+- `components/organisms/user_form_modal.rs:79` → `let Some() else`
 
-**Remediación:** Reemplazar con `ok_or()` o `map_err()`.
-**Esfuerzo:** Bajo
+**Estado:** Resuelto — commit `7632dea`
 
-### C-5: Rate limiter memory leak
+### C-5: Rate limiter memory leak ✅
 **Archivo:** `crates/workshop-server/src/rate_limiter.rs`
 **Problema:** Sin limpieza periódica de entradas expiradas.
-**Remediación:** Agregar tokio task para limpieza periódica + límite de entries.
-**Esfuerzo:** Medio
+**Remediación:** Agregado cleanup cada 60 segundos + campo `last_cleanup`.
+**Estado:** Resuelto — commit `7632dea`
 
 ---
 
-## FASE 2 — Calidad de Código (2-3 días)
+## FASE 2 — Calidad de Código ✅ PARCIALMENTE COMPLETADA
 
-### Q-1: Email validation inconsistente (5 archivos)
+### Q-1: Email validation inconsistente (5 archivos) ✅
 **Archivos:** auth.rs, users.rs, sales.rs, repairs.rs, suppliers.rs
 **Problema:** Cada archivo usa regex diferente.
-**Remediación:** Crear `fn validate_email()` en módulo compartido.
-**Esfuerzo:** Bajo
+**Remediación:** Creado `validation.rs` con `validate_email()` compartido.
+**Estado:** Resuelto — commit `7632dea`
 
-### Q-2: hide_password_hash duplicado
+### Q-2: hide_password_hash duplicado ✅
 **Archivos:** auth.rs:278, users.rs:315
 **Problema:** Función idéntica en 2 archivos.
-**Remediación:** Extraer a módulo compartido.
-**Esfuerzo:** Bajo
+**Remediación:** Extraído a `validation.rs`.
+**Estado:** Resuelto — commit `7632dea`
 
-### Q-3: IVA 19% hardcodeado en POS
+### Q-3: IVA 19% hardcodeado en POS ⏳ PENDIENTE
 **Archivo:** `crates/workshop-viewer/src/pages/pos.rs`
 **Problema:** IVA rate es configurable en server.toml pero viewer muestra fijo 19%.
 **Remediación:** Agregar rate al DashboardResponse o endpoint de config pública.
 **Esfuerzo:** Medio
 
-### Q-4: Regex recompilado por request
+### Q-4: Regex recompilado por request ✅
 **Archivo:** `routes/auth.rs:291`
 **Problema:** `Regex::new()` se ejecuta en cada login.
-**Remediación:** Usar `once_cell::sync::Lazy`.
-**Esfuerzo:** Bajo
+**Remediación:** Usar `once_cell::sync::Lazy` en `validation.rs`.
+**Estado:** Resuelto — commit `7632dea`
 
-### Q-5: Secrets clonados por request
+### Q-5: Secrets clonados por request ⏳ PENDIENTE
 **Archivo:** `crates/workshop-server/src/main.rs`
 **Problema:** `Secrets` (String + Vec<u8>) se clona en cada request.
 **Remediación:** Envolver en `Arc`.
@@ -248,20 +247,20 @@ Auditoría completa de WorkshopManager v0.1.0 revela **19 hallazgos de seguridad
 
 ## Priorización Final
 
-| # | ID | Fase | Esfuerzo | Impacto |
-|---|-----|------|----------|---------|
-| 1 | C-1 | Seguridad | Medio | Elimina SQL injection |
-| 2 | C-2 | Seguridad | Bajo | Elimina MITM en licencia |
-| 3 | C-3 | Seguridad | Bajo | Elimina secreto hardcoded |
-| 4 | C-4 | Seguridad | Bajo | Cumple reglas constitucionales |
-| 5 | C-5 | Seguridad | Medio | Previene DoS y memory leak |
-| 6 | D-2 | Dependencias | Bajo | Fix TLS handshake vulnerability |
-| 7 | D-1 | Dependencias | Alto | Fix SQL binary protocol |
-| 8 | T-1 | Testing | Alto | Cubre auth, JWT, middleware, RBAC |
-| 9 | T-2 | Testing | Medio | Verifica control de acceso |
-| 10 | Q-1 | Calidad | Bajo | Consistencia en validación |
-| 11 | T-4 | Testing | Bajo | Elimina tests flaky |
-| 12 | Q-3 | Calidad | Medio | IVA configurable en UI |
+| # | ID | Fase | Esfuerzo | Impacto | Estado |
+|---|-----|------|----------|---------|--------|
+| 1 | C-1 | Seguridad | Medio | Elimina SQL injection | ✅ Completado |
+| 2 | C-2 | Seguridad | Bajo | Elimina MITM en licencia | ✅ Completado |
+| 3 | C-3 | Seguridad | Bajo | Elimina secreto hardcoded | ✅ Completado |
+| 4 | C-4 | Seguridad | Bajo | Cumple reglas constitucionales | ✅ Completado |
+| 5 | C-5 | Seguridad | Medio | Previene DoS y memory leak | ✅ Completado |
+| 6 | D-2 | Dependencias | Bajo | Fix TLS handshake vulnerability | Pendiente |
+| 7 | D-1 | Dependencias | Alto | Fix SQL binary protocol | Pendiente |
+| 8 | T-1 | Testing | Alto | Cubre auth, JWT, middleware, RBAC | Pendiente |
+| 9 | T-2 | Testing | Medio | Verifica control de acceso | Pendiente |
+| 10 | Q-1 | Calidad | Bajo | Consistencia en validación | ✅ Completado |
+| 11 | T-4 | Testing | Bajo | Elimina tests flaky | Pendiente |
+| 12 | Q-3 | Calidad | Medio | IVA configurable en UI | Pendiente |
 
 ---
 
