@@ -69,5 +69,6 @@ priority = "optional"
 depends = []
 assets = [
     ["target/release/workshop-server", "usr/bin/workshop-server", "755"],
+    ["debian/workshop-server.service", "etc/systemd/system/workshop-server.service", "644"],
 ]
 maintainer-scripts = "debian/"

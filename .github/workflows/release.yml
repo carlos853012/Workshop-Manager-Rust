@@ -136,16 +136,32 @@ jobs:
             if curl -fsSk https://127.0.0.1:8443/health > /dev/null 2>&1; then ok=1; break; fi
             sleep 2
           done
-          kill $SERVER_PID 2>/dev/null || true
           if [ -z "$ok" ]; then
+            kill $SERVER_PID 2>/dev/null || true
             echo "::error::Smoke test falló: el server no respondió en 90s"
             cat /tmp/server-smoke.log
             exit 1
           fi
+          echo "Smoke test OK: /health respondió"
+
+          # Verificar que la DB y el endpoint de API funcionan
+          RESP=$(curl -fsSk -m 10 https://127.0.0.1:8443/api/auth/setup-status 2>&1) || true
+          if echo "$RESP" | grep -q "has_users"; then
+            echo "Smoke test OK: /api/auth/setup-status respondió con JSON (DB funcional)"
+          else
+            echo "::warning::Smoke test: /api/auth/setup-status no respondió JSON (puede ser normal en primer arranque)"
+          fi
+          kill $SERVER_PID 2>/dev/null || true
           echo "Smoke test OK: server nativo x86_64 arrancó (PG embebido correcto)"
 
       - name: Build .deb
         run: cargo deb -p workshop-server
+
+      - name: Verificar .deb contiene service file
+        run: |
+          dpkg-deb -c target/debian/*.deb | grep -q "workshop-server.service" || { echo "::error::.deb no contiene workshop-server.service"; exit 1; }
+          dpkg-deb -c target/debian/*.deb | grep -q "usr/bin/workshop-server" || { echo "::error::.deb no contiene workshop-server binary"; exit 1; }
+          echo "OK: .deb contiene service file y binary"
 
       # upload-artifact@v4 preserva la jerarquía (raíz = LCA de los patrones),
       # así que se sube un staging plano para que el job `release` encuentre
@@ -203,16 +219,32 @@ jobs:
             if curl -fsSk https://127.0.0.1:8443/health > /dev/null 2>&1; then ok=1; break; fi
             sleep 2
           done
-          kill $SERVER_PID 2>/dev/null || true
           if [ -z "$ok" ]; then
+            kill $SERVER_PID 2>/dev/null || true
             echo "::error::Smoke test falló: el server no respondió en 90s"
             cat /tmp/server-smoke.log
             exit 1
           fi
+          echo "Smoke test OK: /health respondió"
+
+          # Verificar que la DB y el endpoint de API funcionan
+          RESP=$(curl -fsSk -m 10 https://127.0.0.1:8443/api/auth/setup-status 2>&1) || true
+          if echo "$RESP" | grep -q "has_users"; then
+            echo "Smoke test OK: /api/auth/setup-status respondió con JSON (DB funcional)"
+          else
+            echo "::warning::Smoke test: /api/auth/setup-status no respondió JSON (puede ser normal en primer arranque)"
+          fi
+          kill $SERVER_PID 2>/dev/null || true
           echo "Smoke test OK: server nativo aarch64 arrancó (PG embebido correcto)"
 
       - name: Build .deb
         run: cargo deb -p workshop-server
+
+      - name: Verificar .deb contiene service file
+        run: |
+          dpkg-deb -c target/debian/*.deb | grep -q "workshop-server.service" || { echo "::error::.deb no contiene workshop-server.service"; exit 1; }
+          dpkg-deb -c target/debian/*.deb | grep -q "usr/bin/workshop-server" || { echo "::error::.deb no contiene workshop-server binary"; exit 1; }
+          echo "OK: .deb contiene service file y binary"
 
       - name: Preparar artefacto (binario + .deb)
         run: |

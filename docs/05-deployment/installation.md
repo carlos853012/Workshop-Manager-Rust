@@ -92,6 +92,7 @@ sudo apt install -y \
     libgtk-3-dev \
     libsoup-3.0-dev \
     libjavascriptcoregtk-4.1-dev \
+    libssl-dev \
     build-essential \
     pkg-config
 ```
@@ -111,7 +112,43 @@ cd target/release
 **Create .deb package (optional):**
 ```bash
 cargo deb -p workshop-server
-cargo deb -p workshop-viewer
+```
+
+### Installing the .deb Package (Recommended for Linux)
+
+The easiest way to deploy on Ubuntu/Debian:
+
+```bash
+# Download the .deb from GitHub Releases
+# Or build locally:
+cargo deb -p workshop-server
+
+# Install
+sudo dpkg -i workshop-server_*.deb
+
+# If there are missing dependencies
+sudo apt-get install -f
+
+# Verify installation
+dpkg -L workshop-server
+systemctl is-enabled workshop-server
+```
+
+The .deb package:
+- Installs the binary to `/usr/bin/workshop-server`
+- Installs the systemd service file to `/etc/systemd/system/workshop-server.service`
+- Creates a `workshop-server` system user
+- Creates the data directory at `/var/lib/workshop-server/`
+- Enables and starts the service automatically
+
+**Open firewall port:**
+```bash
+sudo ufw allow 8443/tcp
+```
+
+**Get the API key (required for viewer pairing):**
+```bash
+sudo cat /var/lib/workshop-server/.local/share/WorkshopManager/config/server.toml | grep api_key
 ```
 
 ## First-Time Setup Wizard
@@ -142,14 +179,16 @@ Use the admin credentials created in Step 2 to log in.
 
 ### Server Health Check
 
+**Windows:**
 ```powershell
-curl https://127.0.0.1:8443/health
+curl https://127.0.0.1:8443/health -k
 # Expected: "OK"
 ```
 
-Or with PowerShell:
-```powershell
-Invoke-RestMethod -Uri "https://127.0.0.1:8443/health" -SkipCertificateCheck
+**Linux:**
+```bash
+curl -k https://localhost:8443/health
+# Expected: "OK"
 ```
 
 ### Check Database
@@ -163,6 +202,11 @@ INFO Crypto initialized
 INFO PostgreSQL embedded started
 INFO Database pool and migrations ready
 INFO Server listening on https://127.0.0.1:8443
+```
+
+**Linux — view logs:**
+```bash
+sudo journalctl -u workshop-server -n 20 --no-pager
 ```
 
 ## Post-Installation

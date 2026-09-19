@@ -11,16 +11,16 @@ Common issues and solutions for WorkshopManager.
 ERROR Failed to start server: Address already in use (os error 10048)
 ```
 
-**Solutions:**
-
+**Windows:**
 ```powershell
-# Find the process using port 8443
 netstat -ano | findstr :8443
-
-# Kill the process (replace PID)
 taskkill /PID <pid> /F
+```
 
-# Or change the port in config/server.toml
+**Linux:**
+```bash
+ss -tlnp | grep 8443
+sudo kill <pid>
 ```
 
 ### Database Locked
@@ -34,10 +34,19 @@ ERROR Failed to start embedded PostgreSQL: database is locked
 
 1. Ensure no other WorkshopManager server is running
 2. Check for leftover PostgreSQL processes:
-   ```powershell
-   tasklist | findstr postgres
-   taskkill /IM postgres.exe /F
-   ```
+
+**Windows:**
+```powershell
+tasklist | findstr postgres
+taskkill /IM postgres.exe /F
+```
+
+**Linux:**
+```bash
+ps aux | grep postgres | grep workshop
+sudo kill <pid>
+```
+
 3. Delete the `postmaster.pid` file in the data directory
 4. Restart the server
 
@@ -48,9 +57,15 @@ ERROR Failed to start embedded PostgreSQL: database is locked
 ERROR Failed to create data directory
 ```
 
-**Solution:** Ensure the parent directory exists and you have write permissions:
+**Windows:**
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\WorkshopManager\data"
+```
+
+**Linux:**
+```bash
+sudo mkdir -p /var/lib/workshop-server/.local/share/WorkshopManager/data
+sudo chown -R workshop-server:workshop-server /var/lib/workshop-server
 ```
 
 ### TLS Certificate Error
@@ -70,7 +85,18 @@ ERROR Failed to generate self-signed certificate
 
 **Solutions:**
 
-1. Verify the server is running: `curl https://127.0.0.1:8443/health -k`
+1. Verify the server is running:
+
+**Windows:**
+```powershell
+curl https://127.0.0.1:8443/health -k
+```
+
+**Linux:**
+```bash
+curl -k https://localhost:8443/health
+```
+
 2. Check `tls_accept_invalid_certs = true` in `config/viewer.toml`
 3. If using custom certificates, ensure the certificate is trusted by the system
 
@@ -86,6 +112,15 @@ ERROR Failed to generate self-signed certificate
 1. Compare `api_key` in both `config/server.toml` and `config/viewer.toml`
 2. They must be identical
 3. Check for the `WORKSHOP_MANAGER_API_KEY` environment variable override
+
+**Linux — how to find the correct API key:**
+```bash
+# The server runs as workshop-server user, config is here:
+sudo cat /var/lib/workshop-server/.local/share/WorkshopManager/config/server.toml | grep api_key
+
+# Or search for it:
+sudo find /var/lib/workshop-server -name "server.toml" 2>/dev/null
+```
 
 ### Device Key Required
 
@@ -110,6 +145,53 @@ ERROR Failed to generate self-signed certificate
 2. Check the `base_url` in `viewer.toml` matches the server address
 3. Verify the port is correct (default: 8443)
 4. Check firewall rules if connecting over LAN
+
+**Linux — open firewall port:**
+```bash
+sudo ufw allow 8443/tcp
+sudo ufw status
+```
+
+### Connection Timeout (API endpoints hang)
+
+**Symptoms:** `/health` responds OK but API endpoints like `/api/auth/setup-status` timeout.
+
+**Solutions:**
+
+1. Check if PostgreSQL is running:
+```bash
+ps aux | grep postgres | grep workshop
+ss -tlnp | grep 46679
+```
+
+2. Restart the server (this resets the DB connection pool):
+```bash
+sudo systemctl restart workshop-server
+```
+
+3. If the issue persists, check server logs:
+```bash
+sudo journalctl -u workshop-server -n 100 --no-pager
+```
+
+### Viewer Can't Connect from Another Machine
+
+**Symptoms:** Server works locally but viewer on another machine times out.
+
+**Solutions:**
+
+1. Verify server binds to `0.0.0.0` (not `127.0.0.1`) in `server.toml`:
+```toml
+[server]
+host = "0.0.0.0"
+```
+
+2. Open the firewall port on the server:
+```bash
+sudo ufw allow 8443/tcp
+```
+
+3. Verify TLS cert includes the server's LAN IP (auto-detected by default)
 
 ## Authentication Errors
 
@@ -214,15 +296,31 @@ ERROR Pool timed out
 
 ## Log Files Location
 
-Logs are written to stdout by default. To capture logs:
+### Windows
 
-### Redirecting Logs to File
+Logs are written to stdout and to `%LOCALAPPDATA%\WorkshopManager\data\logs\server.log`.
 
-```powershell
-# Windows
-.\workshop-server.exe 2>&1 | Tee-Object -FilePath "server.log"
+### Linux (systemd service)
 
-# Linux
+Logs are captured by journald and also written to the data directory:
+
+```bash
+# Ver últimas 100 líneas de log
+sudo journalctl -u workshop-server -n 100 --no-pager
+
+# Logs en tiempo real
+sudo journalctl -u workshop-server -f
+
+# Buscar errores
+sudo journalctl -u workshop-server | grep -i error
+
+# Ver log del archivo
+sudo cat /var/lib/workshop-server/.local/share/WorkshopManager/data/logs/server.log | tail -50
+```
+
+### Linux (manual execution)
+
+```bash
 ./workshop-server 2>&1 | tee server.log
 ```
 
@@ -241,6 +339,58 @@ The server uses `tracing_subscriber` with info level. Key log events:
 ### Windows System Tray
 
 On Windows, the server runs a system tray icon. Right-click for options. The server logs to the terminal window.
+
+## Linux Service Management
+
+### systemd Commands
+
+```bash
+# Estado del servicio
+sudo systemctl status workshop-server
+
+# Iniciar / detener / reiniciar
+sudo systemctl start workshop-server
+sudo systemctl stop workshop-server
+sudo systemctl restart workshop-server
+
+# Habilitar inicio automático
+sudo systemctl enable workshop-server
+
+# Ver logs
+sudo journalctl -u workshop-server -f
+```
+
+### Data Directory Structure (Linux)
+
+```
+/var/lib/workshop-server/.local/share/WorkshopManager/data/
+├── config/server.toml          # Configuración del server
+├── pgdata/                     # Datos de PostgreSQL embebido
+├── postgresql/                 # Binarios de PostgreSQL
+├── backups/                    # Backups automáticos
+├── logs/                       # Archivos de log
+├── .crypto_key                 # Clave de cifrado AES-256
+├── .jwt_secret                 # Secreto para tokens JWT
+├── .postgres_password          # Password de PostgreSQL
+├── server.crt                  # Certificado TLS autofirmado
+└── server.key                  # Clave privada TLS
+```
+
+### .deb Package Installation
+
+```bash
+# Instalar
+sudo dpkg -i workshop-server_*.deb
+
+# Si hay dependencias faltantes
+sudo apt-get install -f
+
+# Verificar instalación
+dpkg -L workshop-server
+
+# Verificar que el service está habilitado
+systemctl is-enabled workshop-server
+```
 
 ## Getting Help
 

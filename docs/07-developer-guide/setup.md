@@ -35,6 +35,29 @@ rustc --version
 cargo --version
 ```
 
+### Install Rust (Linux)
+
+```bash
+# Install rustup
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+
+# Install system dependencies (Ubuntu/Debian)
+sudo apt update
+sudo apt install -y \
+    libwebkit2gtk-4.1-dev \
+    libgtk-3-dev \
+    libsoup-3.0-dev \
+    libjavascriptcoregtk-4.1-dev \
+    libssl-dev \
+    build-essential \
+    pkg-config
+
+# Verify installation
+rustc --version
+cargo --version
+```
+
 ---
 
 ## Clone and Build

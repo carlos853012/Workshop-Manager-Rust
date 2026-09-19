@@ -41,43 +41,37 @@ Remove-Item -Recurse -Force target\wix -ErrorAction SilentlyContinue
 ## Despliegue Linux (servidor)
 
 El server se distribuye como `.deb` (amd64/arm64) y corre como servicio
-systemd con el usuario `workshopmanager`:
+systemd con el usuario `workshop-server`:
 
 ```bash
 # Instalar el .deb (el postinst crea el usuario y arranca el servicio)
 sudo dpkg -i workshop-server_0.1.0-1_amd64.deb
 
+# Si hay dependencias faltantes
+sudo apt-get install -f
+
 # Estado y logs
-systemctl status workshopmanager-server
-journalctl -u workshopmanager-server -f          # esperar "server ready at https://0.0.0.0:8443"
-sudo ufw allow 8443                               # abrir puerto si ufw está activo
+systemctl status workshop-server
+journalctl -u workshop-server -f
+sudo ufw allow 8443/tcp
 
 # Rutas del server Linux
-/var/lib/workshopmanager-server/.local/share/WorkshopManager/data/   # DB, secretos, cert TLS
-/var/lib/workshopmanager-server/.theseus/postgresql/18.3.0/bin/      # binarios PostgreSQL
+/var/lib/workshop-server/.local/share/WorkshopManager/data/   # DB, secretos, cert TLS
+/var/lib/workshop-server/.local/share/WorkshopManager/config/server.toml  # Config con API key
 
-# psql contra la DB embebida (user/password en .superuser_credentials.json)
-cat /var/lib/workshopmanager-server/.local/share/WorkshopManager/data/.superuser_credentials.json
-PGPASSWORD='<password>' /var/lib/workshopmanager-server/.theseus/postgresql/18.3.0/bin/psql \
-  -h 127.0.0.1 -U <user> -d workshop_manager
+# Obtener la API key (para emparejar con el viewer)
+sudo cat /var/lib/workshop-server/.local/share/WorkshopManager/config/server.toml | grep api_key
 
-# Registrar una Device Key en headless (no hay tray icon en Linux)
-KEY=$(tr -dc 'A-Z0-9' < /dev/urandom | head -c 32)   # 32 chars A-Z0-9
-HASH=$(printf '%s' "$KEY" | sha256sum | awk '{print $1}')
-PGPASSWORD='<password>' /var/lib/workshopmanager-server/.theseus/postgresql/18.3.0/bin/psql \
-  -h 127.0.0.1 -U <user> -d workshop_manager \
-  -c "INSERT INTO device_keys (key_hash, device_name) VALUES ('$HASH', 'carlos-pc');"
+# psql contra la DB embebida
+sudo -u workshop-server /var/lib/workshop-server/.local/share/WorkshopManager/data/postgresql/18.3.0/bin/psql \
+  -h 127.0.0.1 -p 46679 -U postgres -d workshop_manager
 
-# Validar una key sin abrir el viewer (v0.1.0+): 200 {"valid":true} = OK
-curl -k -H "X-Device-Key: $KEY" https://<ip>:8443/api/device-key/check
-
-# Diagnóstico "Exec format error" en arm64 (PG embebido con arquitectura
-# equivocada): el binario debe decir "ARM aarch64" en la Pi.
-file /var/lib/workshopmanager-server/.theseus/postgresql/18.3.0/bin/postgres
+# Diagnóstico "Exec format error" en arm64 (PG embebido con arquitectura equivocada)
+file /var/lib/workshop-server/.local/share/WorkshopManager/data/postgresql/18.3.0/bin/postgres
 
 # Remover el paquete (conserva los datos)
 sudo dpkg -r workshop-server
-# Limpieza total: sudo userdel -r workshopmanager && sudo rm -rf /var/lib/workshopmanager-server
+# Limpieza total: sudo userdel -r workshop-server && sudo rm -rf /var/lib/workshop-server
 ```
 
 ## Build de release multi-plataforma

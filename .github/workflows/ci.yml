@@ -68,6 +68,12 @@ jobs:
       - name: Test server
         run: cargo test -p workshop-server
 
+      - name: Test common
+        run: cargo test -p workshop-common
+
+      - name: Test viewer
+        run: cargo test -p workshop-viewer
+
       - name: Install cargo-audit
         uses: taiki-e/install-action@v2
         with:
@@ -120,6 +126,9 @@ jobs:
       - name: Test server
         run: cargo test -p workshop-server
 
+      - name: Test common
+        run: cargo test -p workshop-common
+
   # Linux ARM64 — verifica que el server compile en Ubuntu ARM
   check-linux-arm64:
     runs-on: ubuntu-22.04-arm
@@ -162,3 +171,6 @@ jobs:
 
       - name: Test server
         run: cargo test -p workshop-server
+
+      - name: Test common
+        run: cargo test -p workshop-common
