@@ -12,6 +12,11 @@ const VENDOR_PUBLIC_KEY: &[u8] = &[
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
 
+/// Verifica que la clave pública no sea el placeholder de todos ceros.
+fn is_placeholder_key(key: &[u8]) -> bool {
+    key.iter().all(|&b| b == 0)
+}
+
 /// URL del servidor de validación online.
 const VALIDATION_URL: &str = "https://tudominio.com/api/validate";
 
@@ -28,6 +33,12 @@ pub enum LicenseStatus {
 
 /// Carga y valida la licencia desde disco.
 pub fn load_license(data_dir: &Path) -> LicenseStatus {
+    if is_placeholder_key(VENDOR_PUBLIC_KEY) {
+        return LicenseStatus::Invalid(
+            "Clave pública del vendor no configurada. Ejecuta: license-tool generate-keypair".into(),
+        );
+    }
+
     let license_path = data_dir.join("license.dat");
 
     if !license_path.exists() {

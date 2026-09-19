@@ -57,7 +57,7 @@ Auditoría completa de WorkshopManager v0.1.0 revela **19 hallazgos de seguridad
 
 ---
 
-## FASE 2 — Calidad de Código ✅ PARCIALMENTE COMPLETADA
+## FASE 2 — Calidad de Código ✅ COMPLETADA
 
 ### Q-1: Email validation inconsistente (5 archivos) ✅
 **Archivos:** auth.rs, users.rs, sales.rs, repairs.rs, suppliers.rs
@@ -83,11 +83,11 @@ Auditoría completa de WorkshopManager v0.1.0 revela **19 hallazgos de seguridad
 **Remediación:** Usar `once_cell::sync::Lazy` en `validation.rs`.
 **Estado:** Resuelto — commit `7632dea`
 
-### Q-5: Secrets clonados por request ⏳ PENDIENTE
-**Archivo:** `crates/workshop-server/src/main.rs`
+### Q-5: Secrets clonados por request ✅
+**Archivo:** `crates/workshop-server/src/state.rs`
 **Problema:** `Secrets` (String + Vec<u8>) se clona en cada request.
-**Remediación:** Envolver en `Arc`.
-**Esfuerzo:** Bajo
+**Remediación:** Envolver en `Arc<Secrets>`.
+**Estado:** Resuelto — commit pendiente
 
 ---
 
@@ -146,31 +146,31 @@ Auditoría completa de WorkshopManager v0.1.0 revela **19 hallazgos de seguridad
 
 ---
 
-## FASE 4 — Seguridad Media (1-2 días)
+## FASE 4 — Seguridad Media ✅ PARCIALMENTE COMPLETADA
 
-### S-1: JWT sin refresh token
+### S-1: JWT sin refresh token ⏳ PENDIENTE
 **Archivo:** `crates/workshop-server/src/auth.rs`
 **Problema:** TTL 24h sin mecanismo de refresh o revocación.
 **Remediación:** Implementar refresh tokens con TTL corto (15min-1h).
 **Esfuerzo:** Alto
 
-### S-2: Secretos como archivos plaintext
+### S-2: Secretos como archivos plaintext ⏳ PENDIENTE
 **Archivo:** `crates/workshop-server/src/secrets.rs`
 **Problema:** `.jwt_secret` y `.crypto_key` sin cifrar en disco.
 **Remediación:** Usar OS keychain (DPAPI/Keychain/keyctl).
 **Esfuerzo:** Alto
 
-### S-3: Sin CSP header
-**Archivo:** `crates/workshop-server/src/main.rs:235`
+### S-3: Sin CSP header ✅
+**Archivo:** `crates/workshop-server/src/main.rs`
 **Problema:** Falta Content-Security-Policy.
-**Remediación:** Agregar header CSP apropiado.
-**Esfuerzo:** Bajo
+**Remediación:** Agregado header CSP restrictivo.
+**Estado:** Resuelto — commit pendiente
 
-### S-4: License key placeholder
-**Archivo:** `crates/workshop-server/src/license.rs:10-13`
+### S-4: License key placeholder ✅
+**Archivo:** `crates/workshop-server/src/license.rs`
 **Problema:** VENDOR_PUBLIC_KEY es todos `0x00`.
-**Remediación:** Rechazar si no se generaron claves reales.
-**Esfuerzo:** Bajo
+**Remediación:** Agregada verificación `is_placeholder_key()` que rechaza si no se configuró.
+**Estado:** Resuelto — commit pendiente
 
 ---
 
@@ -186,12 +186,11 @@ Auditoría completa de WorkshopManager v0.1.0 revela **19 hallazgos de seguridad
 **Notas:** Requiere cambios en queries y tipos. sqlx 0.8 tiene nuevos tipos `PgPool` y cambios en `FromRow`.
 **Archivos afectados:** `workshop-common`, `workshop-server`
 
-### D-2: rustls 0.23.43 → 0.23.45+ (MEDIUM)
+### D-2: rustls 0.23.43 → 0.23.45+ (MEDIUM) ✅
 **CVE:** RUSTSEC-2026-0285
 **Problema:** TLS 1.3 handshake messages incorrectly accepted across encryption level boundaries
-**Remediación:** Upgrade rustls (patch update)
-**Esfuerzo:** Bajo
-**Notas:** Dependencia transitive via axum-server, reqwest, sqlx-core. Actualizar Cargo.lock.
+**Remediación:** Upgrade rustls 0.23.43 → 0.23.45
+**Estado:** Resuelto — commit pendiente
 
 ### D-3: lopdf 0.26.0 → 0.42.0+ (HIGH)
 **CVE:** RUSTSEC-2026-0187
@@ -218,8 +217,8 @@ Auditoría completa de WorkshopManager v0.1.0 revela **19 hallazgos de seguridad
 
 | Crate | Severidad | Fix Disponible | Acción |
 |-------|-----------|----------------|--------|
-| sqlx | MEDIUM | ✅ 0.8.1+ | Upgrade (breaking changes) |
-| rustls | MEDIUM | ✅ 0.23.45+ | Upgrade (patch) |
+| sqlx | MEDIUM | ✅ 0.8.1+ | Upgrade (breaking changes) — pendiente |
+| rustls | MEDIUM | ✅ 0.23.45+ | ✅ Completado (0.23.43 → 0.23.45) |
 | lopdf | HIGH | ❌ | Esperar genpdf |
 | webbrowser | MEDIUM | ❌ | Esperar dioxus |
 | rsa | MEDIUM | ❌ | Aceptar riesgo |
@@ -254,13 +253,16 @@ Auditoría completa de WorkshopManager v0.1.0 revela **19 hallazgos de seguridad
 | 3 | C-3 | Seguridad | Bajo | Elimina secreto hardcoded | ✅ Completado |
 | 4 | C-4 | Seguridad | Bajo | Cumple reglas constitucionales | ✅ Completado |
 | 5 | C-5 | Seguridad | Medio | Previene DoS y memory leak | ✅ Completado |
-| 6 | D-2 | Dependencias | Bajo | Fix TLS handshake vulnerability | Pendiente |
+| 6 | D-2 | Dependencias | Bajo | Fix TLS handshake vulnerability | ✅ Completado |
 | 7 | D-1 | Dependencias | Alto | Fix SQL binary protocol | Pendiente |
 | 8 | T-1 | Testing | Alto | Cubre auth, JWT, middleware, RBAC | Pendiente |
 | 9 | T-2 | Testing | Medio | Verifica control de acceso | Pendiente |
 | 10 | Q-1 | Calidad | Bajo | Consistencia en validación | ✅ Completado |
 | 11 | T-4 | Testing | Bajo | Elimina tests flaky | Pendiente |
 | 12 | Q-3 | Calidad | Medio | IVA configurable en UI | Pendiente |
+| 13 | S-3 | Seguridad | Bajo | CSP header | ✅ Completado |
+| 14 | S-4 | Seguridad | Bajo | License key placeholder | ✅ Completado |
+| 15 | Q-5 | Calidad | Bajo | Secrets en Arc | ✅ Completado |
 
 ---
 

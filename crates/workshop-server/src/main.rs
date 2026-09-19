@@ -244,6 +244,10 @@ async fn main() -> anyhow::Result<()> {
             header::X_FRAME_OPTIONS,
             axum::http::HeaderValue::from_static("DENY"),
         ))
+        .layer(SetResponseHeaderLayer::overriding(
+            axum::http::header::CONTENT_SECURITY_POLICY,
+            axum::http::HeaderValue::from_static("default-src 'none'; frame-ancestors 'none'"),
+        ))
         .layer(TraceLayer::new_for_http())
         .with_state(state.clone());
 

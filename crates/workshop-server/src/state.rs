@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::extract::FromRef;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -7,10 +9,10 @@ use crate::rate_limiter::RateLimiter;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub secrets: Secrets,
+    pub secrets: Arc<Secrets>,
     pub config: ServerConfig,
     pub pool: PgPool,
-    pub login_rate_limiter: std::sync::Arc<RateLimiter>,
+    pub login_rate_limiter: Arc<RateLimiter>,
     pub license: Option<License>,
 }
 
@@ -33,7 +35,7 @@ pub struct ServerConfig {
     pub cors_origins: Vec<String>,
 }
 
-impl FromRef<AppState> for Secrets {
+impl FromRef<AppState> for Arc<Secrets> {
     fn from_ref(state: &AppState) -> Self {
         state.secrets.clone()
     }
@@ -59,10 +61,10 @@ impl AppState {
         license: Option<License>,
     ) -> Self {
         Self {
-            secrets,
+            secrets: Arc::new(secrets),
             config,
             pool,
-            login_rate_limiter: std::sync::Arc::new(RateLimiter::new(5, 300)),
+            login_rate_limiter: Arc::new(RateLimiter::new(5, 300)),
             license,
         }
     }
