@@ -71,4 +71,3 @@ assets = [
     ["target/release/workshop-server", "usr/bin/workshop-server", "755"],
 ]
 maintainer-scripts = "debian/"
-systemd-units = { unit-name = "workshop-server", enable = true, start = true, restart-after-upgrade = true }
