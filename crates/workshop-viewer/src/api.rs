@@ -711,7 +711,10 @@ mod tests {
     #[test]
     fn test_api_client_default_url() {
         let client = ApiClient::new(None, "test-key".to_string(), true).unwrap();
-        assert_eq!(client.base_url, crate::config::config().server.base_url);
+        assert_eq!(
+            client.base_url,
+            crate::config::resolve_base_url(&crate::config::config().server.base_url)
+        );
     }
 
     #[test]
