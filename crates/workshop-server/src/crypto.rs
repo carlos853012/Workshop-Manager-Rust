@@ -81,22 +81,33 @@ pub fn decrypt(ciphertext: &str) -> anyhow::Result<String> {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+    use std::sync::OnceLock;
+
+    static SETUP_RESULT: OnceLock<Option<String>> = OnceLock::new();
 
     fn setup_test() -> anyhow::Result<()> {
-        if CIPHER.get().is_some() {
-            return Ok(());
+        let err_msg = SETUP_RESULT.get_or_init(|| {
+            let test_dir = PathBuf::from("test_data");
+            if let Err(e) = std::fs::create_dir_all(&test_dir) {
+                return Some(format!("create_dir: {e}"));
+            }
+
+            let key_path = test_dir.join(".crypto_key");
+            let mut key = vec![0u8; 32];
+            OsRng.fill_bytes(&mut key);
+            if let Err(e) = std::fs::write(&key_path, &key) {
+                return Some(format!("write key: {e}"));
+            }
+
+            if let Err(e) = init(&test_dir) {
+                return Some(format!("init: {e}"));
+            }
+            None
+        });
+        match err_msg {
+            Some(msg) => Err(anyhow::anyhow!("{msg}")),
+            None => Ok(()),
         }
-
-        let test_dir = PathBuf::from("test_data");
-        std::fs::create_dir_all(&test_dir)?;
-
-        let key_path = test_dir.join(".crypto_key");
-        let mut key = vec![0u8; 32];
-        OsRng.fill_bytes(&mut key);
-        std::fs::write(&key_path, &key)?;
-
-        init(&test_dir)?;
-        Ok(())
     }
 
     #[test]
