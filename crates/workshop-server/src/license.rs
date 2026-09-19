@@ -80,7 +80,6 @@ pub fn validate_license(license: &License) -> Result<(), String> {
 /// Retorna Some(licencia) si la validación fue exitosa, None si no hay internet.
 pub async fn validate_online(license_key: &str, hardware_hash: &str) -> Option<License> {
     let client = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
         .timeout(std::time::Duration::from_secs(10))
         .build()
         .ok()?;

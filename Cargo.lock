@@ -8485,6 +8485,7 @@ dependencies = [
  "jsonwebtoken",
  "local-ip-address",
  "native-windows-gui",
+ "once_cell",
  "postgresql_embedded",
  "rand 0.8.8",
  "rcgen",

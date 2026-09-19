@@ -76,7 +76,11 @@ pub fn UserFormModal(
         form_error.set(None);
 
         if is_edit {
-            let user = edit_user.clone().unwrap();
+            let Some(user) = edit_user.clone() else {
+                form_error.set(Some("No user selected for editing".to_string()));
+                saving.set(false);
+                return;
+            };
             let req = UpdateUserRequest {
                 display_name: if name_val.is_empty() {
                     None

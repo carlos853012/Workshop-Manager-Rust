@@ -29,8 +29,8 @@ mod secrets;
 mod splash;
 mod state;
 mod tls;
-#[cfg(target_os = "windows")]
 mod tray;
+mod validation;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

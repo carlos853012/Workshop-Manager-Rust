@@ -13,6 +13,7 @@ use crate::audit::{self, redact_sensitive};
 use crate::auth;
 use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
+use crate::validation::{validate_email, hide_password_hash};
 use crate::state::AppState;
 
 use super::pagination::PaginationParams;
@@ -298,23 +299,13 @@ async fn delete_user(
 }
 
 fn validate_create_user_request(req: &CreateUserRequest) -> Result<(), AppError> {
-    if req.email.is_empty() || req.email.len() > 200 {
-        return Err(AppError::Validation("Invalid email length".to_string()));
-    }
-    if !req.email.contains('@') || !req.email.contains('.') {
-        return Err(AppError::Validation("Invalid email format".to_string()));
-    }
+    validate_email(&req.email)?;
     if req.password.len() < 8 {
         return Err(AppError::Validation(
             "Password must be at least 8 characters".to_string(),
         ));
     }
     Ok(())
-}
-
-fn hide_password_hash(mut user: User) -> User {
-    user.password_hash = String::new();
-    user
 }
 
 #[cfg(test)]

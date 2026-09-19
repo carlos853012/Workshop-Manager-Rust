@@ -179,42 +179,62 @@ async fn revenue(
 
     let days_diff = (end_naive - start_naive).num_days();
 
-    let (group_expr, grouping_label) = if days_diff <= 31 {
-        ("TO_CHAR(created_at, 'YYYY-MM-DD')", "day".to_string())
+    let grouping_label = if days_diff <= 31 {
+        "day"
     } else if days_diff <= 365 {
-        (
-            "TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD')",
-            "week".to_string(),
-        )
+        "week"
     } else {
-        (
-            "TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM')",
-            "month".to_string(),
-        )
+        "month"
     };
 
-    let start_dt = start_naive.and_hms_opt(0, 0, 0).unwrap();
+    let start_dt = start_naive
+        .and_hms_opt(0, 0, 0)
+        .ok_or_else(|| AppError::Internal("Invalid start date".into()))?;
     let end_dt = (end_naive + chrono::Duration::days(1))
         .and_hms_opt(0, 0, 0)
-        .unwrap();
+        .ok_or_else(|| AppError::Internal("Invalid end date".into()))?;
 
-    let sales_query = format!(
-        "SELECT {group_expr} AS period, COALESCE(SUM(s.total), 0) AS amount \
-         FROM sales s \
-         WHERE s.status = 'completed' AND s.workshop_id = $1 \
-           AND s.created_at >= $2 AND s.created_at < $3 \
-         GROUP BY period ORDER BY period"
-    );
+    // SAFETY: group_expr is a compile-time constant, not user input
+    let (sales_query, repairs_query) = match grouping_label {
+        "day" => (
+            "SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS period, COALESCE(SUM(s.total), 0) AS amount \
+             FROM sales s \
+             WHERE s.status = 'completed' AND s.workshop_id = $1 \
+               AND s.created_at >= $2 AND s.created_at < $3 \
+             GROUP BY period ORDER BY period",
+            "SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS period, COALESCE(SUM(r.labor_cost), 0) AS amount \
+             FROM repairs r \
+             WHERE r.status = 'completed' AND r.workshop_id = $1 \
+               AND r.created_at >= $2 AND r.created_at < $3 \
+             GROUP BY period ORDER BY period",
+        ),
+        "week" => (
+            "SELECT TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD') AS period, COALESCE(SUM(s.total), 0) AS amount \
+             FROM sales s \
+             WHERE s.status = 'completed' AND s.workshop_id = $1 \
+               AND s.created_at >= $2 AND s.created_at < $3 \
+             GROUP BY period ORDER BY period",
+            "SELECT TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD') AS period, COALESCE(SUM(r.labor_cost), 0) AS amount \
+             FROM repairs r \
+             WHERE r.status = 'completed' AND r.workshop_id = $1 \
+               AND r.created_at >= $2 AND r.created_at < $3 \
+             GROUP BY period ORDER BY period",
+        ),
+        _ => (
+            "SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS period, COALESCE(SUM(s.total), 0) AS amount \
+             FROM sales s \
+             WHERE s.status = 'completed' AND s.workshop_id = $1 \
+               AND s.created_at >= $2 AND s.created_at < $3 \
+             GROUP BY period ORDER BY period",
+            "SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS period, COALESCE(SUM(r.labor_cost), 0) AS amount \
+             FROM repairs r \
+             WHERE r.status = 'completed' AND r.workshop_id = $1 \
+               AND r.created_at >= $2 AND r.created_at < $3 \
+             GROUP BY period ORDER BY period",
+        ),
+    };
 
-    let repairs_query = format!(
-        "SELECT {group_expr} AS period, COALESCE(SUM(r.labor_cost), 0) AS amount \
-         FROM repairs r \
-         WHERE r.status = 'completed' AND r.workshop_id = $1 \
-           AND r.created_at >= $2 AND r.created_at < $3 \
-         GROUP BY period ORDER BY period"
-    );
-
-    let sales_rows: Vec<(String, Decimal)> = sqlx::query_as(&sales_query)
+    let sales_rows: Vec<(String, Decimal)> = sqlx::query_as(sales_query)
         .bind(wid)
         .bind(start_dt)
         .bind(end_dt)
@@ -222,7 +242,7 @@ async fn revenue(
         .await
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
-    let repairs_rows: Vec<(String, Decimal)> = sqlx::query_as(&repairs_query)
+    let repairs_rows: Vec<(String, Decimal)> = sqlx::query_as(repairs_query)
         .bind(wid)
         .bind(start_dt)
         .bind(end_dt)
@@ -261,7 +281,7 @@ async fn revenue(
 
     Ok(Json(ApiResponse::success(RevenueResponse {
         data,
-        grouping: grouping_label,
+        grouping: grouping_label.to_string(),
     })))
 }
 

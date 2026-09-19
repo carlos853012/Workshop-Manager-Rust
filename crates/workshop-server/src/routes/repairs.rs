@@ -17,6 +17,7 @@ use crate::audit::{self, redact_sensitive};
 use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
 use crate::state::AppState;
+use crate::validation::validate_email;
 
 use super::pagination::PaginationParams;
 
@@ -362,9 +363,7 @@ async fn update_repair(
 
 fn validate_create_repair_request(req: &CreateRepairRequest) -> Result<(), AppError> {
     if let Some(ref email) = req.customer_email {
-        if !email.contains('@') || !email.contains('.') {
-            return Err(AppError::Validation("Invalid customer email".to_string()));
-        }
+        validate_email(email)?;
     }
 
     if let Some(ref phone) = req.customer_phone {
@@ -578,7 +577,8 @@ async fn remove_repair_part(
         return Err(AppError::NotFound("Repair not found".to_string()));
     }
 
-    let repair = repair.unwrap();
+    // SAFETY: repair.is_none() check above ensures this is Some
+    let repair = repair.ok_or_else(|| AppError::NotFound("Repair not found".to_string()))?;
     if matches!(
         repair.status,
         RepairStatus::Completed | RepairStatus::Cancelled

@@ -13,6 +13,7 @@ use workshop_common::{PaymentMethod, Sale, SaleItem, UserRole};
 use crate::audit::{self, redact_sensitive};
 use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
+use crate::validation::validate_email;
 use crate::state::AppState;
 
 use super::pagination::PaginationParams;
@@ -404,9 +405,7 @@ async fn create_sale_in_transaction(
 
 fn validate_create_sale_request(req: &CreateSaleRequest) -> Result<(), AppError> {
     if let Some(ref email) = req.customer_email {
-        if !email.contains('@') || !email.contains('.') {
-            return Err(AppError::Validation("Invalid customer email".to_string()));
-        }
+        validate_email(email)?;
     }
 
     if let Some(ref phone) = req.customer_phone {

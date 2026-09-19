@@ -11,6 +11,7 @@ use workshop_common::{User, Workshop};
 use crate::auth;
 use crate::error::AppError;
 use crate::state::AppState;
+use crate::validation::{validate_email, validate_password, hide_password_hash};
 
 /// Rutas públicas de autenticación: login, registro inicial y estado de setup.
 pub fn public_routes() -> Router<AppState> {
@@ -271,36 +272,6 @@ fn validate_workshop_field(value: &str, field: &str, max_length: usize) -> Resul
             "{} must be between 1 and {} characters",
             field, max_length
         )));
-    }
-    Ok(())
-}
-
-fn hide_password_hash(mut user: User) -> User {
-    user.password_hash = String::new();
-    user
-}
-
-fn validate_email(email: &str) -> Result<(), AppError> {
-    if email.is_empty() || email.len() > 200 {
-        return Err(AppError::Validation("Invalid email length".to_string()));
-    }
-    if !email.contains('@') || !email.contains('.') {
-        return Err(AppError::Validation("Invalid email format".to_string()));
-    }
-    // Basic regex: something@something.something
-    let re = regex::Regex::new(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
-        .map_err(|e| AppError::Internal(format!("Regex error: {}", e)))?;
-    if !re.is_match(email) {
-        return Err(AppError::Validation("Invalid email format".to_string()));
-    }
-    Ok(())
-}
-
-fn validate_password(password: &str) -> Result<(), AppError> {
-    if password.len() < 8 {
-        return Err(AppError::Validation(
-            "Password must be at least 8 characters".to_string(),
-        ));
     }
     Ok(())
 }

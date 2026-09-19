@@ -12,6 +12,7 @@ use crate::audit::{self, redact_sensitive};
 use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
 use crate::state::AppState;
+use crate::validation::validate_email;
 
 use super::pagination::PaginationParams;
 
@@ -234,8 +235,8 @@ fn validate_create_supplier_request(req: &CreateSupplierRequest) -> Result<(), A
     }
 
     if let Some(ref email) = req.email {
-        if !email.is_empty() && (!email.contains('@') || !email.contains('.')) {
-            return Err(AppError::Validation("Invalid email format".to_string()));
+        if !email.is_empty() {
+            validate_email(email)?;
         }
     }
 

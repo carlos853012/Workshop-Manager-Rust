@@ -147,9 +147,9 @@ pub fn load_config(data_dir: &Path) -> anyhow::Result<super::state::ServerConfig
         }
     }
 
-    // Force regenerate API key if it's the insecure default
-    if server_config.api_key == "dev-key-change-in-production" {
-        tracing::warn!("API key is the insecure default — generating a new random key");
+    // Force regenerate API key if it's the insecure default or empty
+    if server_config.api_key.is_empty() || server_config.api_key == "dev-key-change-in-production" {
+        tracing::warn!("API key is insecure or empty — generating a new random key");
         server_config.api_key = default_api_key();
     }
 

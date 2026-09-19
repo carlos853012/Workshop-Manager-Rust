@@ -7,6 +7,7 @@ pub struct RateLimiter {
     attempts: RwLock<HashMap<String, (u32, Instant)>>,
     max_attempts: u32,
     window: Duration,
+    last_cleanup: RwLock<Instant>,
 }
 
 impl RateLimiter {
@@ -15,7 +16,14 @@ impl RateLimiter {
             attempts: RwLock::new(HashMap::new()),
             max_attempts,
             window: Duration::from_secs(window_secs),
+            last_cleanup: RwLock::new(Instant::now()),
         }
+    }
+
+    /// Limpia entradas expiradas del mapa.
+    fn cleanup_expired(&self, attempts: &mut HashMap<String, (u32, Instant)>) {
+        let now = Instant::now();
+        attempts.retain(|_, (_, first_attempt)| now.duration_since(*first_attempt) <= self.window);
     }
 
     /// Verifica si una clave puede realizar un intento.
@@ -26,6 +34,16 @@ impl RateLimiter {
             .write()
             .map_err(|e| anyhow::anyhow!("Rate limiter lock poisoned: {}", e))?;
         let now = Instant::now();
+
+        // Cleanup expired entries periodically (every 60 seconds)
+        if now.duration_since(*self.last_cleanup.read().map_err(|e| anyhow::anyhow!("{}", e))?)
+            > Duration::from_secs(60)
+        {
+            self.cleanup_expired(&mut attempts);
+            if let Ok(mut last) = self.last_cleanup.write() {
+                *last = now;
+            }
+        }
 
         if let Some((count, first_attempt)) = attempts.get(key) {
             if now.duration_since(*first_attempt) > self.window {
