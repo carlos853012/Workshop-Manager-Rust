@@ -1,3 +1,5 @@
+#![cfg_attr(not(test), windows_subsystem = "windows")]
+
 mod api;
 mod app_state;
 mod charts;
@@ -55,6 +57,8 @@ fn main() {
     dioxus::LaunchBuilder::new()
         .with_cfg(
             Config::new()
+                .with_disable_context_menu(true)
+                .with_menu(None)
                 .with_window(
                     WindowBuilder::new()
                         .with_title("WorkshopManager")

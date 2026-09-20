@@ -1,88 +1,136 @@
-<?xml version="1.0" encoding="windows-1252"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<?xml version='1.0' encoding='windows-1252'?>
+<?if $(sys.BUILDARCH) = x64 or $(sys.BUILDARCH) = arm64 ?>
+    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+<?else ?>
+    <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+<?endif ?>
 
-  <Product
-    Id="*"
-    Name="WorkshopManager Viewer"
-    UpgradeCode="D0C4E6F8-A3B5-7C9D-1E2F-4A6B8C0D2E4F"
-    Language="1033"
-    Codepage="1252"
-    Version="0.1.0"
-    Manufacturer="WorkshopManager">
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
 
-    <Package
-      Id="*"
-      Keywords="Installer"
-      Description="WorkshopManager — Cliente de escritorio para gestión de taller"
-      Manufacturer="WorkshopManager"
-      InstallerVersion="500"
-      Languages="1033"
-      Compressed="yes"
-      InstallScope="perMachine"
-      SummaryCodepage="1252" />
+    <Product
+        Id='*'
+        Name='WorkshopManager Viewer'
+        UpgradeCode='D0C4E6F8-A3B5-7C9D-1E2F-4A6B8C0D2E4F'
+        Manufacturer='WorkshopManager'
+        Language='1033'
+        Codepage='1252'
+        Version='$(var.Version)'>
 
-    <MajorUpgrade AllowDowngrades="yes" />
+        <Package Id='*'
+            Keywords='Installer'
+            Manufacturer='WorkshopManager'
+            InstallerVersion='450'
+            Languages='1033'
+            Compressed='yes'
+            InstallScope='perMachine'
+            SummaryCodepage='1252'
+        />
 
-    <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" DiskPrompt="CD-ROM #1" />
-    <Property Id="DiskPrompt" Value="WorkshopManager Viewer Installation" />
+        <MajorUpgrade
+            Schedule='afterInstallInitialize'
+            DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
 
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFiles64Folder" Name="PFiles">
-        <Directory Id="INSTALLDIR" Name="WorkshopManager">
-          <Component Id="MainComponent" Guid="C3D4E5F6-A7B8-9C0D-1E2F-3A4B5C6D7E8F" Win64="yes">
-            <File
-              Id="workshop_viewer_exe"
-              Name="workshop-viewer.exe"
-              DiskId="1"
-              Source="..\..\target\release\workshop-viewer.exe"
-              KeyPath="yes" />
-          </Component>
+        <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
+        <Property Id='DiskPrompt' Value='WorkshopManager Viewer Installation'/>
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+
+            <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
+                <Directory Id='APPLICATIONFOLDER' Name='WorkshopManager'>
+                    <Directory Id='Bin' Name='bin'>
+                        <Component Id='Path' Guid='9ED55FAC-D827-4D6D-B5D6-CA29021382D3' KeyPath='yes'>
+                            <Environment
+                                Id='PATH'
+                                Name='PATH'
+                                Value='[Bin]'
+                                Permanent='no'
+                                Part='last'
+                                Action='set'
+                                System='yes'/>
+                        </Component>
+                        <Component Id='binary0' Guid='*'>
+                            <File
+                                Id='exe0'
+                                Name='workshop-viewer.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\workshop-viewer.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                    </Directory>
+                </Directory>
+            </Directory>
+
+            <Directory Id='ProgramMenuFolder'>
+                <Directory Id='ApplicationProgramsFolder' Name='WorkshopManager'/>
+            </Directory>
+
+            <Directory Id='DesktopFolder' Name='Desktop'/>
+
         </Directory>
-      </Directory>
-      <Directory Id="ProgramMenuFolder">
-        <Directory Id="ApplicationProgramsFolder" Name="WorkshopManager">
-          <Component Id="ShortcutRemoveComponent" Guid="F1A2B3C4-D5E6-7F8A-9B0C-1D2E3F4A5B6C" Win64="yes">
-            <RemoveFolder Id="RemoveAppProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
-            <RegistryValue Root="HKCU" Key="Software\WorkshopManager\Viewer" Name="installed" Type="integer" Value="1" KeyPath="yes" />
-          </Component>
-        </Directory>
-      </Directory>
-    </Directory>
+        <Feature
+            Id='Binaries'
+            Title='Application'
+            Description='Instala el cliente de escritorio WorkshopManager.'
+            Level='1'
+            ConfigurableDirectory='APPLICATIONFOLDER'
+            AllowAdvertise='no'
+            Display='expand'
+            Absent='disallow'>
+            <ComponentRef Id='binary0'/>
+            <ComponentRef Id='ShortcutStartMenu'/>
+            <ComponentRef Id='ShortcutDesktop'/>
 
-    <DirectoryRef Id="ApplicationProgramsFolder">
-      <Component Id="ShortcutComponent" Guid="D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F9A" Win64="yes">
-        <Shortcut
-          Id="ViewerStartMenuShortcut"
-          Name="WorkshopManager Viewer"
-          Description="Abrir cliente WorkshopManager"
-          Target="[INSTALLDIR]workshop-viewer.exe"
-          WorkingDirectory="INSTALLDIR"
-          Icon="app.exe" />
-        <RegistryValue Root="HKCU" Key="Software\WorkshopManager\Viewer" Name="installed" Type="integer" Value="1" KeyPath="yes" />
-      </Component>
-    </DirectoryRef>
+            <Feature
+                Id='Environment'
+                Title='PATH Environment Variable'
+                Description='Add the install location of the [ProductName] executable to the PATH system environment variable.'
+                Level='1'
+                Absent='allow'>
+                <ComponentRef Id='Path'/>
+            </Feature>
+        </Feature>
 
-    <Feature
-      Id="MainFeature"
-      Title="WorkshopManager Viewer"
-      Description="Instala el cliente de escritorio de taller."
-      Level="1"
-      ConfigurableDirectory="INSTALLDIR"
-      AllowAdvertise="no"
-      Display="expand"
-      Absent="disallow">
+        <SetProperty Id='ARPINSTALLLOCATION' Value='[APPLICATIONFOLDER]' After='CostFinalize'/>
 
-      <ComponentRef Id="MainComponent" />
-      <ComponentRef Id="ShortcutComponent" />
-      <ComponentRef Id="ShortcutRemoveComponent" />
-    </Feature>
+        <DirectoryRef Id='ApplicationProgramsFolder'>
+            <Component Id='ShortcutStartMenu' Guid='*'>
+                <Shortcut Id='StartMenuShortcut'
+                    Name='WorkshopManager Viewer'
+                    Description='Abrir WorkshopManager Viewer'
+                    Target='[Bin]workshop-viewer.exe'
+                    WorkingDirectory='Bin'/>
+                <RemoveFolder Id='RemoveAppProgramsFolder' Directory='ApplicationProgramsFolder' On='uninstall'/>
+                <RegistryValue Root='HKCU' Key='Software\WorkshopManager\Viewer' Name='installed' Type='integer' Value='1' KeyPath='yes'/>
+            </Component>
+        </DirectoryRef>
 
-    <Icon Id="app.exe" SourceFile="..\..\target\release\workshop-viewer.exe" />
+        <DirectoryRef Id='DesktopFolder'>
+            <Component Id='ShortcutDesktop' Guid='*'>
+                <Shortcut Id='DesktopShortcut'
+                    Name='WorkshopManager Viewer'
+                    Description='Abrir WorkshopManager Viewer'
+                    Target='[Bin]workshop-viewer.exe'
+                    WorkingDirectory='Bin'/>
+                <RemoveFolder Id='RemoveDesktopFolder' Directory='DesktopFolder' On='uninstall'/>
+                <RegistryValue Root='HKCU' Key='Software\WorkshopManager\Viewer' Name='desktop' Type='integer' Value='1' KeyPath='yes'/>
+            </Component>
+        </DirectoryRef>
 
-    <UI>
-      <UIRef Id="WixUI_Minimal" />
-    </UI>
+        <UI>
+            <UIRef Id='WixUI_FeatureTree'/>
+            <Publish Dialog='WelcomeDlg' Control='Next' Event='NewDialog' Value='CustomizeDlg' Order='99'>1</Publish>
+            <Publish Dialog='CustomizeDlg' Control='Back' Event='NewDialog' Value='WelcomeDlg' Order='99'>1</Publish>
+        </UI>
 
-  </Product>
+        <CustomAction Id="CleanupAppData"
+                      Script="vbscript"
+                      Execute="commit"
+                      Impersonate="yes"
+                      Return="ignore"><![CDATA[On Error Resume Next:CreateObject("Scripting.FileSystemObject").DeleteFolder Session.Property("LocalAppDataFolder") & "\WorkshopManager", True]]></CustomAction>
 
+        <InstallExecuteSequence>
+            <Custom Action="CleanupAppData" Before="InstallFinalize">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+        </InstallExecuteSequence>
+
+    </Product>
 </Wix>

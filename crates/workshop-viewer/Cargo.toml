@@ -7,6 +7,9 @@ edition.workspace = true
 name = "workshop-viewer"
 path = "src/main.rs"
 
+[build-dependencies]
+winresource = "0.1"
+
 [dependencies]
 workshop-common = { path = "../workshop-common" }
 dioxus = { version = "0.6", features = ["desktop"] }

@@ -3,7 +3,8 @@ members = [
     "crates/workshop-common",
     "crates/workshop-server",
     "crates/workshop-viewer",
-    "crates/license-tool"
+    "crates/license-tool",
+    "tools/generate-icon"
 ]
 resolver = "2"
 

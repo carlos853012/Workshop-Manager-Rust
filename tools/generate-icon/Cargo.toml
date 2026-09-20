@@ -1,0 +1,8 @@
+[package]
+name = "generate-icon"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+workshop-common = { path = "../../crates/workshop-common" }
+png = "0.17"
