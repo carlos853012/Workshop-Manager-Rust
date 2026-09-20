@@ -33,6 +33,8 @@ pub struct ServerConfig {
     pub icon_bg: [u8; 3],
     pub icon_fg: [u8; 3],
     pub cors_origins: Vec<String>,
+    pub license_api_url: String,
+    pub license_trial_days: u32,
 }
 
 impl FromRef<AppState> for Arc<Secrets> {

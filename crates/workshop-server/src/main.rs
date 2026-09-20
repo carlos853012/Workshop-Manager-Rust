@@ -1,4 +1,4 @@
-#![cfg_attr(not(test), windows_subsystem = "windows")]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use axum::http::{header, Method};
 use axum::{middleware as axum_middleware, routing::get, Router};
@@ -97,12 +97,20 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Crypto initialized");
 
     // 4. License validation
+    if license::is_placeholder_key() {
+        tracing::error!("Clave pública del vendor no configurada");
+        tracing::error!("Ejecuta: license-tool generate-keypair");
+        tracing::info!("El servidor funcionará en modo trial por {} días", config.license_trial_days);
+    }
     let license = match license::load_license(&data_dir) {
         license::LicenseStatus::Valid(lic) => {
             if let Err(e) = license::validate_license(&lic) {
-                tracing::error!("Licencia inválida: {}", e);
-                tracing::info!("El servidor funcionará en modo trial por 7 días");
-                None
+                tracing::error!("═══════════════════════════════════════════════════════");
+                tracing::error!("  LICENCIA EXPIRADA O INVÁLIDA");
+                tracing::error!("  {}", e);
+                tracing::error!("  Contacte al proveedor para obtener una nueva licencia");
+                tracing::error!("═══════════════════════════════════════════════════════");
+                std::process::exit(1);
             } else {
                 tracing::info!("Licencia válida: {} ({})", lic.license_key, lic.tier);
                 Some(lic)
@@ -116,22 +124,27 @@ async fn main() -> anyhow::Result<()> {
             tracing::info!("Contacte al proveedor para activar la licencia");
 
             // Intentar validación online
-            match license::validate_online("trial", &hw_hash).await {
+            match license::validate_online(&config.license_api_url, "trial", &hw_hash, config.license_trial_days).await {
                 Some(lic) => {
                     tracing::info!("Licencia trial activada online");
-                    let _ = license::save_license(&lic, &data_dir);
+                    if let Err(e) = license::save_license(&lic, &data_dir) {
+                        tracing::error!("Error guardando licencia: {}", e);
+                    }
                     Some(lic)
                 }
                 None => {
-                    tracing::info!("Sin conexión — funcionando en modo trial (7 días)");
-                    Some(workshop_common::license::create_trial_license(&hw_hash))
+                    tracing::info!("Sin conexión — funcionando en modo trial ({} días)", config.license_trial_days);
+                    Some(workshop_common::license::create_trial_license_with_days(&hw_hash, config.license_trial_days))
                 }
             }
         }
         license::LicenseStatus::Invalid(e) => {
-            tracing::error!("Error de licencia: {}", e);
-            tracing::info!("El servidor funcionará en modo trial por 7 días");
-            None
+            tracing::error!("═══════════════════════════════════════════════════════");
+            tracing::error!("  ERROR DE LICENCIA");
+            tracing::error!("  {}", e);
+            tracing::error!("  Contacte al proveedor para obtener una nueva licencia");
+            tracing::error!("═══════════════════════════════════════════════════════");
+            std::process::exit(1);
         }
     };
 
@@ -275,6 +288,42 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let handle = axum_server::Handle::new();
+
+    // 7b. License expiry watcher — shuts down server if license expires at runtime
+    {
+        let data_dir_clone = data_dir.clone();
+        let handle_clone = handle.clone();
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(tokio::time::Duration::from_secs(300)).await;
+                match license::load_license(&data_dir_clone) {
+                    license::LicenseStatus::Valid(lic) => {
+                        if let Err(e) = license::validate_license(&lic) {
+                            tracing::error!("═══════════════════════════════════════════════════════");
+                            tracing::error!("  LICENCIA EXPIRADA (detectado durante ejecución)");
+                            tracing::error!("  {}", e);
+                            tracing::error!("  El servidor se apagará automáticamente");
+                            tracing::error!("  Contacte al proveedor para obtener una nueva licencia");
+                            tracing::error!("═══════════════════════════════════════════════════════");
+                            handle_clone.graceful_shutdown(Some(std::time::Duration::from_secs(5)));
+                            break;
+                        }
+                    }
+                    license::LicenseStatus::Invalid(e) => {
+                        tracing::error!("═══════════════════════════════════════════════════════");
+                        tracing::error!("  LICENCIA INVÁLIDA (detectado durante ejecución)");
+                        tracing::error!("  {}", e);
+                        tracing::error!("  El servidor se apagará automáticamente");
+                        tracing::error!("═══════════════════════════════════════════════════════");
+                        handle_clone.graceful_shutdown(Some(std::time::Duration::from_secs(5)));
+                        break;
+                    }
+                    license::LicenseStatus::FirstRun(_) => {}
+                }
+            }
+        });
+    }
+
     let server_task = tokio::spawn(
         axum_server::bind_rustls(addr, rustls_config)
             .handle(handle.clone())

@@ -7,3 +7,7 @@ cors_origins = []
 
 [tax]
 iva_rate = 0.19
+
+[license]
+api_url = "https://workshop-license-worker.carlitos24oz.workers.dev"
+trial_days = 1

@@ -132,6 +132,7 @@ fn main() {
                 max_transfers: max_transfers.unwrap_or(tier.max_transfers()),
                 transfer_count: 0,
                 activated_at: chrono::Utc::now(),
+                expires_at: None,
             };
 
             let sk = std::fs::read(&secret_key).expect("Error leyendo clave secreta");
@@ -209,6 +210,7 @@ fn main() {
                 max_transfers: tier.max_transfers(),
                 transfer_count: transfer_count + 1,
                 activated_at: chrono::Utc::now(),
+                expires_at: None,
             };
 
             let signed = lic::sign_license(&license, &sk).expect("Error firmando licencia");

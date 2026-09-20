@@ -15,3 +15,5 @@ elimar_datos.md
 config/server.toml
 config/viewer.toml
 .opencode/node_modules/
+vendor_secret_key.bin
+vendor_public_key.bin

@@ -2,7 +2,7 @@ use sha2::{Digest, Sha256};
 use std::process::Command;
 
 /// Extrae un identificador de hardware del PC actual.
-/// En Windows usa `wmic`, en Linux lee `/sys/class/dmi/id/`.
+/// En Windows usa `PowerShell Get-CimInstance`, en Linux lee `/sys/class/dmi/id/`.
 /// Retorna un hash SHA-256 de CPU + Motherboard + Disk.
 pub fn get_hardware_id() -> Result<String, String> {
     #[cfg(target_os = "windows")]
@@ -71,22 +71,33 @@ fn disk_serial_linux() -> String {
         .to_string()
 }
 
-/// Ejecuta `wmic <class> get <field>` y limpia el resultado.
+/// Ejecuta `Get-CimInstance <class> | Select-Object -ExpandProperty <field>` y limpia el resultado.
+/// Reemplaza wmic (deprecado en Windows 11+).
 #[cfg(target_os = "windows")]
 fn wmic_value(class: &str, field: &str) -> Option<String> {
-    let output = Command::new("wmic")
-        .args([class, "get", field])
+    let cim_class = match class {
+        "cpu" => "Win32_Processor",
+        "baseboard" => "Win32_BaseBoard",
+        "diskdrive" => "Win32_DiskDrive",
+        _ => return None,
+    };
+
+    let output = Command::new("powershell")
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            &format!(
+                "Get-CimInstance {} | Select-Object -ExpandProperty {}",
+                cim_class, field
+            ),
+        ])
         .output()
         .ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let lines: Vec<&str> = stdout.lines().collect();
+    let value = stdout.trim();
 
-    if lines.len() < 2 {
-        return None;
-    }
-
-    let value = lines[1].trim();
     if value.is_empty() || value == "To be filled by O.E.M." {
         None
     } else {

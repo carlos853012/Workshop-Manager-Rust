@@ -89,9 +89,15 @@ impl Drop for DbManager {
     fn drop(&mut self) {
         let pg_ctl = self.postgresql.settings().binary_dir().join("pg_ctl");
         let data_dir = self.postgresql.settings().data_dir.clone();
-        let _ = std::process::Command::new(&pg_ctl)
-            .args(["stop", "-D", &data_dir.to_string_lossy(), "-m", "fast"])
-            .output();
+        let mut cmd = std::process::Command::new(&pg_ctl);
+        cmd.args(["stop", "-D", &data_dir.to_string_lossy(), "-m", "fast"]);
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            cmd.creation_flags(CREATE_NO_WINDOW);
+        }
+        let _ = cmd.output();
     }
 }
 

@@ -128,6 +128,9 @@ pub struct License {
     pub max_transfers: u32,
     pub transfer_count: u32,
     pub activated_at: chrono::DateTime<chrono::Utc>,
+    /// Fecha de expiración. None = licencia permanente.
+    /// Para trial, se establece a activated_at + 7 días.
+    pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl License {
@@ -136,7 +139,33 @@ impl License {
     }
 
     pub fn is_valid(&self) -> bool {
-        !self.license_key.is_empty() && !self.hardware_hash.is_empty()
+        if self.license_key.is_empty() || self.hardware_hash.is_empty() {
+            return false;
+        }
+        if let Some(expires_at) = self.expires_at {
+            if chrono::Utc::now() > expires_at {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn is_expired(&self) -> bool {
+        match self.expires_at {
+            Some(expires_at) => chrono::Utc::now() > expires_at,
+            None => false,
+        }
+    }
+
+    pub fn days_until_expiry(&self) -> Option<i64> {
+        self.expires_at.map(|exp| {
+            let now = chrono::Utc::now();
+            if now > exp {
+                0
+            } else {
+                (exp - now).num_days()
+            }
+        })
     }
 
     pub fn is_trial(&self) -> bool {
@@ -162,6 +191,7 @@ mod tests {
             max_transfers: 3,
             transfer_count: 0,
             activated_at: chrono::Utc::now(),
+            expires_at: None,
         };
 
         assert!(license.has_feature(&Feature::Inventory));
@@ -179,6 +209,7 @@ mod tests {
             max_transfers: 3,
             transfer_count: 0,
             activated_at: chrono::Utc::now(),
+            expires_at: None,
         };
         assert!(valid.is_valid());
 
@@ -190,8 +221,43 @@ mod tests {
             max_transfers: 3,
             transfer_count: 0,
             activated_at: chrono::Utc::now(),
+            expires_at: None,
         };
         assert!(!invalid.is_valid());
+    }
+
+    #[test]
+    fn test_license_expiry() {
+        let expired = License {
+            license_key: "TEST-1234".to_string(),
+            tier: LicenseTier::Trial,
+            hardware_hash: "abc123".to_string(),
+            max_viewers: 1,
+            max_transfers: 0,
+            transfer_count: 0,
+            activated_at: chrono::Utc::now() - chrono::Duration::days(10),
+            expires_at: Some(chrono::Utc::now() - chrono::Duration::days(3)),
+        };
+        assert!(expired.is_expired());
+        assert!(!expired.is_valid());
+        assert_eq!(expired.days_until_expiry(), Some(0));
+
+        let active = License {
+            expires_at: Some(chrono::Utc::now() + chrono::Duration::days(5)),
+            ..expired.clone()
+        };
+        assert!(!active.is_expired());
+        assert!(active.is_valid());
+        let days = active.days_until_expiry().unwrap();
+        assert!(days >= 4 && days <= 5, "Expected ~5 days, got {days}");
+
+        let permanent = License {
+            expires_at: None,
+            ..expired
+        };
+        assert!(!permanent.is_expired());
+        assert!(permanent.is_valid());
+        assert_eq!(permanent.days_until_expiry(), None);
     }
 
     #[test]
@@ -204,6 +270,7 @@ mod tests {
             max_transfers: 3,
             transfer_count: 2,
             activated_at: chrono::Utc::now(),
+            expires_at: None,
         };
         assert!(license.can_transfer());
 

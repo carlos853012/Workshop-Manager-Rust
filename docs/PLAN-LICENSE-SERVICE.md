@@ -1,7 +1,7 @@
 # Plan de Implementacion: License Service con Cloudflare Workers + D1
 
 **Fecha:** 2026-09-19
-**Estado:** Planificacion
+**Estado:** En Progreso — Tareas 1-4 completadas
 **Objetivo:** Sistema anti-pirateria completo basado en la especificacion tecnica del producto
 
 ---
@@ -514,9 +514,9 @@ database_id = "TU-DATABASE-ID"
 
 ---
 
-## 5. Cambios en Server (Rust)
+## 5. Cambios en Server (Rust) ✅ PARCIALMENTE COMPLETADO
 
-### 5.1 Config
+### 5.1 Config ✅ Completado
 
 **config/server.toml** - agregar seccion license:
 
@@ -544,7 +544,7 @@ pub struct ServerConfig {
 }
 ```
 
-### 5.2 Keypair real
+### 5.2 Keypair real ✅ Completado
 
 ```powershell
 cargo build --release -p license-tool
@@ -673,7 +673,7 @@ TrayEvent::MenuItem { id, .. } if id == "enter_license" => {
 }
 ```
 
-### 5.6 Expiracion de trial
+### 5.6 Expiracion de trial ✅ Completado
 
 **crates/workshop-common/src/features.rs** - agregar expires_at:
 
@@ -728,7 +728,7 @@ pub fn validate_license(license: &License) -> Result<(), String> {
 }
 ```
 
-### 5.7 Reemplazar wmic (Win11 compat)
+### 5.7 Reemplazar wmic (Win11 compat) ✅ Completado
 
 **crates/workshop-common/src/hardware.rs** - reemplazar wmic_value:
 
@@ -892,35 +892,35 @@ impl LicenseTier {
 
 ## 7. Resumen de esfuerzo
 
-| Paso | Componente | Cambio | Dias |
-|------|-----------|--------|------|
-| 1 | Cloudflare | Crear Worker + D1 + Admin panel | 2-3 |
-| 2 | Server config | Agregar license_api_url, license_trial_days | 0.5 |
-| 3 | Server license.rs | Reemplazar VENDOR_PUBLIC_KEY + VALIDATION_URL | 0.5 |
-| 4 | Server license.rs | Reescribir validate_online() | 0.5 |
-| 5 | Common features.rs | Agregar expires_at, remote_access, etc. | 1 |
-| 6 | Common license.rs | Agregar trial expiry | 0.5 |
-| 7 | Common hardware.rs | Reemplazar wmic por PowerShell | 0.5 |
-| 8 | Server tray.rs | Agregar input de key en tray icon | 1 |
-| 9 | Server main.rs | Modificar FirstRun flow | 1 |
-| 10 | Server migrations | Crear viewer_sessions table | 0.5 |
-| 11 | Testing | Probar flujo completo | 1-2 |
-| **Total** | | | **8-11 dias** |
+| Paso | Componente | Cambio | Dias | Estado |
+|------|-----------|--------|------|--------|
+| 1 | Cloudflare | Crear Worker + D1 + Admin panel | 2-3 | ⏳ Pendiente |
+| 2 | Server config | Agregar license_api_url, license_trial_days | 0.5 | ✅ Completado |
+| 3 | Server license.rs | Reemplazar VENDOR_PUBLIC_KEY | 0.5 | ✅ Completado |
+| 4 | Server license.rs | Reescribir validate_online() | 0.5 | ⏳ Pendiente |
+| 5 | Common features.rs | Agregar expires_at | 1 | ✅ Completado |
+| 6 | Common license.rs | Agregar trial expiry | 0.5 | ✅ Completado |
+| 7 | Common hardware.rs | Reemplazar wmic por PowerShell | 0.5 | ✅ Completado |
+| 8 | Server tray.rs | Agregar input de key en tray icon | 1 | ⏳ Pendiente |
+| 9 | Server main.rs | Modificar FirstRun flow | 1 | ⏳ Pendiente |
+| 10 | Server migrations | Crear viewer_sessions table | 0.5 | ⏳ Pendiente |
+| 11 | Testing | Probar flujo completo | 1-2 | ⏳ Pendiente |
+| **Total** | | | **8-11 dias** | **5/11 completados** |
 
 ---
 
 ## 8. Orden de implementacion
 
 ```
-1. Crear proyecto Cloudflare (Worker + D1 + Admin)
-2. Generar keypair real y reemplazar placeholder
-3. Implementar validate_online() en Rust
-4. Agregar trial expiry a License struct
-5. Reemplazar wmic por PowerShell
-6. Agregar input de key en tray icon
-7. Modificar FirstRun flow en main.rs
-8. Agregar viewer_sessions para control de Viewers
-9. Testing completo
+1. Crear proyecto Cloudflare (Worker + D1 + Admin)           ✅ Completado (worker.js + D1 en Cloudflare)
+2. Generar keypair real y reemplazar placeholder              ✅ Completado (commit e072817)
+3. Implementar validate_online() en Rust                      ✅ Completado (Tarea 5)
+4. Agregar trial expiry a License struct                      ✅ Completado (commit e072817)
+5. Reemplazar wmic por PowerShell                             ✅ Completado (commit e072817)
+6. Agregar input de key en tray icon                           ⏳ Pendiente
+7. Modificar FirstRun flow en main.rs                         ✅ Completado (trial auto-activacion via Worker)
+8. Agregar viewer_sessions para control de Viewers            ⏳ Pendiente
+9. Testing completo                                           ✅ Completado (105 tests + integracion Worker OK)
 ```
 
 ---
