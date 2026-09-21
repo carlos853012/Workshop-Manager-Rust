@@ -7,7 +7,7 @@
     UpgradeCode="B8A2C4D6-E1F3-5A7B-9C0D-2E4F6A8B0C2D"
     Language="1033"
     Codepage="1252"
-    Version="0.1.0"
+    Version="$(var.Version)"
     Manufacturer="WorkshopManager">
 
     <Package

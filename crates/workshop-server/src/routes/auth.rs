@@ -10,6 +10,7 @@ use workshop_common::{User, Workshop};
 
 use crate::auth;
 use crate::error::AppError;
+use crate::license::{self, OnlineResult};
 use crate::state::AppState;
 use crate::validation::{hide_password_hash, validate_email, validate_password};
 
@@ -26,6 +27,7 @@ pub fn protected_routes() -> Router<AppState> {
     Router::new()
         .route("/status", get(status))
         .route("/license", get(license_status))
+        .route("/activate", post(activate_license))
 }
 
 /// Indica si ya existe al menos un usuario en el sistema.
@@ -239,7 +241,8 @@ pub struct LicenseInfo {
 async fn license_status(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<LicenseInfo>>, AppError> {
-    let info = match &state.license {
+    let lic = state.license.read().await;
+    let info = match lic.as_ref() {
         Some(lic) => LicenseInfo {
             is_trial: lic.is_trial(),
             tier: lic.tier.to_string(),
@@ -250,6 +253,72 @@ async fn license_status(
         },
     };
     Ok(Json(ApiResponse::success(info)))
+}
+
+#[derive(serde::Deserialize)]
+pub struct ActivateRequest {
+    pub license_key: String,
+}
+
+#[derive(serde::Serialize)]
+pub struct ActivateResponse {
+    pub is_trial: bool,
+    pub tier: String,
+    pub license_key: String,
+}
+
+async fn activate_license(
+    State(state): State<AppState>,
+    Json(req): Json<ActivateRequest>,
+) -> Result<Json<ApiResponse<ActivateResponse>>, AppError> {
+    let key = req.license_key.trim().to_string();
+    if key.is_empty() {
+        return Err(AppError::Validation(
+            "license_key no puede estar vacío".into(),
+        ));
+    }
+
+    let hw_hash = workshop_common::hardware::get_hardware_id()
+        .map_err(|e| AppError::Internal(format!("No se pudo obtener hardware: {e}")))?;
+
+    match license::validate_online(&state.config.license_api_url, &key, &hw_hash).await {
+        OnlineResult::Ok { signed, license } => {
+            if signed.is_empty() {
+                return Err(AppError::Internal(
+                    "Worker no devolvió licencia firmada".into(),
+                ));
+            }
+
+            let data_dir = dirs::data_local_dir()
+                .unwrap_or_else(|| std::path::PathBuf::from("."))
+                .join("WorkshopManager")
+                .join("data");
+            if let Err(e) = license::save_signed_license(&signed, &data_dir) {
+                return Err(AppError::Internal(format!("Error guardando licencia: {e}")));
+            }
+
+            let mut lic_write = state.license.write().await;
+            *lic_write = Some(license.clone());
+
+            tracing::info!(
+                "Licencia activada por el cliente: key={}, tier={}",
+                license.license_key,
+                license.tier
+            );
+
+            Ok(Json(ApiResponse::success(ActivateResponse {
+                is_trial: license.is_trial(),
+                tier: license.tier.to_string(),
+                license_key: license.license_key,
+            })))
+        }
+        OnlineResult::Rejected(_reason) => Err(AppError::Forbidden(
+            "Clave de licencia inválida o revocada".into(),
+        )),
+        OnlineResult::Unreachable(reason) => Err(AppError::Internal(format!(
+            "No se pudo conectar al servidor de licencias: {reason}"
+        ))),
+    }
 }
 
 async fn find_workshop(

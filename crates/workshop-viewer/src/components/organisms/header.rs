@@ -4,6 +4,7 @@ use workshop_common::UserRole;
 
 use crate::app_state::{use_auth, use_sidebar, use_tabs};
 use crate::components::atoms::button::{Button, ButtonVariant};
+use crate::components::organisms::license_activation_modal::LicenseActivationModal;
 use crate::icons::IconName;
 use crate::routes::Route;
 use crate::theme::use_theme;
@@ -12,13 +13,19 @@ use crate::theme::use_theme;
 pub fn Header(title: String, active_route: Route) -> Element {
     let mut theme = use_theme();
     let auth = use_auth();
+    let mut show_activate = use_signal(|| false);
 
     rsx! {
         header { class: "header",
             div { class: "header-navigation",
                 h1 { class: "header-title", "{title}" }
                 if auth.is_trial() {
-                    span { class: "trial-badge", "TRIAL" }
+                    button {
+                        class: "trial-badge",
+                        title: "Click para activar licencia",
+                        onclick: move |_| show_activate.set(true),
+                        "TRIAL"
+                    }
                 }
                 Tabs { active_route: active_route }
             }
@@ -29,6 +36,10 @@ pub fn Header(title: String, active_route: Route) -> Element {
                     "🌓"
                 }
             }
+        }
+        LicenseActivationModal {
+            show: *show_activate.read(),
+            on_close: move |_| show_activate.set(false),
         }
     }
 }

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use tokio::sync::RwLock;
 use workshop_common::features::License;
 
 use crate::rate_limiter::RateLimiter;
@@ -13,7 +14,7 @@ pub struct AppState {
     pub config: ServerConfig,
     pub pool: PgPool,
     pub login_rate_limiter: Arc<RateLimiter>,
-    pub license: Option<License>,
+    pub license: Arc<RwLock<Option<License>>>,
 }
 
 #[derive(Clone)]
@@ -66,7 +67,7 @@ impl AppState {
             config,
             pool,
             login_rate_limiter: Arc::new(RateLimiter::new(5, 300)),
-            license,
+            license: Arc::new(RwLock::new(license)),
         }
     }
 }

@@ -71,11 +71,12 @@ Auditoría completa de WorkshopManager v0.1.0 revela **19 hallazgos de seguridad
 **Remediación:** Extraído a `validation.rs`.
 **Estado:** Resuelto — commit `7632dea`
 
-### Q-3: IVA 19% hardcodeado en POS ⏳ PENDIENTE
+### Q-3: IVA 19% hardcodeado en POS ✅
 **Archivo:** `crates/workshop-viewer/src/pages/pos.rs`
 **Problema:** IVA rate es configurable en server.toml pero viewer muestra fijo 19%.
 **Remediación:** Agregar rate al DashboardResponse o endpoint de config pública.
 **Esfuerzo:** Medio
+**Estado:** Resuelto — commit `13fa84a` (nuevo endpoint `GET /api/config`, viewer fetch IVA dinámico en mount)
 
 ### Q-4: Regex recompilado por request ✅
 **Archivo:** `routes/auth.rs:291`

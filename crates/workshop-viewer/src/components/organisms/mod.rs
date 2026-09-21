@@ -1,6 +1,7 @@
 pub mod certificate_detail_modal;
 pub mod data_table;
 pub mod header;
+pub mod license_activation_modal;
 pub mod product_form_modal;
 pub mod repair_detail_modal;
 pub mod repair_form_modal;

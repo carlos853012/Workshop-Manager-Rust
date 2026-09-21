@@ -60,9 +60,9 @@
 - [ ] **B-5** Crear script de restore para backups
 - [x] **B-6** Unificar IVA como config centralizada
 - [ ] **B-7** refresh token o TTL corto para JWT
-- [ ] **B-8** Anulación/devolución de ventas
+- [x] **B-8** Anulación/devolución de ventas
 - [ ] **B-9** repair_parts vinculados a products
-- [ ] **B-10** Endpoint de lectura de audit logs
+- [x] **B-10** Endpoint de lectura de audit logs
 
 ## 📦 DEPENDENCIAS
 
