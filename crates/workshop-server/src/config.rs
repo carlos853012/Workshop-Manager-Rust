@@ -17,16 +17,12 @@ pub struct LicenseSection {
     /// URL del Cloudflare Worker para validación online (vacío = sin validación online).
     #[serde(default = "default_license_api_url")]
     pub api_url: String,
-    /// Días de duración del trial automático.
-    #[serde(default = "default_trial_days")]
-    pub trial_days: u32,
 }
 
 impl Default for LicenseSection {
     fn default() -> Self {
         Self {
             api_url: default_license_api_url(),
-            trial_days: default_trial_days(),
         }
     }
 }
@@ -107,11 +103,7 @@ fn default_max_viewers() -> u32 {
 }
 
 fn default_license_api_url() -> String {
-    String::new()
-}
-
-fn default_trial_days() -> u32 {
-    7
+    "https://workshop-license-worker.carlitos24oz.workers.dev".to_string()
 }
 
 impl Default for Config {
@@ -152,7 +144,6 @@ pub fn load_config(data_dir: &Path) -> anyhow::Result<super::state::ServerConfig
             icon_fg: parse_hex_color(&config.icon.fg),
             cors_origins: config.server.cors_origins,
             license_api_url: config.license.api_url,
-            license_trial_days: config.license.trial_days,
         }
     } else {
         let default_config = Config::default();
@@ -170,7 +161,6 @@ pub fn load_config(data_dir: &Path) -> anyhow::Result<super::state::ServerConfig
             icon_fg: parse_hex_color(&default_config.icon.fg),
             cors_origins: default_config.server.cors_origins,
             license_api_url: default_config.license.api_url,
-            license_trial_days: default_config.license.trial_days,
         }
     };
 

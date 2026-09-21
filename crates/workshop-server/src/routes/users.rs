@@ -13,8 +13,8 @@ use crate::audit::{self, redact_sensitive};
 use crate::auth;
 use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
-use crate::validation::{validate_email, hide_password_hash};
 use crate::state::AppState;
+use crate::validation::{hide_password_hash, validate_email};
 
 use super::pagination::PaginationParams;
 

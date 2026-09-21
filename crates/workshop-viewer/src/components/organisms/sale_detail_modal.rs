@@ -182,7 +182,7 @@ fn SaleDetailBody(data: SaleDetailResponse) -> Element {
                     }
                 }
                 div { class: "detail-row",
-                    span { class: "detail-label", "IVA (19%)" }
+                    span { class: "detail-label", "IVA" }
                     span { class: "detail-value", "{tax}" }
                 }
                 div { class: "detail-row detail-total",

@@ -5,6 +5,7 @@ use crate::state::AppState;
 mod analytics;
 mod audit;
 mod auth;
+mod config;
 mod device_keys;
 pub(crate) mod pagination;
 mod products;
@@ -24,6 +25,7 @@ pub fn public_routes() -> Router<AppState> {
 pub fn protected_routes() -> Router<AppState> {
     Router::new()
         .nest("/auth", auth::protected_routes())
+        .nest("/config", config::routes())
         .nest("/products", products::routes())
         .nest("/sales", sales::routes())
         .nest("/repairs", repairs::routes())

@@ -363,3 +363,112 @@ curl -k -X GET "https://localhost:8443/api/reports/client-certificate.pdf?email=
   -H "X-WorkshopManager-Device-Key: wm_..." \
   --output certificado.pdf
 ```
+
+---
+
+## GET /api/analytics/revenue
+
+Get revenue time-series data (sales + repairs) grouped by day, week, or month.
+
+**Auth level**: Protected
+
+### Query Parameters
+
+| Parameter    | Type   | Default       | Constraints        |
+|--------------|--------|---------------|--------------------|
+| `start_date` | string | 180 days ago  | Format: YYYY-MM-DD |
+| `end_date`   | string | Today         | Format: YYYY-MM-DD |
+
+### Response (200)
+
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "period": "2025-01-15",
+        "sales": 250000,
+        "repairs": 75000
+      },
+      {
+        "period": "2025-01-16",
+        "sales": 180000,
+        "repairs": 0
+      }
+    ],
+    "grouping": "day"
+  }
+}
+```
+
+| Field            | Type   | Description |
+|------------------|--------|-------------|
+| `data`           | array  | Time-series data points |
+| `data[].period`  | string | Period label (format depends on grouping) |
+| `data[].sales`   | decimal | Total sales revenue for that period |
+| `data[].repairs` | decimal | Total repair labor cost for that period |
+| `grouping`       | string | `"day"`, `"week"`, or `"month"` |
+
+Grouping is auto-selected based on date range:
+- `day`: range ≤ 31 days
+- `week`: range 32–365 days
+- `month`: range > 365 days
+
+### cURL
+
+```bash
+curl -k -X GET "https://localhost:8443/api/analytics/revenue?start_date=2025-01-01&end_date=2025-01-31" \
+  -H "Authorization: Bearer eyJ..." \
+  -H "X-WorkshopManager-Key: your-api-key" \
+  -H "X-WorkshopManager-Device-Key: wm_..."
+```
+
+---
+
+## GET /api/analytics/top-products
+
+Get the top 5 products by quantity sold.
+
+**Auth level**: Protected
+
+### Response (200)
+
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "product_id": "550e8400-e29b-41d4-a716-446655440000",
+        "product_name": "Filtro de Aceite Honda CB500",
+        "total_quantity": 142,
+        "total_revenue": 2130000
+      },
+      {
+        "product_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+        "product_name": "Cadena 520H",
+        "total_quantity": 87,
+        "total_revenue": 2175000
+      }
+    ]
+  }
+}
+```
+
+| Field               | Type    | Description |
+|---------------------|---------|-------------|
+| `data`              | array   | Top 5 products by quantity sold |
+| `data[].product_id` | UUID    | Product identifier |
+| `data[].product_name` | string | Product name |
+| `data[].total_quantity` | i64  | Total units sold (completed sales only) |
+| `data[].total_revenue` | decimal | Total revenue (quantity × unit_price) |
+
+### cURL
+
+```bash
+curl -k -X GET https://localhost:8443/api/analytics/top-products \
+  -H "Authorization: Bearer eyJ..." \
+  -H "X-WorkshopManager-Key: your-api-key" \
+  -H "X-WorkshopManager-Device-Key: wm_..."
+```

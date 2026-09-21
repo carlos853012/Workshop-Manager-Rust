@@ -129,7 +129,8 @@ pub struct License {
     pub transfer_count: u32,
     pub activated_at: chrono::DateTime<chrono::Utc>,
     /// Fecha de expiración. None = licencia permanente.
-    /// Para trial, se establece a activated_at + 7 días.
+    /// Para trial, se establece a activated_at + N días.
+    #[serde(default)]
     pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 

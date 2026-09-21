@@ -59,6 +59,11 @@ pub struct LicenseInfo {
     pub tier: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServerConfig {
+    pub iva_rate: f64,
+}
+
 /// Cliente HTTP centralizado para comunicarse con el servidor.
 #[derive(Clone)]
 pub struct ApiClient {
@@ -186,6 +191,11 @@ impl ApiClient {
 
     pub async fn license_status(&self) -> Result<LicenseInfo, ApiError> {
         self.get("/api/auth/license").await
+    }
+
+    /// GET /api/config
+    pub async fn get_config(&self) -> Result<ServerConfig, ApiError> {
+        self.get("/api/config").await
     }
 
     /// GET /api/products

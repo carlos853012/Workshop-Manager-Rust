@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufWriter, Cursor, Write};
+use std::io::{BufWriter, Write};
 use workshop_common::icon_data::generate_wrench_icon;
 
 fn main() {
@@ -51,7 +51,12 @@ fn main() {
     }
 
     // Write to file
-    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("..").join("crates").join("workshop-viewer").join("icon.ico");
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("crates")
+        .join("workshop-viewer")
+        .join("icon.ico");
     let file = File::create(&path).expect("Failed to create icon.ico");
     let mut writer = BufWriter::new(file);
     writer.write_all(&ico).expect("Failed to write icon.ico");

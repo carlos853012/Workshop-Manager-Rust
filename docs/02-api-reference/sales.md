@@ -255,3 +255,67 @@ curl -k -X GET https://localhost:8443/api/sales/7c9e6679-7425-40de-944b-e07fc1f9
 | `taxable_amount`  | Base amount excluding IVA (subtotal - discount, rounded) |
 | `tax_amount`      | IVA amount (19% of taxable_amount)               |
 | `total`           | Final amount: subtotal - discount_amount         |
+
+---
+
+## POST /api/sales/:id/cancel
+
+Cancel an existing sale and restore product stock.
+
+**Auth level**: Protected (Admin or Seller only)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id`      | UUID | The sale to cancel |
+
+### Response (200)
+
+Returns the sale with `status` changed to `"cancelled"`.
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "workshop_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "customer_name": "Juan Perez",
+    "customer_email": "juan@email.com",
+    "customer_phone": "+56912345678",
+    "subtotal": 30000,
+    "discount_amount": 3000,
+    "taxable_amount": 22689,
+    "tax_amount": 4311,
+    "total": 27000,
+    "payment_method": "cash",
+    "status": "cancelled",
+    "created_at": "2025-01-15T14:30:00Z"
+  }
+}
+```
+
+### Status Codes
+
+| Status | Condition |
+|--------|-----------|
+| 200 | Sale successfully cancelled |
+| 403 | User is not Admin or Seller |
+| 404 | Sale not found or different workshop |
+| 409 | Sale is already cancelled |
+
+### Business Logic
+
+1. Runs inside a PostgreSQL transaction with `FOR UPDATE` lock
+2. Restores stock for each line item (`products.stock += quantity`)
+3. Sets `sales.status = 'cancelled'`
+4. Records an audit log entry (action: `"cancel"`)
+
+### cURL
+
+```bash
+curl -k -X POST https://localhost:8443/api/sales/550e8400-e29b-41d4-a716-446655440000/cancel \
+  -H "Authorization: Bearer eyJ..." \
+  -H "X-WorkshopManager-Key: your-api-key" \
+  -H "X-WorkshopManager-Device-Key: wm_..."
+```

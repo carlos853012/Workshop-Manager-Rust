@@ -254,7 +254,7 @@ Example: encrypt("my_password") → "aB3dEfGhIjKlMnOpQrStUvWxYz1234567890..."
 |-----------|-------|-----------|
 | Algorithm | HS256 (HMAC-SHA256) | Symmetric, simple, sufficient for single-server |
 | Secret | 32 random bytes (64 hex chars) | Generated via `OsRng` |
-| Expiry | 8 hours | Balances security and usability |
+| Expiry | 24 hours | Balances security and usability |
 | Claims | `sub`, `email`, `role`, `workshop_id`, `exp` | Minimal required claims |
 | Validation | Default (checks `exp`) | Automatic expiration check |
 

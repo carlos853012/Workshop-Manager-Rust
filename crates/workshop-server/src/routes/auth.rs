@@ -11,7 +11,7 @@ use workshop_common::{User, Workshop};
 use crate::auth;
 use crate::error::AppError;
 use crate::state::AppState;
-use crate::validation::{validate_email, validate_password, hide_password_hash};
+use crate::validation::{hide_password_hash, validate_email, validate_password};
 
 /// Rutas públicas de autenticación: login, registro inicial y estado de setup.
 pub fn public_routes() -> Router<AppState> {

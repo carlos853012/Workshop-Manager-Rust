@@ -324,7 +324,7 @@ WorkshopManager is a **desktop-native, integrated management system** designed f
 |---------|---------------|--------|
 | Transport encryption | TLS 1.3 via rustls + self-signed certs | Implemented |
 | Password hashing | Argon2id (64MB, 3 iter, 4 parallelism) | Implemented |
-| Token authentication | JWT HS256, 8-hour expiry | Implemented |
+| Token authentication | JWT HS256, 24-hour expiry | Implemented |
 | Data at rest | AES-256-GCM for credentials and backups | Implemented |
 | API key | Shared secret between viewer and server | Implemented |
 | Device binding | SHA-256 hashed device keys, middleware check | Implemented |

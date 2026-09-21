@@ -32,6 +32,24 @@ pub fn Pos() -> Element {
     let mut customer_name = use_signal(|| "".to_string());
     let mut payment_method = use_signal(|| "cash".to_string());
     let mut saving = use_signal(|| false);
+    let iva_rate_pct = use_signal(|| 19u32);
+
+    // Fetch server IVA rate on mount
+    {
+        let mut iva_rate_pct = iva_rate_pct;
+        spawn(async move {
+            if let Some(client) = auth.api_client() {
+                if let Ok(cfg) = client.get_config().await {
+                    let rate = (cfg.iva_rate * 100.0).round() as u32;
+                    iva_rate_pct.set(rate);
+                    workshop_common::money::set_iva_rate(
+                        rust_decimal::Decimal::try_from(cfg.iva_rate)
+                            .unwrap_or(rust_decimal::Decimal::new(19, 2)),
+                    );
+                }
+            }
+        });
+    }
 
     let subtotal: Decimal = cart
         .read()
@@ -178,7 +196,7 @@ pub fn Pos() -> Element {
                                 span { "{format_clp(base)}" }
                             }
                             div { class: "pos-total-row",
-                                span { "IVA (19%)" }
+                                span { "IVA ({iva_rate_pct}%)" }
                                 span { "{format_clp(_tax)}" }
                             }
                             div { class: "pos-total-row pos-total-final",

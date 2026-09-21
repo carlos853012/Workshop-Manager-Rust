@@ -13,8 +13,8 @@ use workshop_common::{PaymentMethod, Sale, SaleItem, UserRole};
 use crate::audit::{self, redact_sensitive};
 use crate::error::AppError;
 use crate::middleware::AuthenticatedUser;
-use crate::validation::validate_email;
 use crate::state::AppState;
+use crate::validation::validate_email;
 
 use super::pagination::PaginationParams;
 

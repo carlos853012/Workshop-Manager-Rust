@@ -36,8 +36,12 @@ impl RateLimiter {
         let now = Instant::now();
 
         // Cleanup expired entries periodically (every 60 seconds)
-        if now.duration_since(*self.last_cleanup.read().map_err(|e| anyhow::anyhow!("{}", e))?)
-            > Duration::from_secs(60)
+        if now.duration_since(
+            *self
+                .last_cleanup
+                .read()
+                .map_err(|e| anyhow::anyhow!("{}", e))?,
+        ) > Duration::from_secs(60)
         {
             self.cleanup_expired(&mut attempts);
             if let Ok(mut last) = self.last_cleanup.write() {

@@ -151,7 +151,7 @@
      │    email: user.email    │                         │
      │    role: user.role      │                         │
      │    workshop_id: UUID    │                         │
-     │    exp: now + 8 hours   │                         │
+     │    exp: now + 24 hours  │                         │
      │  Sign with jwt_secret   │                         │
      │                         │                         │
      │  8. Record attempt      │                         │

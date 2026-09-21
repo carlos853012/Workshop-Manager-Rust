@@ -75,6 +75,8 @@ fn disk_serial_linux() -> String {
 /// Reemplaza wmic (deprecado en Windows 11+).
 #[cfg(target_os = "windows")]
 fn wmic_value(class: &str, field: &str) -> Option<String> {
+    use std::os::windows::process::CommandExt;
+
     let cim_class = match class {
         "cpu" => "Win32_Processor",
         "baseboard" => "Win32_BaseBoard",
@@ -92,6 +94,7 @@ fn wmic_value(class: &str, field: &str) -> Option<String> {
                 cim_class, field
             ),
         ])
+        .creation_flags(0x0800_0000)
         .output()
         .ok()?;
 

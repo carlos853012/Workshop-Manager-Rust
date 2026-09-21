@@ -32,8 +32,29 @@ mod tls;
 mod tray;
 mod validation;
 
+/// En release (MSI) el exe no tiene consola. Sin consola, cada proceso hijo
+/// (initdb, pg_ctl, postgres) abre su propia ventana negra. Creamos una consola
+/// oculta para que los hijos la hereden.
+#[cfg(all(windows, not(debug_assertions)))]
+fn hide_console_for_children() {
+    use windows_sys::Win32::System::Console::{AllocConsole, GetConsoleWindow};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_HIDE};
+    unsafe {
+        if GetConsoleWindow().is_null() {
+            AllocConsole();
+        }
+        let h = GetConsoleWindow();
+        if !h.is_null() {
+            ShowWindow(h, SW_HIDE);
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    #[cfg(all(windows, not(debug_assertions)))]
+    hide_console_for_children();
+
     // 0. Splash screen (only on Windows, non-test builds)
     #[cfg(all(target_os = "windows", not(test)))]
     let (ready_tx, ready_rx) = tokio::sync::oneshot::channel();
@@ -98,9 +119,11 @@ async fn main() -> anyhow::Result<()> {
 
     // 4. License validation
     if license::is_placeholder_key() {
-        tracing::error!("Clave pública del vendor no configurada");
-        tracing::error!("Ejecuta: license-tool generate-keypair");
-        tracing::info!("El servidor funcionará en modo trial por {} días", config.license_trial_days);
+        tracing::error!("═══════════════════════════════════════════════════════");
+        tracing::error!("  Clave pública del vendor no configurada");
+        tracing::error!("  Ejecuta: license-tool generate-keypair");
+        tracing::error!("═══════════════════════════════════════════════════════");
+        std::process::exit(1);
     }
     let license = match license::load_license(&data_dir) {
         license::LicenseStatus::Valid(lic) => {
@@ -117,24 +140,38 @@ async fn main() -> anyhow::Result<()> {
             }
         }
         license::LicenseStatus::FirstRun(hw_hash) => {
-            tracing::info!("Primer uso — Hardware ID: {}", hw_hash);
+            tracing::info!("Activando licencia de prueba...");
             if hw_hash.len() >= 16 {
                 tracing::info!("Código de activación: {}", &hw_hash[..16]);
             }
-            tracing::info!("Contacte al proveedor para activar la licencia");
 
-            // Intentar validación online
-            match license::validate_online(&config.license_api_url, "trial", &hw_hash, config.license_trial_days).await {
-                Some(lic) => {
+            match license::validate_online(&config.license_api_url, "trial", &hw_hash).await {
+                license::OnlineResult::Ok {
+                    signed,
+                    license: lic,
+                } => {
                     tracing::info!("Licencia trial activada online");
-                    if let Err(e) = license::save_license(&lic, &data_dir) {
+                    if signed.is_empty() {
+                        tracing::warn!("Worker no envió signed_license — licencia no persistida");
+                    } else if let Err(e) = license::save_signed_license(&signed, &data_dir) {
                         tracing::error!("Error guardando licencia: {}", e);
                     }
                     Some(lic)
                 }
-                None => {
-                    tracing::info!("Sin conexión — funcionando en modo trial ({} días)", config.license_trial_days);
-                    Some(workshop_common::license::create_trial_license_with_days(&hw_hash, config.license_trial_days))
+                license::OnlineResult::Rejected(reason) => {
+                    tracing::error!("═══════════════════════════════════════════════════════");
+                    tracing::error!("  ACTIVACIÓN RECHAZADA: {}", reason);
+                    tracing::error!("  No se puede iniciar sin una licencia válida");
+                    tracing::error!("═══════════════════════════════════════════════════════");
+                    std::process::exit(1);
+                }
+                license::OnlineResult::Unreachable(reason) => {
+                    tracing::error!("═══════════════════════════════════════════════════════");
+                    tracing::error!("  SIN CONEXIÓN: {}", reason);
+                    tracing::error!("  Se requiere conexión a internet para activar");
+                    tracing::error!("  la licencia por primera vez.");
+                    tracing::error!("═══════════════════════════════════════════════════════");
+                    std::process::exit(1);
                 }
             }
         }
@@ -299,12 +336,18 @@ async fn main() -> anyhow::Result<()> {
                 match license::load_license(&data_dir_clone) {
                     license::LicenseStatus::Valid(lic) => {
                         if let Err(e) = license::validate_license(&lic) {
-                            tracing::error!("═══════════════════════════════════════════════════════");
+                            tracing::error!(
+                                "═══════════════════════════════════════════════════════"
+                            );
                             tracing::error!("  LICENCIA EXPIRADA (detectado durante ejecución)");
                             tracing::error!("  {}", e);
                             tracing::error!("  El servidor se apagará automáticamente");
-                            tracing::error!("  Contacte al proveedor para obtener una nueva licencia");
-                            tracing::error!("═══════════════════════════════════════════════════════");
+                            tracing::error!(
+                                "  Contacte al proveedor para obtener una nueva licencia"
+                            );
+                            tracing::error!(
+                                "═══════════════════════════════════════════════════════"
+                            );
                             handle_clone.graceful_shutdown(Some(std::time::Duration::from_secs(5)));
                             break;
                         }

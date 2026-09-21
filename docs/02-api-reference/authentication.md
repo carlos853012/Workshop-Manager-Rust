@@ -229,7 +229,7 @@ Tokens are HS256-signed JSON Web Tokens with the following claims:
 | Property       | Value                            |
 |----------------|----------------------------------|
 | Algorithm      | HS256                            |
-| Expiration     | 8 hours from creation            |
+| Expiration     | 24 hours from creation           |
 | Refresh        | Not supported (re-login required)|
 | Revocation     | Not supported (stateless)        |
 
@@ -239,3 +239,66 @@ Tokens are HS256-signed JSON Web Tokens with the following claims:
 - Memory: 64 MB
 - Iterations: 3
 - Parallelism: 4
+
+---
+
+## GET /api/auth/setup-status
+
+Check if the system has been set up (at least one user exists).
+
+**Auth level**: Public (no authentication required)
+
+### Response (200)
+
+```json
+{
+  "success": true,
+  "data": {
+    "has_users": true
+  }
+}
+```
+
+| Field       | Type | Description |
+|-------------|------|-------------|
+| `has_users` | bool | `true` if at least one user exists |
+
+### cURL
+
+```bash
+curl -k https://localhost:8443/api/auth/setup-status
+```
+
+---
+
+## GET /api/auth/license
+
+Get the current license information.
+
+**Auth level**: Protected (any authenticated user)
+
+### Response (200)
+
+```json
+{
+  "success": true,
+  "data": {
+    "is_trial": true,
+    "tier": "Trial"
+  }
+}
+```
+
+| Field      | Type   | Description |
+|------------|--------|-------------|
+| `is_trial` | bool   | `true` if the license is a trial |
+| `tier`     | string | License tier: `"Trial"`, `"Base"`, `"Reports"`, `"Advanced"`, `"Api"` |
+
+### cURL
+
+```bash
+curl -k https://localhost:8443/api/auth/license \
+  -H "Authorization: Bearer eyJ..." \
+  -H "X-WorkshopManager-Key: your-api-key" \
+  -H "X-WorkshopManager-Device-Key: wm_..."
+```
