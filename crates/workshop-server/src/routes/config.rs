@@ -10,11 +10,7 @@ pub struct ConfigResponse {
 }
 
 pub fn routes() -> Router<AppState> {
-<<<<<<< HEAD
-    Router::new().route("", axum::routing::get(get_config))
-=======
     Router::new().route("/", axum::routing::get(get_config))
->>>>>>> 378ab33 (feat: license architecture, security fixes, IVA dynamic, API docs)
 }
 
 async fn get_config(

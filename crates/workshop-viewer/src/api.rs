@@ -193,8 +193,6 @@ impl ApiClient {
         self.get("/api/auth/license").await
     }
 
-<<<<<<< HEAD
-=======
     /// POST /api/auth/activate
     pub async fn activate_license(&self, license_key: &str) -> Result<LicenseInfo, ApiError> {
         #[derive(serde::Serialize)]
@@ -215,7 +213,6 @@ impl ApiClient {
         })
     }
 
->>>>>>> 378ab33 (feat: license architecture, security fixes, IVA dynamic, API docs)
     /// GET /api/config
     pub async fn get_config(&self) -> Result<ServerConfig, ApiError> {
         self.get("/api/config").await
