@@ -1,25 +1,21 @@
 use sha2::{Digest, Sha256};
-use std::process::Command;
 
 /// Extrae un identificador de hardware del PC actual.
-/// En Windows usa `PowerShell Get-CimInstance`, en Linux lee `/sys/class/dmi/id/`.
-/// Retorna un hash SHA-256 de CPU + Motherboard + Disk.
+/// En Windows usa `MachineGuid` del registro (primario) o PowerShell como fallback.
+/// En Linux lee `/sys/class/dmi/id/`.
+/// Retorna un hash SHA-256 del identificador de hardware.
 pub fn get_hardware_id() -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
-        let cpu = wmic_value("cpu", "ProcessorId").unwrap_or_default();
-        let mb = wmic_value("baseboard", "SerialNumber").unwrap_or_default();
-        let disk = wmic_value("diskdrive", "SerialNumber").unwrap_or_default();
-
-        if cpu.is_empty() && mb.is_empty() && disk.is_empty() {
-            return Err("No se pudo extraer información de hardware".to_string());
+        if let Some(guid) = read_machine_guid() {
+            return Ok(hash_single(&guid));
         }
 
-        let mut hasher = Sha256::new();
-        hasher.update(cpu.as_bytes());
-        hasher.update(mb.as_bytes());
-        hasher.update(disk.as_bytes());
-        Ok(format!("{:x}", hasher.finalize()))
+        if let Some(id) = hardware_id_via_powershell() {
+            return Ok(hash_single(&id));
+        }
+
+        Err("No se pudo extraer información de hardware".to_string())
     }
 
     #[cfg(target_os = "linux")]
@@ -55,6 +51,8 @@ pub fn get_hardware_id() -> Result<String, String> {
 /// Intenta obtener el serial del disco principal en Linux.
 #[cfg(target_os = "linux")]
 fn disk_serial_linux() -> String {
+    use std::process::Command;
+
     if let Ok(output) = Command::new("lsblk")
         .args(["-dno", "SERIAL", "/dev/sda"])
         .output()
@@ -71,41 +69,75 @@ fn disk_serial_linux() -> String {
         .to_string()
 }
 
-/// Ejecuta `Get-CimInstance <class> | Select-Object -ExpandProperty <field>` y limpia el resultado.
-/// Reemplaza wmic (deprecado en Windows 11+).
+/// Hashea un valor único con SHA-256.
 #[cfg(target_os = "windows")]
-fn wmic_value(class: &str, field: &str) -> Option<String> {
+fn hash_single(value: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(value.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
+
+/// Lee `MachineGuid` del registro de Windows.
+/// Es estable, único por máquina y no lanza procesos.
+#[cfg(target_os = "windows")]
+fn read_machine_guid() -> Option<String> {
+    use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ};
+    use winreg::RegKey;
+
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let key = hklm.open_subkey_with_flags(
+        "SOFTWARE\\Microsoft\\Cryptography",
+        KEY_READ,
+    ).ok()?;
+
+    let value: String = key.get_value("MachineGuid").ok()?;
+    let trimmed = value.trim().to_string();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed)
+    }
+}
+
+/// Fallback: ejecuta un ÚNICO proceso PowerShell para obtener CPU + BaseBoard + Disk serials.
+/// Retorna un identificador compuesto o `None` si falla.
+#[cfg(target_os = "windows")]
+fn hardware_id_via_powershell() -> Option<String> {
     use std::os::windows::process::CommandExt;
 
-    let cim_class = match class {
-        "cpu" => "Win32_Processor",
-        "baseboard" => "Win32_BaseBoard",
-        "diskdrive" => "Win32_DiskDrive",
-        _ => return None,
-    };
+    let script = r#"
+        $cpu = (Get-CimInstance Win32_Processor | Select-Object -ExpandProperty ProcessorId).Trim()
+        $mb  = (Get-CimInstance Win32_BaseBoard | Select-Object -ExpandProperty SerialNumber).Trim()
+        $disk = (Get-CimInstance Win32_DiskDrive | Select-Object -ExpandProperty SerialNumber).Trim()
+        Write-Output $cpu
+        Write-Output $mb
+        Write-Output $disk
+    "#;
 
-    let output = Command::new("powershell")
-        .args([
-            "-NoProfile",
-            "-NonInteractive",
-            "-Command",
-            &format!(
-                "Get-CimInstance {} | Select-Object -ExpandProperty {}",
-                cim_class, field
-            ),
-        ])
+    let output = std::process::Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-Command", script])
         .creation_flags(0x0800_0000)
         .output()
         .ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let value = stdout.trim();
-
-    if value.is_empty() || value == "To be filled by O.E.M." {
-        None
-    } else {
-        Some(value.to_string())
+    let lines: Vec<&str> = stdout.lines().collect();
+    if lines.len() != 3 {
+        return None;
     }
+
+    let invalid = ["", "To be filled by O.E.M."];
+    let fields: Vec<String> = lines
+        .iter()
+        .map(|p| p.trim().to_string())
+        .filter(|p| !invalid.contains(&p.as_str()))
+        .collect();
+
+    if fields.is_empty() {
+        return None;
+    }
+
+    Some(fields.join("|"))
 }
 
 #[cfg(test)]
@@ -127,5 +159,22 @@ mod tests {
         if let (Ok(a), Ok(b)) = (h1, h2) {
             assert_eq!(a, b);
         }
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_hash_single_deterministic() {
+        let a = hash_single("test-value-123");
+        let b = hash_single("test-value-123");
+        assert_eq!(a, b);
+        assert_eq!(a.len(), 64);
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_hash_single_different_inputs() {
+        let a = hash_single("abc");
+        let b = hash_single("xyz");
+        assert_ne!(a, b);
     }
 }

@@ -14,3 +14,6 @@ sha2 = "0.10"
 resvg = { version = "0.48", default-features = false }
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 rand = "0.8"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"

@@ -8473,6 +8473,7 @@ dependencies = [
  "sha2 0.10.9",
  "sqlx 0.7.4",
  "uuid",
+ "winreg",
 ]
 
 [[package]]
