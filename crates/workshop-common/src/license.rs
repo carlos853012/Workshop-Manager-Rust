@@ -91,27 +91,6 @@ pub fn validate_hardware(license: &License, current_hardware_hash: &str) -> bool
     license.hardware_hash == current_hardware_hash
 }
 
-/// Genera una licencia de trial (sin firma, para primer uso).
-/// Expira en `trial_days` días desde la creación (default: 7).
-pub fn create_trial_license(hardware_hash: &str) -> License {
-    create_trial_license_with_days(hardware_hash, 7)
-}
-
-/// Genera una licencia de trial con duración personalizada.
-pub fn create_trial_license_with_days(hardware_hash: &str, trial_days: u32) -> License {
-    let now = chrono::Utc::now();
-    License {
-        license_key: "TRIAL".to_string(),
-        tier: crate::features::LicenseTier::Trial,
-        hardware_hash: hardware_hash.to_string(),
-        max_viewers: 1,
-        max_transfers: 0,
-        transfer_count: 0,
-        activated_at: now,
-        expires_at: Some(now + chrono::Duration::days(trial_days as i64)),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -186,17 +165,5 @@ mod tests {
 
         assert!(validate_hardware(&license, "abc123"));
         assert!(!validate_hardware(&license, "xyz789"));
-    }
-
-    #[test]
-    fn test_create_trial_license() {
-        let license = create_trial_license("hw_hash");
-        assert_eq!(license.license_key, "TRIAL");
-        assert_eq!(license.tier, LicenseTier::Trial);
-        assert_eq!(license.max_viewers, 1);
-        assert!(!license.can_transfer());
-        assert!(license.expires_at.is_some());
-        assert!(license.is_valid());
-        assert!(!license.is_expired());
     }
 }

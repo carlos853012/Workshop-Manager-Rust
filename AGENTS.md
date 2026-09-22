@@ -148,6 +148,72 @@ See `AUDITORIA.md` for full tracking. Summary:
 - **Low:** 7/10 resolved (B-1, B-2, B-3, B-4 done; B-5, B-7 to B-10 pending)
 - **Dependencies:** D-1 pending (sqlx upgrade), D-2/D-3 not applicable
 
+## Licensing system
+Separate repo: `C:\Users\carlos\Desktop\workshop-license-panel-v2` (Cloudflare Worker, auto-deploy on push).
+
+> **Nota de acceso:** este repo vive fuera del workspace de WorkshopManager.
+> Para leerlo desde OpenCode hace falta permiso de directorio externo.
+> Si no lo tienes, pídelo o marca lo que no puedas verificar.
+
+### Components
+- **Worker:** Cloudflare Worker (TypeScript) — `src/index.ts`, deploy vía GitHub → Workers Builds
+- **DB:** Cloudflare D1 — binding `DB` (ID en `wrangler.jsonc`)
+- **Firma:** Ed25519 — `VENDOR_SECRET_KEY` (32-byte seed, Cloudflare secret) ↔ `VENDOR_PUBLIC_KEY` embebida en Rust
+- **Cliente:** `crates/workshop-server/src/license.rs` (integración) + `crates/workshop-common/src/license.rs` + `features.rs` (tipos y verificación)
+- **Panel admin:** `public/` (HTML/JS vanilla, servido por el Worker)
+- **Config:** `wrangler.jsonc` (vars: `ADMIN_TOKEN`, `TRIAL_DAYS`), `config/server.toml` (`[license] api_url`)
+
+### Worker endpoints
+| Endpoint | Method | Auth | Descripción |
+|---|---|---|---|
+| `/api/v1/licenses/activate` | POST | No | Activa licencia o crea trial |
+| `/api/v1/licenses/validate` | POST | No | Valida licencia activa + hardware |
+| `/api/v1/admin/licenses` | GET/POST | Bearer | CRUD admin legacy |
+| `/api/login` | POST | No | Login del panel |
+| `/api/licenses` | GET/POST/PATCH/DELETE | Bearer | Panel web CRUD |
+| `/api/stats` | GET | Bearer | Dashboard stats |
+| `/api/attempts` | GET | Bearer | Log de intentos |
+| `/health` | GET | No | Health check |
+
+### D1 schema
+- **`licenses`** (16 cols): `id`, `license_key` (UNIQUE), `tier`, `hardware_hash`, `active`, `max_concurrent_viewers`, `remote_access`, `advanced_reports`, `backup`, `max_transfers`, `transfer_count`, `activated_at`, `created_at`, `updated_at`, `expires_at`
+- **`activation_attempts`** (6 cols): `id`, `license_key`, `hardware_hash`, `success`, `error_message`, `created_at`, `ip`
+
+### Activation flow
+1. Cliente → `POST /api/v1/licenses/activate` (`license_key`, `hardware_hash`)
+2. Worker: D1 lookup → valida estado/expiración → Ed25519 sign → retorna `signed_license` (base64)
+3. Server: `verify_license(bytes, VENDOR_PUBLIC_KEY)` → guarda `license.dat`
+4. Formato blob: `[4 bytes LE length][JSON payload][64 bytes Ed25519 signature]`
+5. Arranques posteriores: verificación offline. **NO hay ping al Worker**
+
+### Security
+- **Ed25519:** Worker firma, Rust verifica con `VENDOR_PUBLIC_KEY` embebida
+- **Rate limiting:** 5 fallos/hora por key + 3 trials/24h por IP
+- **Key generation:** `crypto.getRandomValues` con rejection sampling
+- **Trial único:** unique constraint en D1 (`hardware_hash` WHERE `tier = 'trial'`)
+- **Transferencias:** solo vía `/activate` (endpoint `/transfer` eliminado)
+
+### Gaps conocidos (NO existen)
+- `/revalidate` — no implementado
+- Contador de migraciones en DB — no existe
+- Ping silencioso / heartbeat — no implementado
+- Refresh tokens JWT — no implementado
+- CORS restringido para admin — sigue `*`
+- Revocación detectada en cliente — imposible sin `/revalidate`
+- `fatal_license_dialog` — no implementado (la app sale sin diálogo en release)
+
+### Pendientes (de `PLAN_MEJORA`)
+- **H3:** Server crea trial en memoria si falla conexión online
+- **H15:** `process::exit(1)` sin diálogo visible en release (sin consola)
+- **H17:** `get_hardware_id()` hashea string vacío si fallan consultas PowerShell
+- **H20:** `ADMIN_TOKEN` hardcoded en `wrangler.jsonc` (commit al repo)
+- **Revalidación periódica:** planeada en Fase 5.4, no implementada
+
+### Docs
+- `docs/10-licensing/` — overview + license-tool CLI
+- `crates/license-tool/` — CLI generate/verify/migrate
+- `PLAN_MEJORA` — lista viva de pendientes del sistema de licencias
+
 ## Known security improvements (backlog)
 - **Secrets storage**: `.crypto_key`, `.jwt_secret`, `.postgres_password` stored as raw files. Mitigation: DPAPI/Keychain.
 - **JWT refresh**: No refresh token mechanism (24h fixed TTL).
