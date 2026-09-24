@@ -168,6 +168,7 @@ Separate repo: `C:\Users\carlos\Desktop\workshop-license-panel-v2` (Cloudflare W
 |---|---|---|---|
 | `/api/v1/licenses/activate` | POST | No | Activa licencia o crea trial |
 | `/api/v1/licenses/validate` | POST | No | Valida licencia activa + hardware |
+| `/api/v1/licenses/revalidate` | POST | No | Revalida licencia vigente (5 casos) + re-firma blob con `issued_at` (GAP-1) |
 | `/api/v1/admin/licenses` | GET/POST | Bearer | CRUD admin legacy |
 | `/api/login` | POST | No | Login del panel |
 | `/api/licenses` | GET/POST/PATCH/DELETE | Bearer | Panel web CRUD |
@@ -194,12 +195,11 @@ Separate repo: `C:\Users\carlos\Desktop\workshop-license-panel-v2` (Cloudflare W
 - **Transferencias:** solo vía `/activate` (endpoint `/transfer` eliminado)
 
 ### Gaps conocidos (NO existen)
-- `/revalidate` — no implementado
 - Contador de migraciones en DB — no existe
 - Ping silencioso / heartbeat — no implementado
 - Refresh tokens JWT — no implementado
 - CORS restringido para admin — sigue `*`
-- Revocación detectada en cliente — imposible sin `/revalidate`
+- Revocación detectada en cliente — requiere caller `/revalidate` + heartbeat (5.4-B/C)
 - `fatal_license_dialog` — no implementado (la app sale sin diálogo en release)
 
 ### Pendientes (de `PLAN_MEJORA`)
@@ -207,10 +207,10 @@ Separate repo: `C:\Users\carlos\Desktop\workshop-license-panel-v2` (Cloudflare W
 - **H15:** `process::exit(1)` sin diálogo visible en release (sin consola)
 - **H17:** `get_hardware_id()` hashea string vacío si fallan consultas PowerShell
 - **H20:** `ADMIN_TOKEN` hardcoded en `wrangler.jsonc` (commit al repo)
-- **Revalidación periódica:** planeada en Fase 5.4, no implementada
+- **Revalidación periódica:** endpoint `/revalidate` **implementado en Worker**; caller cliente (24h) + período de gracia pendientes (5.4-B)
 
 ### Docs
-- `docs/10-licensing/` — overview + license-tool CLI
+- `docs/10-licensing/` — overview + license-tool CLI + revalidate endpoint
 - `crates/license-tool/` — CLI generate/verify/migrate
 - `PLAN_MEJORA` — lista viva de pendientes del sistema de licencias
 

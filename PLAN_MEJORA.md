@@ -5,8 +5,8 @@
 ## Estado general
 - Total items: 28
 - Completados: 16
-- Parciales: 3
-- Pendientes (este repo): 4
+- Parciales: 4
+- Pendientes (este repo): 3
 - Pendientes (Worker): 2
 - No verificables: 1 (GAP-2 — D1 remoto)
 - Dependientes: 2 (bloqueados por otros pendientes)
@@ -43,6 +43,7 @@
 | H7 | Worker firma pero servidor tiene fallback JSON plano | Servidor verifica `signed_license` (`server/license.rs:146-170`) pero fallback a JSON sin firma (`:173-197`). Worker SÍ envía `signed_license` (`index.ts:196,229,295,335`) — el fallback es solo compatibilidad con Workers antiguos. | `server/license.rs:173-197` + `index.ts:341-351` |
 | H14 | `handlePanelUpdateLicense` sin validación de tier/rangos | Sin whitelist de `tier` (`:443`). Sin rango para `max_transfers` (`:448`). SQL parametrizado (`:453`). `id` es `license_key` (string), no numérico. | `index.ts:429-454` |
 | H18 | Mensaje "Contacte al proveedor" engañoso | `main.rs:143` OK ("Activando licencia de prueba…"), pero `:134` y `:182` dicen "Contacte al proveedor" (confuso en trial) | `main.rs:134,182` |
+| GAP-1 | Endpoint `/revalidate` — **Worker implementado** | Caller en el servidor (heartbeat 24h) + período de gracia → 5.4-B. Worker: `handleRevalidate` + ruta `POST /api/v1/licenses/revalidate` + test `revalidate.test.ts` (8 tests) | Worker `src/index.ts` — Fase 5.4 (2026-09-24) |
 
 ---
 
@@ -53,7 +54,6 @@
 | ID | Descripción | Prioridad | Criterio de aceptación |
 |---|---|---|---|
 | H19 | Retroceso del reloj no detectado | Baja | Guardar `last_seen_utc` cifrado (AES-256-GCM). Si `now < last_seen_utc - 10min` → exigir revalidación online |
-| GAP-1 | Endpoint `/revalidate` no implementado | Alta | Endpoint que el servidor llame para verificar licencia vigente. Worker ya tiene `handleValidate` (`index.ts:299-337`) — solo falta el caller en el servidor |
 | GAP-3 | Ping silencioso / heartbeat no implementado | Media | Tarea `tokio::spawn` cada 24h que llame al Worker. Actualizar `license.dat` si renueva. Watcher actual solo lee disco |
 | REV | Revalidación periódica no implementada | Alta | GAP-1 + GAP-3 + período de gracia. Watcher debe tratar `license.dat` desaparecido como `Invalid` |
 

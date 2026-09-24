@@ -131,6 +131,7 @@
 |----------|-------------|
 | [Overview](10-licensing/overview.md) | License tiers, hardware binding, Ed25519 signing |
 | [License Tool](10-licensing/license-tool.md) | CLI reference for license generation |
+| [Revalidate Endpoint](10-licensing/revalidate.md) | `POST /api/v1/licenses/revalidate` specification |
 
 ### Reference
 | Document | Description |

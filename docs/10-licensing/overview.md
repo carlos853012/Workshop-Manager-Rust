@@ -166,6 +166,21 @@ Response:
 
 If offline, the server falls back to trial mode.
 
+### Revalidation (`/revalidate`)
+
+For periodic online revalidation (Fase 5.4), the Worker exposes a richer endpoint that returns a structured state and a freshly signed blob:
+
+```
+POST /api/v1/licenses/revalidate
+→ 200 { "estado": "active", "signed_license": "..." }
+→ 200 { "estado": "invalid", "reason": "not_found" | "hardware_mismatch" }
+→ 200 { "estado": "revoked", "reason": "revoked" }
+→ 200 { "estado": "expired", "expires_at": "..." }
+→ 429 rate limited / 400 bad body
+```
+
+See [revalidate.md](revalidate.md) for the full specification.
+
 ---
 
 ## 8. Trial License
@@ -217,5 +232,6 @@ The `max_viewers` field is read from the license, not from config. The config va
 | Document | Description |
 |----------|-------------|
 | [license-tool.md](license-tool.md) | CLI reference for license generation |
+| [revalidate.md](revalidate.md) | `/revalidate` endpoint specification |
 | [../01-architecture/overview.md](../01-architecture/overview.md) | Architecture decision D5 |
 | [../05-deployment/configuration.md](../05-deployment/configuration.md) | Server configuration |
