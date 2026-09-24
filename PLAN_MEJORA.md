@@ -1,12 +1,12 @@
 # PLAN_MEJORA
 
-Última actualización: 2026-09-21
+Última actualización: 2026-09-24
 
 ## Estado general
 - Total items: 28
-- Completados: 15
+- Completados: 16
 - Parciales: 3
-- Pendientes (este repo): 5
+- Pendientes (este repo): 4
 - Pendientes (Worker): 2
 - No verificables: 1 (GAP-2 — D1 remoto)
 - Dependientes: 2 (bloqueados por otros pendientes)
@@ -32,6 +32,7 @@
 | H13 | Worker: endpoint `/transfer` eliminado | Worker | `index.ts:494` — comentario: "H13: /transfer removed" |
 | H16 | `expires_at` tiene `#[serde(default)]` | Server | `features.rs:133` — pre-existente |
 | H17 | `get_hardware_id()` no hashea vacío | Server | `c02d27c` — `hardware.rs:8-18` → winreg + PowerShell fallback + `Err` |
+| H15 | `exit(1)` con diálogo visible en release | Server | `fn fatal_license_dialog` (`MessageBoxW` / stderr) + cierre de splash (`ready_tx`) antes del diálogo en los 5 exits de licencia (`main.rs`) |
 
 ---
 
@@ -51,7 +52,6 @@
 
 | ID | Descripción | Prioridad | Criterio de aceptación |
 |---|---|---|---|
-| H15 | `process::exit(1)` sin diálogo visible en release | Media | `fn fatal_license_dialog(title, msg)` usando `MessageBoxW`. Llamar antes de cada `exit(1)` de licencia (`:126,136,166,174,184`). Cerrar splash antes de mostrar diálogo |
 | H19 | Retroceso del reloj no detectado | Baja | Guardar `last_seen_utc` cifrado (AES-256-GCM). Si `now < last_seen_utc - 10min` → exigir revalidación online |
 | GAP-1 | Endpoint `/revalidate` no implementado | Alta | Endpoint que el servidor llame para verificar licencia vigente. Worker ya tiene `handleValidate` (`index.ts:299-337`) — solo falta el caller en el servidor |
 | GAP-3 | Ping silencioso / heartbeat no implementado | Media | Tarea `tokio::spawn` cada 24h que llame al Worker. Actualizar `license.dat` si renueva. Watcher actual solo lee disco |

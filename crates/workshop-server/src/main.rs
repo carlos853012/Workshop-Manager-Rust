@@ -50,6 +50,27 @@ fn hide_console_for_children() {
     }
 }
 
+/// En release no hay consola: mostrar el error de licencia en un diálogo
+/// modal (Windows) o por stderr (otros SO) antes de salir (H15).
+fn fatal_license_dialog(title: &str, msg: &str) {
+    #[cfg(windows)]
+    unsafe {
+        use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+        let title_w: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
+        let msg_w: Vec<u16> = msg.encode_utf16().chain(std::iter::once(0)).collect();
+        MessageBoxW(
+            std::ptr::null_mut(),
+            msg_w.as_ptr(),
+            title_w.as_ptr(),
+            MB_OK | MB_ICONERROR,
+        );
+    }
+    #[cfg(not(windows))]
+    {
+        eprintln!("{} — {}", title, msg);
+    }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     #[cfg(all(windows, not(debug_assertions)))]
@@ -123,6 +144,17 @@ async fn main() -> anyhow::Result<()> {
         tracing::error!("  Clave pública del vendor no configurada");
         tracing::error!("  Ejecuta: license-tool generate-keypair");
         tracing::error!("═══════════════════════════════════════════════════════");
+        #[cfg(all(target_os = "windows", not(test)))]
+        {
+            let _ = ready_tx.send(Err(
+                "Clave pública del vendor no configurada".to_string()
+            ));
+            std::thread::sleep(std::time::Duration::from_millis(250));
+        }
+        fatal_license_dialog(
+            "WorkshopManager — Error de licencia",
+            "Clave pública del vendor no configurada.\n\nEjecuta: license-tool generate-keypair",
+        );
         std::process::exit(1);
     }
     let license = match license::load_license(&data_dir) {
@@ -133,6 +165,18 @@ async fn main() -> anyhow::Result<()> {
                 tracing::error!("  {}", e);
                 tracing::error!("  Contacte al proveedor para obtener una nueva licencia");
                 tracing::error!("═══════════════════════════════════════════════════════");
+                #[cfg(all(target_os = "windows", not(test)))]
+                {
+                    let _ = ready_tx.send(Err(format!("Licencia expirada: {}", e)));
+                    std::thread::sleep(std::time::Duration::from_millis(250));
+                }
+                fatal_license_dialog(
+                    "WorkshopManager — Licencia expirada",
+                    &format!(
+                        "La licencia ha expirado o es inválida.\n\n{}\n\nContacte al proveedor para obtener una nueva licencia.",
+                        e
+                    ),
+                );
                 std::process::exit(1);
             } else {
                 tracing::info!("Licencia válida: {} ({})", lic.license_key, lic.tier);
@@ -163,6 +207,18 @@ async fn main() -> anyhow::Result<()> {
                     tracing::error!("  ACTIVACIÓN RECHAZADA: {}", reason);
                     tracing::error!("  No se puede iniciar sin una licencia válida");
                     tracing::error!("═══════════════════════════════════════════════════════");
+                    #[cfg(all(target_os = "windows", not(test)))]
+                    {
+                        let _ = ready_tx.send(Err(format!("Activación rechazada: {}", reason)));
+                        std::thread::sleep(std::time::Duration::from_millis(250));
+                    }
+                    fatal_license_dialog(
+                        "WorkshopManager — Activación rechazada",
+                        &format!(
+                            "La activación de la licencia fue rechazada.\n\n{}\n\nNo se puede iniciar sin una licencia válida.",
+                            reason
+                        ),
+                    );
                     std::process::exit(1);
                 }
                 license::OnlineResult::Unreachable(reason) => {
@@ -171,6 +227,18 @@ async fn main() -> anyhow::Result<()> {
                     tracing::error!("  Se requiere conexión a internet para activar");
                     tracing::error!("  la licencia por primera vez.");
                     tracing::error!("═══════════════════════════════════════════════════════");
+                    #[cfg(all(target_os = "windows", not(test)))]
+                    {
+                        let _ = ready_tx.send(Err(format!("Sin conexión: {}", reason)));
+                        std::thread::sleep(std::time::Duration::from_millis(250));
+                    }
+                    fatal_license_dialog(
+                        "WorkshopManager — Sin conexión",
+                        &format!(
+                            "No se pudo contactar al servidor de licencias.\n\n{}\n\nSe requiere conexión a internet para activar la licencia por primera vez.",
+                            reason
+                        ),
+                    );
                     std::process::exit(1);
                 }
             }
@@ -181,6 +249,18 @@ async fn main() -> anyhow::Result<()> {
             tracing::error!("  {}", e);
             tracing::error!("  Contacte al proveedor para obtener una nueva licencia");
             tracing::error!("═══════════════════════════════════════════════════════");
+            #[cfg(all(target_os = "windows", not(test)))]
+            {
+                let _ = ready_tx.send(Err(format!("Error de licencia: {}", e)));
+                std::thread::sleep(std::time::Duration::from_millis(250));
+            }
+            fatal_license_dialog(
+                "WorkshopManager — Error de licencia",
+                &format!(
+                    "No se pudo cargar la licencia.\n\n{}\n\nContacte al proveedor para obtener una nueva licencia.",
+                    e
+                ),
+            );
             std::process::exit(1);
         }
     };
