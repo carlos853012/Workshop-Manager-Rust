@@ -1,0 +1,23 @@
+# Copiar a %LOCALAPPDATA%\WorkshopManager\config\server.toml (Windows)
+# o ~/.local/share/WorkshopManager/config/server.toml (Linux).
+# No commitear el archivo real: contiene la API key compartida con el viewer.
+
+[server]
+host = "0.0.0.0"
+port = 8443
+# Vacío = el server genera una key aleatoria al arrancar (no persistida).
+# Para producción define aquí la misma api_key que en viewer.toml.
+api_key = ""
+require_device_key = false
+max_viewers = 2
+cors_origins = []
+
+[tax]
+iva_rate = 0.19
+
+[icon]
+bg = "#F59E0B"
+fg = "#FFFFFF"
+
+[license]
+api_url = "https://workshop-license-worker.carlitos24oz.workers.dev"

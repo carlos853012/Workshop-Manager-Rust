@@ -12,6 +12,7 @@ mod products;
 mod repairs;
 pub(crate) mod reports;
 mod sales;
+#[cfg(debug_assertions)]
 mod seed;
 mod suppliers;
 mod users;
@@ -36,9 +37,13 @@ pub fn protected_routes() -> Router<AppState> {
 
 /// Rutas de administración de /api (requieren JWT + rol admin).
 pub fn admin_routes() -> Router<AppState> {
-    Router::new()
+    let router = Router::new()
         .nest("/users", users::routes())
         .nest("/device-keys", device_keys::routes())
-        .nest("/audit", audit::routes())
-        .nest("/seed", seed::routes())
+        .nest("/audit", audit::routes());
+
+    #[cfg(debug_assertions)]
+    let router = router.nest("/seed", seed::routes());
+
+    router
 }

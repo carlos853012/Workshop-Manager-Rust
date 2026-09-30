@@ -77,7 +77,7 @@
       <ComponentRef Id="ShortcutRemoveComponent" />
     </Feature>
 
-    <Icon Id="app.exe" SourceFile="..\..\target\release\workshop-server.exe" />
+    <Icon Id="app.exe" SourceFile="$(sys.SOURCEFILEDIR)icon.ico" />
 
     <UI>
       <UIRef Id="WixUI_Minimal" />

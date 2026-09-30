@@ -1,0 +1,11 @@
+# Copiar a %LOCALAPPDATA%\WorkshopManager\config\viewer.toml (Windows)
+# o ~/.local/share/WorkshopManager/config/viewer.toml (Linux).
+# No commitear el archivo real: contiene la API key y la device key.
+
+[server]
+base_url = "https://127.0.0.1:8443"
+# Debe coincidir con la api_key del server.toml
+api_key = ""
+# Se obtiene desde el panel admin (página Device Keys) del server
+device_key = ""
+tls_accept_invalid_certs = true

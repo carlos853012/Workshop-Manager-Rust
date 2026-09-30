@@ -12,8 +12,8 @@ data/
 .DS_Store
 Thumbs.db
 elimar_datos.md
-config/server.toml
-config/viewer.toml
+config/*.toml
+!config/*.toml.example
 .opencode/node_modules/
 vendor_secret_key.bin
 vendor_public_key.bin

@@ -18,13 +18,26 @@ impl DbManager {
         let pg_data_dir = data_dir.join("pgdata");
         let password = load_or_generate_password(data_dir)?;
 
-        let settings = Settings {
-            installation_dir,
-            data_dir: pg_data_dir,
-            password,
-            temporary: false,
-            ..Settings::default()
-        };
+        // `Settings::default()` crea dos tempdirs con `.keep()` (pwfile y data)
+        // que quedarían huérfanos si no los limpiamos. Los capturamos antes de
+        // sobreescribirlos y los borramos solo si están dentro del temp del SO.
+        let mut settings = Settings::default();
+        let stray_tmp_dirs = [
+            settings.password_file.parent().map(Path::to_path_buf),
+            Some(settings.data_dir.clone()),
+        ];
+
+        settings.installation_dir = installation_dir;
+        settings.data_dir = pg_data_dir;
+        settings.password = password;
+        // Ruta controlada para el `--pwfile` de initdb; se borra tras `setup()`.
+        settings.password_file = data_dir.join(".pgpass_init");
+
+        for dir in stray_tmp_dirs.into_iter().flatten() {
+            if dir.starts_with(std::env::temp_dir()) {
+                let _ = std::fs::remove_dir_all(&dir);
+            }
+        }
 
         let postgresql = PostgreSQL::new(settings);
         Ok(Self {
@@ -37,7 +50,22 @@ impl DbManager {
     /// Descarga/instala PostgreSQL si es necesario, inicia el servidor, crea la base de datos y retorna el connection string.
     pub async fn start(&mut self) -> anyhow::Result<String> {
         tracing::info!("PostgreSQL setup starting...");
-        self.postgresql.setup().await.map_err(|e| {
+        let setup_result = self.postgresql.setup().await;
+
+        // initdb usa `password_file` como `--pwfile` (contraseña en claro).
+        // Lo borramos siempre (incluso si setup falla) para no dejarla en disco.
+        let password_file = self.postgresql.settings().password_file.clone();
+        if let Err(e) = std::fs::remove_file(&password_file) {
+            if e.kind() != std::io::ErrorKind::NotFound {
+                tracing::warn!(
+                    "No se pudo borrar el archivo temporal de contraseña ({}): {}",
+                    password_file.display(),
+                    e
+                );
+            }
+        }
+
+        setup_result.map_err(|e| {
             tracing::error!(error = %e, "PostgreSQL setup failed");
             e
         })?;

@@ -1,5 +1,0 @@
-[server]
-base_url = "https://192.168.1.19:8443"
-api_key = "c7bbfcfc032e738c61fe86c3e1d223cbb0eb885c97cdccc0f915e935df368cda"
-device_key = "wm_f235a99614644b529cf44f3e6bb0db89"
-tls_accept_invalid_certs = true
