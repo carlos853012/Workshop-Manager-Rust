@@ -76,7 +76,7 @@ El servidor Rust solo verifica con `VENDOR_PUBLIC_KEY`. `vendor_secret_key.bin` 
 
 **D3. Política offline (recomendada):**
 - **Primera activación requiere internet.** Sin `license.dat` firmado válido y sin conexión → el servidor NO arranca el trial; muestra mensaje claro ("Se requiere conexión a internet para activar").
-- Con licencia ya guardada y firmada: funciona offline. Se revalida contra el Worker cada 24 h; si falla la red, se tolera un período de gracia (propuesto: 7 días para licencias pagadas, 0 extra para trial porque su `expires_at` ya es absoluto).
+- Con licencia ya guardada y firmada: funciona offline. Revalidación **oportunista** cada 24 h (primer intento a los 5 min del arranque): si no hay internet se omite el intento **sin ninguna consecuencia** (offline-first, sin período de gracia); solo una respuesta explícita del Worker (revocada / expirada / inexistente / hardware distinto) apaga el servidor.
 
 **D4. Formato de transporte firmado:** el Worker envía `signed_license` = bytes firmados. Rust verifica la firma sobre los **bytes recibidos** y recién después deserializa. Nunca re-serializar para verificar.
 
@@ -288,12 +288,14 @@ match load_license:
 - `is_placeholder_key()`: si la clave pública es todo ceros, el servidor **no debe arrancar** (hoy solo loguea y sigue). Es un error de build/configuración.
 - Cambiar el log de `FirstRun` "Contacte al proveedor para activar la licencia" por algo acorde ("Activando licencia de prueba…").
 
-**5.4 Revalidación periódica y período de gracia.**
-- Tarea `tokio::spawn` cada 24 h: llamar `POST /api/v1/licenses/validate` (ya existe en el Worker) o `/activate` con la clave real.
-  - Respuesta `valid:true` → actualizar `license.dat` con la nueva `signed_license` si el Worker la envía (añadirla también a `handleValidate`).
-  - `valid:false` (revocada/hardware distinto) → apagar con mensaje.
-  - `Unreachable` → guardar `last_online_ok` y permitir hasta N días de gracia (D3); pasado el plazo, apagar con mensaje.
-- El watcher actual (300 s) debe usar el mismo criterio: hoy ignora `FirstRun` (`=> {}`), lo que permite eludirlo borrando `license.dat`. Con la nueva política, si `license.dat` desaparece en ejecución → tratar como `Invalid`.
+**5.4 Revalidación oportunista (IMPLEMENTADO — diseño offline-first, 2026-09-30).**
+- Decisión de producto: la app es **offline-first** → se descartó el período de gracia con `last_online_ok` (D3 original). Estar sin internet nunca apaga el servidor.
+- Tarea `tokio::spawn` en `main.rs` (7c): primer intento a los 5 min del arranque, luego cada 24 h, llamando `POST /api/v1/licenses/revalidate` (`license::revalidate_online` + parser puro `parse_revalidate_response`).
+  - `active` → guarda `signed_license` si verifica la firma Ed25519; si no verifica, se ignora y la licencia local sigue vigente.
+  - `revoked` / `expired` / `invalid (not_found|hardware_mismatch)` → `revalidation_fatal()`: `fatal_license_dialog` + `graceful_shutdown` + `exit(1)`.
+  - `Unreachable` (sin internet, 429, 500, respuesta malformada o `estado` desconocido) → se omite silenciosamente y se reintenta en el próximo ciclo.
+- El watcher de 300 s (7b): si `license.dat` existía al arrancar y desaparece en ejecución → apagado (cierra el atajo de borrar el archivo para eludirlo). Si nunca existió (Worker sin blob, compat) se ignora.
+- Tests: 7 unitarios en `license.rs` (5 casos del Worker + blob corrupto + malformados + URL vacía).
 
 **5.5 Mensajes visibles (H15).** En release no hay consola: crear helper `fn fatal_license_dialog(title: &str, msg: &str)` con `MessageBoxW` (`windows-sys`, feature `Win32_UI_WindowsAndMessaging` **ya habilitada**) y llamarlo antes de cada `std::process::exit(1)` de licencia. Cerrar también el splash (`ready_tx`) antes de mostrar el diálogo si sigue abierto. En Linux, imprimir a stderr.
 

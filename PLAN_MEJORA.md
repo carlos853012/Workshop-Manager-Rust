@@ -43,7 +43,7 @@
 | H7 | Worker firma pero servidor tiene fallback JSON plano | Servidor verifica `signed_license` (`server/license.rs:146-170`) pero fallback a JSON sin firma (`:173-197`). Worker SÍ envía `signed_license` (`index.ts:196,229,295,335`) — el fallback es solo compatibilidad con Workers antiguos. | `server/license.rs:173-197` + `index.ts:341-351` |
 | H14 | `handlePanelUpdateLicense` sin validación de tier/rangos | Sin whitelist de `tier` (`:443`). Sin rango para `max_transfers` (`:448`). SQL parametrizado (`:453`). `id` es `license_key` (string), no numérico. | `index.ts:429-454` |
 | H18 | Mensaje "Contacte al proveedor" engañoso | `main.rs:143` OK ("Activando licencia de prueba…"), pero `:134` y `:182` dicen "Contacte al proveedor" (confuso en trial) | `main.rs:134,182` |
-| GAP-1 | Endpoint `/revalidate` — **Worker implementado** | Caller en el servidor (heartbeat 24h) + período de gracia → 5.4-B. Worker: `handleRevalidate` + ruta `POST /api/v1/licenses/revalidate` + test `revalidate.test.ts` (8 tests) | Worker `src/index.ts` — Fase 5.4 (2026-09-24) |
+| GAP-1 | Endpoint `/revalidate` — **Worker implementado** | ~~Caller en el servidor (heartbeat 24h) + período de gracia~~ **Resuelto (2026-09-30):** caller oportunista cada 24 h (`license::revalidate_online` + tarea 7c `main.rs`), sin período de gracia (offline-first). Worker: `handleRevalidate` + ruta `POST /api/v1/licenses/revalidate` + test `revalidate.test.ts` (8 tests) | `crates/workshop-server/src/license.rs` + `main.rs` 7c (2026-09-30) + Worker `src/index.ts` (2026-09-24) |
 
 ---
 
@@ -54,8 +54,14 @@
 | ID | Descripción | Prioridad | Criterio de aceptación |
 |---|---|---|---|
 | H19 | Retroceso del reloj no detectado | Baja | Guardar `last_seen_utc` cifrado (AES-256-GCM). Si `now < last_seen_utc - 10min` → exigir revalidación online |
-| GAP-3 | Ping silencioso / heartbeat no implementado | Media | Tarea `tokio::spawn` cada 24h que llame al Worker. Actualizar `license.dat` si renueva. Watcher actual solo lee disco |
-| REV | Revalidación periódica no implementada | Alta | GAP-1 + GAP-3 + período de gracia. Watcher debe tratar `license.dat` desaparecido como `Invalid` |
+
+### Resueltos en este repo (2026-09-30)
+
+| ID | Resolución |
+|---|---|
+| GAP-3 | Heartbeat: tarea 7c en `main.rs` llama `/revalidate` cada 24 h (primer intento a los 5 min) y actualiza `license.dat` si el Worker re-firma |
+| REV | Revalidación implementada como **oportunista/offline-first**: sin conexión no hay apagado ni gracia; `revoked`/`expired`/`invalid` → `revalidation_fatal()` (diálogo + shutdown + `exit(1)`). Watcher 300 s trata `license.dat` desaparecido como manipulación |
+| GAP-6 | Revocación detectada en cliente: dependía de GAP-1+GAP-3, ambos resueltos |
 
 ### Worker (workshop-license-panel-v2)
 
@@ -79,7 +85,6 @@
 | ID | Descripción | Bloqueado por |
 |---|---|---|
 | GAP-4 | Refresh tokens JWT | Requiere decisión de diseño. Relacionado con B-7 de AUDITORIA.md |
-| GAP-6 | Revocación detectada en cliente | Depende de GAP-1 (`/revalidate`) |
 
 ---
 

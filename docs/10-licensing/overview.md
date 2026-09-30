@@ -164,11 +164,11 @@ Response:
 }
 ```
 
-If offline, the server falls back to trial mode.
+The first activation requires internet. Afterwards the server runs fully offline from the signed local `license.dat`.
 
 ### Revalidation (`/revalidate`)
 
-For periodic online revalidation (Fase 5.4), the Worker exposes a richer endpoint that returns a structured state and a freshly signed blob:
+For opportunistic online revalidation (Fase 5.4, offline-first: attempted every 24 h, skipped silently when there is no connectivity), the Worker exposes a richer endpoint that returns a structured state and a freshly signed blob:
 
 ```
 POST /api/v1/licenses/revalidate

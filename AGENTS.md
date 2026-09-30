@@ -1,7 +1,7 @@
 # AGENTS.md — WorkshopManager
 
 ## Project status
-**Version 0.1.0** — All critical/high audit items resolved. 92 tests passing, clippy clean. Domain: motorcycle workshop (products, sales, repairs, suppliers).
+**Version 0.1.0** — All critical/high audit items resolved. 117 tests passing, clippy clean. Domain: motorcycle workshop (products, sales, repairs, suppliers).
 
 ## Workspace structure
 4 crates in a Cargo workspace:
@@ -196,18 +196,17 @@ Separate repo: `C:\Users\carlos\Desktop\workshop-license-panel-v2` (Cloudflare W
 
 ### Gaps conocidos (NO existen)
 - Contador de migraciones en DB — no existe
-- Ping silencioso / heartbeat — no implementado
 - Refresh tokens JWT — no implementado
 - CORS restringido para admin — sigue `*`
-- Revocación detectada en cliente — requiere caller `/revalidate` + heartbeat (5.4-B/C)
-- `fatal_license_dialog` — no implementado (la app sale sin diálogo en release)
 
 ### Pendientes (de `PLAN_MEJORA`)
 - **H3:** Server crea trial en memoria si falla conexión online
-- **H15:** `process::exit(1)` sin diálogo visible en release (sin consola)
-- **H17:** `get_hardware_id()` hashea string vacío si fallan consultas PowerShell
 - **H20:** `ADMIN_TOKEN` hardcoded en `wrangler.jsonc` (commit al repo)
-- **Revalidación periódica:** endpoint `/revalidate` **implementado en Worker**; caller cliente (24h) + período de gracia pendientes (5.4-B)
+
+### Resueltos (verificado en código)
+- **5.4-B/C revalidación + revocación:** `license::revalidate_online()` + tarea 7c en `main.rs` — oportunista cada 24 h, offline-first (sin castigo por falta de internet); revocada/expirada/inválida → diálogo + apagado. Watcher 300 s detecta `license.dat` borrado en ejecución.
+- **H15:** `fatal_license_dialog()` implementado y llamado en todos los `exit(1)` de licencia.
+- **H17:** `get_hardware_id()` usa `MachineGuid` de registro → fallback PowerShell → `Err` (no hashea string vacío).
 
 ### Docs
 - `docs/10-licensing/` — overview + license-tool CLI + revalidate endpoint

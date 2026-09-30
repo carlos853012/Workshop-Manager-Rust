@@ -71,6 +71,25 @@ fn fatal_license_dialog(title: &str, msg: &str) {
     }
 }
 
+/// El Worker rechazó la licencia durante la revalidación oportunista:
+/// registrar, mostrar diálogo visible (H15) y apagar el servidor.
+fn revalidation_fatal(handle: &axum_server::Handle, title: &str, detail: &str) -> ! {
+    tracing::error!("═══════════════════════════════════════════════════════");
+    tracing::error!("  LICENCIA RECHAZADA POR EL SERVIDOR DE LICENCIAS");
+    tracing::error!("  {}", detail);
+    tracing::error!("  El servidor se apagará automáticamente");
+    tracing::error!("═══════════════════════════════════════════════════════");
+    handle.graceful_shutdown(Some(std::time::Duration::from_secs(5)));
+    fatal_license_dialog(
+        &format!("WorkshopManager — {}", title),
+        &format!(
+            "{}\n\nEl servidor se apagará.\n\nContacte al proveedor para obtener una nueva licencia.",
+            detail
+        ),
+    );
+    std::process::exit(1);
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     #[cfg(all(windows, not(debug_assertions)))]
@@ -146,9 +165,7 @@ async fn main() -> anyhow::Result<()> {
         tracing::error!("═══════════════════════════════════════════════════════");
         #[cfg(all(target_os = "windows", not(test)))]
         {
-            let _ = ready_tx.send(Err(
-                "Clave pública del vendor no configurada".to_string()
-            ));
+            let _ = ready_tx.send(Err("Clave pública del vendor no configurada".to_string()));
             std::thread::sleep(std::time::Duration::from_millis(250));
         }
         fatal_license_dialog(
@@ -410,6 +427,10 @@ async fn main() -> anyhow::Result<()> {
     {
         let data_dir_clone = data_dir.clone();
         let handle_clone = handle.clone();
+        // Si license.dat existía al arrancar y desaparece en ejecución, fue
+        // borrado a mano: tratarlo como manipulación (5.4). Solo se ignora
+        // FirstRun si nunca hubo archivo (compat con Workers sin blob).
+        let had_license_file = data_dir.join("license.dat").exists();
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(tokio::time::Duration::from_secs(300)).await;
@@ -441,7 +462,106 @@ async fn main() -> anyhow::Result<()> {
                         handle_clone.graceful_shutdown(Some(std::time::Duration::from_secs(5)));
                         break;
                     }
-                    license::LicenseStatus::FirstRun(_) => {}
+                    license::LicenseStatus::FirstRun(_) => {
+                        if had_license_file {
+                            tracing::error!(
+                                "═══════════════════════════════════════════════════════"
+                            );
+                            tracing::error!("  LICENCIA ELIMINADA (detectado durante ejecución)");
+                            tracing::error!("  El archivo license.dat fue borrado a mano");
+                            tracing::error!("  El servidor se apagará automáticamente");
+                            tracing::error!(
+                                "═══════════════════════════════════════════════════════"
+                            );
+                            handle_clone.graceful_shutdown(Some(std::time::Duration::from_secs(5)));
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 7c. Revalidación oportunista — verifica la licencia con el Worker
+    // cada 24 h (primer intento a los 5 min). Diseño offline-first: si no
+    // hay internet, se omite el intento silenciosamente y se reintenta en
+    // el próximo ciclo; solo una respuesta explícita de revocación/
+    // expiración/invalidación apaga el servidor.
+    {
+        let data_dir_clone = data_dir.clone();
+        let handle_clone = handle.clone();
+        let api_url = state.config.license_api_url.clone();
+        let license_key = license.as_ref().map(|l| l.license_key.clone());
+        tokio::spawn(async move {
+            let Some(license_key) = license_key else {
+                tracing::info!("Sin licencia cargada — revalidación oportunista inactiva");
+                return;
+            };
+            const FIRST_DELAY_SECS: u64 = 300;
+            const INTERVAL_SECS: u64 = 24 * 60 * 60;
+            let mut first = true;
+            loop {
+                if first {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(FIRST_DELAY_SECS)).await;
+                    first = false;
+                } else {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(INTERVAL_SECS)).await;
+                }
+
+                let hw_hash = match license::get_current_hardware_hash() {
+                    Ok(h) => h,
+                    Err(e) => {
+                        tracing::warn!("Revalidación omitida (hardware no disponible): {}", e);
+                        continue;
+                    }
+                };
+
+                match license::revalidate_online(&api_url, &license_key, &hw_hash).await {
+                    license::RevalidateResult::Active {
+                        signed: Some(signed),
+                    } => match license::save_signed_license(&signed, &data_dir_clone) {
+                        Ok(()) => {
+                            tracing::info!("Licencia revalidada online (blob renovado)")
+                        }
+                        Err(e) => {
+                            tracing::error!("Licencia revalidada, pero no se pudo guardar: {}", e)
+                        }
+                    },
+                    license::RevalidateResult::Active { signed: None } => {
+                        tracing::info!("Licencia revalidada online (vigente)");
+                    }
+                    license::RevalidateResult::Unreachable(reason) => {
+                        // Offline-first: no hay castigo por estar sin internet.
+                        tracing::debug!("Revalidación omitida (sin conexión): {}", reason);
+                    }
+                    license::RevalidateResult::Revoked => {
+                        revalidation_fatal(
+                            &handle_clone,
+                            "Licencia revocada",
+                            &format!("La licencia {} fue revocada desde el panel.", license_key),
+                        );
+                    }
+                    license::RevalidateResult::Expired => {
+                        revalidation_fatal(
+                            &handle_clone,
+                            "Licencia expirada",
+                            &format!("La licencia {} expiró en el servidor.", license_key),
+                        );
+                    }
+                    license::RevalidateResult::Invalid(reason) => {
+                        let detail = match reason.as_str() {
+                            "hardware_mismatch" => {
+                                format!("La licencia {} no corresponde a este equipo.", license_key)
+                            }
+                            "not_found" => {
+                                format!("La licencia {} no existe en el servidor.", license_key)
+                            }
+                            other => {
+                                format!("La licencia {} es inválida ({}).", license_key, other)
+                            }
+                        };
+                        revalidation_fatal(&handle_clone, "Licencia inválida", &detail);
+                    }
                 }
             }
         });

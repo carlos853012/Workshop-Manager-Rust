@@ -39,6 +39,26 @@ pub enum OnlineResult {
     Unreachable(String),
 }
 
+/// Resultado de la revalidación oportunista contra el Worker (`/revalidate`).
+///
+/// Diseño offline-first: `Unreachable` **nunca** condena la licencia — solo
+/// un respuesta explícita del Worker (`Revoked`/`Expired`/`Invalid`) permite
+/// apagar el servidor.
+#[derive(Debug, PartialEq)]
+pub enum RevalidateResult {
+    /// El Worker confirma que la licencia sigue activa. `signed` solo se
+    /// llena si el blob re-firmado pasa la verificación Ed25519.
+    Active { signed: Option<Vec<u8>> },
+    /// Revocada desde el panel de administración.
+    Revoked,
+    /// Expirada según el Worker.
+    Expired,
+    /// No existe (`not_found`) o pertenece a otro equipo (`hardware_mismatch`).
+    Invalid(String),
+    /// Sin conexión / rate limit / error transitorio — no accionar.
+    Unreachable(String),
+}
+
 /// Carga y valida la licencia desde disco.
 pub fn load_license(data_dir: &Path) -> LicenseStatus {
     let license_path = data_dir.join("license.dat");
@@ -197,6 +217,110 @@ pub async fn validate_online(
     }
 }
 
+/// Revalida la licencia online contra el Worker (endpoint `/revalidate`).
+///
+/// Diseño offline-first: si no hay conexión, el Worker no responde o hay
+/// rate limit, retorna `Unreachable` y la licencia local sigue vigente.
+/// Solo una respuesta explícita del Worker puede dar `Revoked`/`Expired`/
+/// `Invalid`.
+pub async fn revalidate_online(
+    api_url: &str,
+    license_key: &str,
+    hardware_hash: &str,
+) -> RevalidateResult {
+    if api_url.is_empty() {
+        return RevalidateResult::Unreachable("license_api_url vacío".to_string());
+    }
+
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => return RevalidateResult::Unreachable(format!("Error creando HTTP client: {e}")),
+    };
+
+    let url = format!(
+        "{}/api/v1/licenses/revalidate",
+        api_url.trim_end_matches('/')
+    );
+    let body = serde_json::json!({
+        "license_key": license_key,
+        "hardware_hash": hardware_hash,
+    });
+
+    tracing::info!("Revalidando licencia online: {} en {}", license_key, url);
+    let resp = match client.post(&url).json(&body).send().await {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::debug!("Revalidación omitida (sin conexión): {}", e);
+            return RevalidateResult::Unreachable(format!("No se pudo conectar: {e}"));
+        }
+    };
+
+    let status = resp.status();
+    if !status.is_success() {
+        // 429 (rate limit), 500 (signing error), 400: transitorios o del
+        // Worker — no deben apagar una app offline-first.
+        tracing::warn!("Revalidación: Worker respondió {}", status);
+        return RevalidateResult::Unreachable(format!("Worker respondió {status}"));
+    }
+
+    let resp_body = resp.text().await.unwrap_or_default();
+    let json: serde_json::Value = match serde_json::from_str(&resp_body) {
+        Ok(v) => v,
+        Err(e) => return RevalidateResult::Unreachable(format!("Error parseando respuesta: {e}")),
+    };
+
+    parse_revalidate_response(&json)
+}
+
+/// Interpreta el cuerpo JSON de `/revalidate` (los 5 casos del Worker).
+/// Función pura — testeable sin red.
+fn parse_revalidate_response(json: &serde_json::Value) -> RevalidateResult {
+    let estado = match json.get("estado").and_then(|v| v.as_str()) {
+        Some(e) => e,
+        None => {
+            return RevalidateResult::Unreachable("Respuesta sin campo 'estado'".to_string());
+        }
+    };
+
+    match estado {
+        "active" => {
+            // Preferir el blob re-firmado; si no verifica, no se guarda
+            // (la licencia local sigue siendo válida por su cuenta).
+            let signed = json
+                .get("signed_license")
+                .and_then(|v| v.as_str())
+                .and_then(|s| match base64_decode(s) {
+                    Ok(bytes) => match lic::verify_license(&bytes, VENDOR_PUBLIC_KEY) {
+                        Ok(_) => Some(bytes),
+                        Err(e) => {
+                            tracing::warn!("Revalidación: firma del Worker inválida: {e}");
+                            None
+                        }
+                    },
+                    Err(e) => {
+                        tracing::warn!("Revalidación: signed_license base64 inválido: {e}");
+                        None
+                    }
+                });
+            RevalidateResult::Active { signed }
+        }
+        "revoked" => RevalidateResult::Revoked,
+        "expired" => RevalidateResult::Expired,
+        "invalid" => {
+            let reason = json
+                .get("reason")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown")
+                .to_string();
+            RevalidateResult::Invalid(reason)
+        }
+        other => RevalidateResult::Unreachable(format!("estado desconocido: {other}")),
+    }
+}
+
 /// Parsea un License desde un JSON del Worker (fallback sin firma).
 fn parse_license_from_json(
     lic_data: &serde_json::Value,
@@ -290,7 +414,6 @@ fn base64_decode(input: &str) -> Result<Vec<u8>, String> {
 }
 
 /// Obtiene el hardware hash actual.
-#[allow(dead_code)]
 pub fn get_current_hardware_hash() -> Result<String, String> {
     hardware::get_hardware_id()
 }
@@ -366,5 +489,85 @@ mod tests {
     #[test]
     fn test_is_placeholder_key() {
         assert!(!is_placeholder_key());
+    }
+
+    #[test]
+    fn test_revalidate_active_without_blob() {
+        let json = serde_json::json!({ "estado": "active" });
+        assert_eq!(
+            parse_revalidate_response(&json),
+            RevalidateResult::Active { signed: None }
+        );
+    }
+
+    #[test]
+    fn test_revalidate_active_bad_blob_ignored() {
+        // base64 válido pero contenido sin firma Ed25519 válida → se ignora,
+        // nunca se guarda un blob que no verifique.
+        use base64::Engine;
+        let bogus = base64::engine::general_purpose::STANDARD.encode(b"not-a-license");
+        let json = serde_json::json!({ "estado": "active", "signed_license": bogus });
+        assert_eq!(
+            parse_revalidate_response(&json),
+            RevalidateResult::Active { signed: None }
+        );
+
+        // blob corrupto (base64 inválido) → también se ignora
+        let json = serde_json::json!({ "estado": "active", "signed_license": "!!!" });
+        assert_eq!(
+            parse_revalidate_response(&json),
+            RevalidateResult::Active { signed: None }
+        );
+    }
+
+    #[test]
+    fn test_revalidate_revoked() {
+        let json = serde_json::json!({ "estado": "revoked", "reason": "revoked" });
+        assert_eq!(parse_revalidate_response(&json), RevalidateResult::Revoked);
+    }
+
+    #[test]
+    fn test_revalidate_expired() {
+        let json =
+            serde_json::json!({ "estado": "expired", "expires_at": "2026-09-20T00:00:00.000Z" });
+        assert_eq!(parse_revalidate_response(&json), RevalidateResult::Expired);
+    }
+
+    #[test]
+    fn test_revalidate_invalid_cases() {
+        let json = serde_json::json!({ "estado": "invalid", "reason": "not_found" });
+        assert_eq!(
+            parse_revalidate_response(&json),
+            RevalidateResult::Invalid("not_found".to_string())
+        );
+
+        let json = serde_json::json!({ "estado": "invalid", "reason": "hardware_mismatch" });
+        assert_eq!(
+            parse_revalidate_response(&json),
+            RevalidateResult::Invalid("hardware_mismatch".to_string())
+        );
+    }
+
+    #[test]
+    fn test_revalidate_malformed_responses_are_unreachable() {
+        // Sin campo estado → no accionar (offline-first)
+        let json = serde_json::json!({ "success": true });
+        assert!(matches!(
+            parse_revalidate_response(&json),
+            RevalidateResult::Unreachable(_)
+        ));
+
+        // Estado desconocido → no accionar
+        let json = serde_json::json!({ "estado": "weird" });
+        assert!(matches!(
+            parse_revalidate_response(&json),
+            RevalidateResult::Unreachable(_)
+        ));
+    }
+
+    #[tokio::test]
+    async fn test_revalidate_empty_api_url_is_unreachable() {
+        let result = revalidate_online("", "KEY", "hw").await;
+        assert!(matches!(result, RevalidateResult::Unreachable(_)));
     }
 }

@@ -85,10 +85,9 @@ fn read_machine_guid() -> Option<String> {
     use winreg::RegKey;
 
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let key = hklm.open_subkey_with_flags(
-        "SOFTWARE\\Microsoft\\Cryptography",
-        KEY_READ,
-    ).ok()?;
+    let key = hklm
+        .open_subkey_with_flags("SOFTWARE\\Microsoft\\Cryptography", KEY_READ)
+        .ok()?;
 
     let value: String = key.get_value("MachineGuid").ok()?;
     let trimmed = value.trim().to_string();

@@ -1,8 +1,8 @@
 # POST /api/v1/licenses/revalidate
 
 **Service:** workshop-license-worker (Cloudflare Worker)
-**Status:** Implemented (Worker-side) — GAP-1, Fase 5.4
-**Last Updated:** 2026-09-24
+**Status:** Implemented (Worker + Rust client) — GAP-1/GAP-3/GAP-6, Fase 5.4
+**Last Updated:** 2026-09-30
 **Audience:** Developers (server/client integration)
 
 ---
@@ -16,7 +16,7 @@
 - **Logs every attempt** to `activation_attempts`.
 - On success, **re-signs** the license with Ed25519 and `issued_at = now`.
 
-> The Rust client caller (heartbeat every 24h) is **5.4-B** and is not part of this change. Until then, the endpoint exists but nothing calls it.
+> **Client integration (5.4-B/C): DONE** — `workshop-server` calls this endpoint opportunistically every 24 h (first attempt ~5 min after boot). Design is **offline-first**: if the Worker is unreachable, the attempt is skipped silently (no grace period, no shutdown); only an explicit `revoked`/`expired`/`invalid` answer shuts the server down.
 
 ---
 
@@ -148,9 +148,9 @@ curl -X POST https://<worker>/api/v1/licenses/revalidate \
 |-------|--------|
 | Worker endpoint | **Done** (this change) |
 | Unit tests (`evaluateRevalidate`) | **Done** — `src/revalidate.test.ts`, 8 tests |
-| Rust caller (`/revalidate` every 24h) | Pending — **5.4-B** (GAP-3 heartbeat) |
-| Grace period on `Unreachable` | Pending — **5.4-B** |
-| Revocation detected in client | Pending — **5.4-C** (GAP-6) |
+| Rust caller (`/revalidate` every 24h) | **Done** — `license::revalidate_online()` + task 7c in `main.rs` |
+| Grace period on `Unreachable` | **N/A by design** — offline-first: unreachable never shuts down |
+| Revocation detected in client | **Done** — `revalidation_fatal()` shows dialog + graceful shutdown + `exit(1)` |
 
 ---
 
