@@ -125,6 +125,7 @@
 | [Monitoring](09-operations/monitoring.md) | Observability and alerting |
 | [Incident Response](09-operations/incident-response.md) | Incident playbook |
 | [Maintenance](09-operations/maintenance.md) | Routine procedures |
+| [Self-Hosted Runners](09-operations/self-hosted-runners.md) | CI runners propios y descargas LAN |
 
 ### 10 — Licensing
 | Document | Description |
