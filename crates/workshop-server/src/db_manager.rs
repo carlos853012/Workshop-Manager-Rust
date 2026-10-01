@@ -33,6 +33,12 @@ impl DbManager {
         // Ruta controlada para el `--pwfile` de initdb; se borra tras `setup()`.
         settings.password_file = data_dir.join(".pgpass_init");
 
+        // CRÍTICO: `Settings::default()` marca `temporary = true`, y el `Drop`
+        // de `PostgreSQL` hace `remove_dir_all(data_dir)`. Si el proceso termina
+        // de forma normal (p. ej. `start()` falla y `main` retorna `Err`), eso
+        // borraría TODO el `pgdata` y perdería la base de datos. Lo desactivamos.
+        settings.temporary = false;
+
         for dir in stray_tmp_dirs.into_iter().flatten() {
             if dir.starts_with(std::env::temp_dir()) {
                 let _ = std::fs::remove_dir_all(&dir);
@@ -69,6 +75,9 @@ impl DbManager {
             tracing::error!(error = %e, "PostgreSQL setup failed");
             e
         })?;
+        // Antes de arrancar, limpiar una instancia previa mal cerrada (huérfana)
+        // o un `postmaster.pid` obsoleto, para que `pg_ctl start` no falle.
+        self.cleanup_stale_instance();
         tracing::info!("PostgreSQL setup complete, starting...");
         self.postgresql.start().await.map_err(|e| {
             tracing::error!(error = %e, "PostgreSQL start failed");
@@ -87,6 +96,45 @@ impl DbManager {
         let database_url = self.postgresql.settings().url(&self.database_name);
         self.database_url = Some(database_url.clone());
         Ok(database_url)
+    }
+
+    /// Limpia una instancia previa mal cerrada antes de arrancar.
+    ///
+    /// Si existe `pgdata/postmaster.pid`:
+    /// - Con un postmaster vivo (huérfano, p. ej. tras matar el server), lo
+    ///   detiene con `pg_ctl stop`.
+    /// - Si el pid file es obsoleto (proceso muerto), lo elimina.
+    ///
+    /// Esto evita que `pg_ctl start` falle por una instancia colgada.
+    fn cleanup_stale_instance(&self) {
+        let data_dir = self.postgresql.settings().data_dir.clone();
+        let pid_file = data_dir.join("postmaster.pid");
+        let pg_ctl = self.postgresql.settings().binary_dir().join("pg_ctl");
+
+        let pid_file_exists = pid_file.exists();
+        if !pid_file_exists {
+            return;
+        }
+
+        let data_arg = data_dir.to_string_lossy().to_string();
+        let status_code = run_pg_ctl(&pg_ctl, &["status", "-D", &data_arg]);
+
+        match decide_stale_action(pid_file_exists, status_code) {
+            StaleAction::None => {}
+            StaleAction::StopOrphan => {
+                tracing::warn!(
+                    "PostgreSQL embebido ya estaba en ejecución (huérfano) — deteniéndolo..."
+                );
+                let _ = run_pg_ctl(&pg_ctl, &["stop", "-D", &data_arg, "-m", "fast", "-w"]);
+                tracing::warn!("Instancia previa de PostgreSQL detenida");
+            }
+            StaleAction::RemovePidFile => {
+                tracing::warn!("postmaster.pid obsoleto detectado — eliminándolo");
+                if let Err(e) = std::fs::remove_file(&pid_file) {
+                    tracing::warn!("No se pudo eliminar {}: {}", pid_file.display(), e);
+                }
+            }
+        }
     }
 
     /// Detiene el servidor PostgreSQL embebido.
@@ -174,4 +222,58 @@ pub async fn create_pool(database_url: &str) -> anyhow::Result<PgPool> {
         .connect(database_url)
         .await?;
     Ok(pool)
+}
+
+/// Acción a tomar sobre una instancia previa de PostgreSQL.
+#[derive(Debug, PartialEq)]
+enum StaleAction {
+    /// No hay nada que limpiar.
+    None,
+    /// Hay un postmaster vivo (huérfano): detenerlo.
+    StopOrphan,
+    /// El `postmaster.pid` es obsoleto (proceso muerto): eliminarlo.
+    RemovePidFile,
+}
+
+/// Decide qué hacer con un `postmaster.pid` existente según el resultado de
+/// `pg_ctl status` (`0` = servidor en ejecución; otro/`None` = sin servidor).
+fn decide_stale_action(pid_file_exists: bool, status_code: Option<i32>) -> StaleAction {
+    if !pid_file_exists {
+        return StaleAction::None;
+    }
+    if status_code == Some(0) {
+        StaleAction::StopOrphan
+    } else {
+        StaleAction::RemovePidFile
+    }
+}
+
+/// Ejecuta `pg_ctl` con los argumentos dados y retorna el código de salida.
+fn run_pg_ctl(program: &Path, args: &[&str]) -> Option<i32> {
+    let mut cmd = std::process::Command::new(program);
+    cmd.args(args);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd.output().ok().and_then(|o| o.status.code())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_decide_stale_action() {
+        assert_eq!(decide_stale_action(false, None), StaleAction::None);
+        assert_eq!(decide_stale_action(false, Some(0)), StaleAction::None);
+        assert_eq!(decide_stale_action(true, Some(0)), StaleAction::StopOrphan);
+        assert_eq!(
+            decide_stale_action(true, Some(3)),
+            StaleAction::RemovePidFile
+        );
+        assert_eq!(decide_stale_action(true, None), StaleAction::RemovePidFile);
+    }
 }
