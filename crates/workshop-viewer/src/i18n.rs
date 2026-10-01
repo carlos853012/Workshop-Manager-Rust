@@ -70,3 +70,21 @@ pub fn translate_user_status(status: &str) -> String {
         other => other.to_string(),
     }
 }
+
+/// Título de la pantalla de módulo bloqueado por licencia.
+pub fn blocked_module_title() -> &'static str {
+    "Módulo no disponible"
+}
+
+/// Mensaje de la pantalla de módulo bloqueado por licencia.
+pub fn blocked_module_message(module: &str) -> String {
+    format!(
+        "El módulo \"{module}\" no está incluido en tu licencia actual. \
+         Activá una licencia superior para desbloquearlo."
+    )
+}
+
+/// Texto del botón para abrir el modal de activación de licencia.
+pub fn blocked_module_cta() -> &'static str {
+    "Actualizar licencia"
+}

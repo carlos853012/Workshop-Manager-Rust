@@ -274,6 +274,37 @@ body {
   letter-spacing: 0.05em;
 }
 
+.header-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--nav-text);
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.header-icon-btn:hover {
+  background-color: color-mix(in srgb, var(--nav-text) 12%, transparent);
+}
+
+.header-icon-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.header-icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 .tabs {
   display: flex;
   align-items: center;
@@ -1064,7 +1095,7 @@ body {
 .table-actions {
   display: flex;
   gap: var(--space-xs);
-  justify-content: center;
+  justify-content: right;
 }
 .btn-icon {
   display: inline-flex;

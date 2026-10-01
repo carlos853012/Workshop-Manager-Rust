@@ -4,6 +4,7 @@ use axum::{
     middleware::Next,
     response::Response,
 };
+use workshop_common::features::{Feature, License, LicenseTier};
 use workshop_common::UserRole;
 
 use crate::auth::{self, Claims};
@@ -94,6 +95,38 @@ pub async fn require_admin_middleware(
     Ok(next.run(request).await)
 }
 
+/// Helper puro: ¿la licencia incluye `feature`?
+///
+/// Sin licencia se asume el tier `Trial` (solo features base), de modo que
+/// una instalación nueva nunca obtiene módulos DLC.
+pub fn license_allows(license: Option<&License>, feature: &Feature) -> bool {
+    match license {
+        Some(lic) => lic.has_feature(feature),
+        None => LicenseTier::Trial.features().contains(feature),
+    }
+}
+
+/// Middleware que exige que la licencia activa incluya `feature`.
+///
+/// Se construye con estado `(AppState, Feature)` vía `from_fn_with_state`.
+/// Devuelve `403 FORBIDDEN` si el tier no incluye la feature.
+pub async fn require_feature(
+    State((state, feature)): State<(AppState, Feature)>,
+    request: Request,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    let allowed = {
+        let license = state.license.read().await;
+        license_allows(license.as_ref(), &feature)
+    };
+
+    if allowed {
+        Ok(next.run(request).await)
+    } else {
+        Err(StatusCode::FORBIDDEN)
+    }
+}
+
 fn extract_bearer_token(request: &Request) -> Result<&str, StatusCode> {
     let auth_header = request
         .headers()
@@ -166,5 +199,37 @@ mod tests {
         };
 
         assert!(AuthenticatedUser::from_claims(claims).is_err());
+    }
+
+    fn make_license(tier: LicenseTier) -> License {
+        License {
+            license_key: "TEST".to_string(),
+            tier,
+            hardware_hash: "abc".to_string(),
+            max_viewers: 1,
+            max_transfers: 0,
+            transfer_count: 0,
+            activated_at: chrono::Utc::now(),
+            expires_at: None,
+        }
+    }
+
+    #[test]
+    fn test_license_allows_none_is_trial_only() {
+        assert!(license_allows(None, &Feature::Inventory));
+        assert!(!license_allows(None, &Feature::ClientHistory));
+    }
+
+    #[test]
+    fn test_license_allows_by_tier() {
+        let trial = make_license(LicenseTier::Trial);
+        assert!(!license_allows(Some(&trial), &Feature::ClientHistory));
+
+        let base = make_license(LicenseTier::Base);
+        assert!(!license_allows(Some(&base), &Feature::ClientHistory));
+
+        let reports = make_license(LicenseTier::Reports);
+        assert!(license_allows(Some(&reports), &Feature::ClientHistory));
+        assert!(license_allows(Some(&reports), &Feature::PdfReports));
     }
 }

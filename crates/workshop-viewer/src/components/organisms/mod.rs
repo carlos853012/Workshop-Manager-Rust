@@ -10,4 +10,5 @@ pub mod server_settings;
 pub mod stock_entry_modal;
 pub mod supplier_form_modal;
 pub mod tabs;
+pub mod upgrade_required;
 pub mod user_form_modal;

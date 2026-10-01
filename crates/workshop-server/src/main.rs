@@ -330,7 +330,7 @@ async fn main() -> anyhow::Result<()> {
             .collect()
     };
 
-    let protected_api = routes::protected_routes()
+    let protected_api = routes::protected_routes(state.clone())
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::authenticate_middleware,

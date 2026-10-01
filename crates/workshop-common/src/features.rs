@@ -119,6 +119,23 @@ impl std::fmt::Display for LicenseTier {
     }
 }
 
+impl std::str::FromStr for LicenseTier {
+    type Err = String;
+
+    /// Acepta tanto las formas de `Display` ("Trial", "Base", ..., "API")
+    /// como las de serde ("Api"), sin distinguir mayúsculas/minúsculas.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "trial" => Ok(LicenseTier::Trial),
+            "base" => Ok(LicenseTier::Base),
+            "reports" => Ok(LicenseTier::Reports),
+            "advanced" => Ok(LicenseTier::Advanced),
+            "api" => Ok(LicenseTier::Api),
+            other => Err(format!("Tier desconocido: {other}")),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct License {
     pub license_key: String,
@@ -289,5 +306,41 @@ mod tests {
         assert_eq!(LicenseTier::Reports.max_viewers(), 5);
         assert_eq!(LicenseTier::Advanced.max_viewers(), 10);
         assert_eq!(LicenseTier::Api.max_viewers(), 999);
+    }
+
+    #[test]
+    fn test_license_tier_from_str() {
+        use std::str::FromStr;
+
+        assert_eq!(LicenseTier::from_str("Trial").unwrap(), LicenseTier::Trial);
+        assert_eq!(LicenseTier::from_str("Base").unwrap(), LicenseTier::Base);
+        assert_eq!(
+            LicenseTier::from_str("Reports").unwrap(),
+            LicenseTier::Reports
+        );
+        assert_eq!(
+            LicenseTier::from_str("Advanced").unwrap(),
+            LicenseTier::Advanced
+        );
+        assert_eq!(LicenseTier::from_str("API").unwrap(), LicenseTier::Api);
+        assert_eq!(LicenseTier::from_str("Api").unwrap(), LicenseTier::Api);
+        assert_eq!(LicenseTier::from_str("api").unwrap(), LicenseTier::Api);
+        assert!(LicenseTier::from_str("Unknown").is_err());
+    }
+
+    #[test]
+    fn test_license_tier_from_str_roundtrip_display() {
+        use std::str::FromStr;
+
+        for tier in [
+            LicenseTier::Trial,
+            LicenseTier::Base,
+            LicenseTier::Reports,
+            LicenseTier::Advanced,
+            LicenseTier::Api,
+        ] {
+            let s = tier.to_string();
+            assert_eq!(LicenseTier::from_str(&s).unwrap(), tier);
+        }
     }
 }

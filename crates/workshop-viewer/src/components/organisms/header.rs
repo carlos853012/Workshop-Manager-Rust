@@ -14,6 +14,7 @@ pub fn Header(title: String, active_route: Route) -> Element {
     let mut theme = use_theme();
     let auth = use_auth();
     let mut show_activate = use_signal(|| false);
+    let is_dark = *theme.is_dark.read();
 
     rsx! {
         header { class: "header",
@@ -30,10 +31,25 @@ pub fn Header(title: String, active_route: Route) -> Element {
                 Tabs { active_route: active_route }
             }
             div { class: "header-actions",
-                Button {
-                    variant: ButtonVariant::Ghost,
+                button {
+                    class: "header-icon-btn",
+                    r#type: "button",
+                    title: "Activar o actualizar licencia",
+                    aria_label: "Activar o actualizar licencia",
+                    onclick: move |_evt| show_activate.set(true),
+                    {IconName::Key.render()}
+                }
+                button {
+                    class: "header-icon-btn",
+                    r#type: "button",
+                    title: "Cambiar tema",
+                    aria_label: "Cambiar tema",
                     onclick: move |_evt| theme.toggle(),
-                    "🌓"
+                    if is_dark {
+                        {IconName::Sun.render()}
+                    } else {
+                        {IconName::Moon.render()}
+                    }
                 }
             }
         }

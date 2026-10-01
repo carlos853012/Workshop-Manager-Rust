@@ -1,10 +1,12 @@
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
+use workshop_common::features::Feature;
 use workshop_common::UserRole;
 
 use crate::app_state::{use_auth, use_sidebar, use_tabs, OpenTab};
 use crate::components::organisms::header::Sidebar;
 use crate::components::organisms::header::{Header, NavItem};
+use crate::components::organisms::upgrade_required::UpgradeRequired;
 use crate::icons::IconName;
 use crate::routes::Route;
 
@@ -71,16 +73,18 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
         });
     }
 
-    nav_items.push(NavItem {
-        label: "Reportes".to_string(),
-        route: Route::Reports {},
-        icon: IconName::ChartBar,
-    });
-    nav_items.push(NavItem {
-        label: "Certificado Servicios".to_string(),
-        route: Route::ServiceCertificatePage {},
-        icon: IconName::DocumentText,
-    });
+    if auth.has_feature(Feature::ClientHistory) {
+        nav_items.push(NavItem {
+            label: "Reportes".to_string(),
+            route: Route::Reports {},
+            icon: IconName::ChartBar,
+        });
+        nav_items.push(NavItem {
+            label: "Certificado Servicios".to_string(),
+            route: Route::ServiceCertificatePage {},
+            icon: IconName::DocumentText,
+        });
+    }
 
     if matches!(role, UserRole::Admin) {
         nav_items.push(NavItem {
@@ -94,6 +98,10 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
             icon: IconName::Key,
         });
     }
+
+    let blocked = required_feature(&active_route)
+        .map(|feature| !auth.has_feature(feature))
+        .unwrap_or(false);
 
     let user_name = auth.user_email.read().clone();
     let user_display_name = auth.user_display_name.read().clone();
@@ -128,7 +136,13 @@ pub fn AppShell(children: Element, title: String, active_route: Route) -> Elemen
                     title: title.clone(),
                     active_route: active_route.clone(),
                 }
-                main { class: "page", {children} }
+                main { class: "page",
+                    if blocked {
+                        UpgradeRequired { module: title.clone() }
+                    } else {
+                        {children}
+                    }
+                }
             }
         }
     }
@@ -143,5 +157,16 @@ pub fn require_auth() -> Option<()> {
         let navigator = use_navigator();
         navigator.push(Route::Login {});
         None
+    }
+}
+
+/// Feature requerida por una ruta, si el módulo es DLC.
+///
+/// Reportes y Certificado de Servicios pertenecen al tier `Reports`
+/// (features acumulativas), por eso ambos comparten el sentinel `ClientHistory`.
+pub fn required_feature(route: &Route) -> Option<Feature> {
+    match route {
+        Route::Reports {} | Route::ServiceCertificatePage {} => Some(Feature::ClientHistory),
+        _ => None,
     }
 }

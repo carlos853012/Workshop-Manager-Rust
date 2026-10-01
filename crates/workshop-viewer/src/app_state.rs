@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use crate::api::{ApiClient, LicenseInfo};
 use crate::config::config;
 use crate::routes::Route;
+use workshop_common::features::{Feature, LicenseTier};
 use workshop_common::{UserRole, Workshop};
 
 /// Estado global de autenticación de la aplicación.
@@ -22,11 +23,30 @@ impl AuthState {
     }
 
     pub fn is_trial(&self) -> bool {
+        // Desconocido != trial: solo mostramos el badge cuando el servidor
+        // confirma que el tier es Trial.
         self.license_info
             .read()
             .as_ref()
             .map(|l| l.is_trial)
-            .unwrap_or(true)
+            .unwrap_or(false)
+    }
+
+    /// Tier efectivo de la licencia. Sin información → `Trial` (solo base).
+    pub fn license_tier(&self) -> LicenseTier {
+        self.license_info
+            .read()
+            .as_ref()
+            .and_then(|l| l.tier.parse::<LicenseTier>().ok())
+            .unwrap_or(LicenseTier::Trial)
+    }
+
+    /// ¿La licencia actual incluye `feature`?
+    ///
+    /// Mientras no se cargó la licencia se asume `Trial`: los módulos DLC
+    /// permanecen ocultos hasta confirmar el tier.
+    pub fn has_feature(&self, feature: Feature) -> bool {
+        self.license_tier().features().contains(&feature)
     }
 
     pub fn login(
@@ -75,7 +95,7 @@ pub fn AuthProvider(children: Element) -> Element {
     let user_role = use_signal(|| None::<UserRole>);
     let workshop = use_signal(|| None::<Workshop>);
     let license_info = use_signal(|| None::<LicenseInfo>);
-    let auth = AuthState {
+    let mut auth = AuthState {
         token,
         user_email,
         user_display_name,
@@ -85,6 +105,20 @@ pub fn AuthProvider(children: Element) -> Element {
     };
 
     use_context_provider(|| auth);
+
+    // Refresca la info de licencia al iniciar sesión: el badge TRIAL y el
+    // gating de módulos deben reflejar el tier real del servidor.
+    use_effect(move || {
+        if auth.token.read().is_some() {
+            spawn(async move {
+                if let Some(client) = auth.api_client() {
+                    if let Ok(info) = client.license_status().await {
+                        auth.license_info.set(Some(info));
+                    }
+                }
+            });
+        }
+    });
 
     rsx! { {children} }
 }

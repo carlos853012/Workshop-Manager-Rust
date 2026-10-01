@@ -1,5 +1,7 @@
-use axum::Router;
+use axum::{middleware as axum_middleware, Router};
+use workshop_common::features::Feature;
 
+use crate::middleware;
 use crate::state::AppState;
 
 mod analytics;
@@ -23,7 +25,16 @@ pub fn public_routes() -> Router<AppState> {
 }
 
 /// Rutas protegidas de /api (requieren JWT).
-pub fn protected_routes() -> Router<AppState> {
+///
+/// El grupo `/reports` exige la feature `ClientHistory` (sentinel del tier
+/// Reports, que desbloquea Reportes + Certificado de Servicios). Los demás
+/// grupos son base y no se gatean por licencia.
+pub fn protected_routes(state: AppState) -> Router<AppState> {
+    let reports = reports::routes().route_layer(axum_middleware::from_fn_with_state(
+        (state.clone(), Feature::ClientHistory),
+        middleware::require_feature,
+    ));
+
     Router::new()
         .nest("/auth", auth::protected_routes())
         .nest("/config", config::routes())
@@ -32,7 +43,7 @@ pub fn protected_routes() -> Router<AppState> {
         .nest("/repairs", repairs::routes())
         .nest("/suppliers", suppliers::routes())
         .nest("/analytics", analytics::routes())
-        .nest("/reports", reports::routes())
+        .nest("/reports", reports)
 }
 
 /// Rutas de administración de /api (requieren JWT + rol admin).
