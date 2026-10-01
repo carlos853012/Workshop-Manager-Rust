@@ -413,6 +413,7 @@ If upgrade fails:
 |----------|-------------|
 | [Monitoring](./monitoring.md) | Observability and alerting |
 | [Incident Response](./incident-response.md) | Incident playbook |
+| [Self-Hosted Runners](./self-hosted-runners.md) | CI runners propios y descargas LAN |
 | [Backup Recovery](../05-deployment/backup-recovery.md) | Backup procedures |
 | [Installation](../05-deployment/installation.md) | Server setup |
 | [Configuration](../05-deployment/configuration.md) | Server configuration |

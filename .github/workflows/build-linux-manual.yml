@@ -1,0 +1,188 @@
+name: Build Linux (manual)
+
+# Prueba/manual del pipeline self-hosted: compila el server en el runner
+# propio (wm-linux-01) y publica en /srv/workshop-releases/<version> para
+# descargar desde la LAN. No toca release.yml ni gasta minutos de GitHub
+# (no hay jobs de Windows ni ARM).
+#
+# Uso: Actions -> Build Linux (manual) -> Run workflow -> version: v0.1.0-test1
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión destino (ej. v0.1.0-test1)"
+        required: true
+        default: "test"
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  POSTGRESQL_VERSION: "=18.3.0"
+
+jobs:
+  build-linux-x64:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - uses: actions/checkout@v4
+
+      # En el runner self-hosted puede no haber rustup (dtolnay/rust-toolchain
+      # asume que ya existe): se instala si falta y se pone ~/.cargo/bin en el
+      # PATH de los pasos siguientes vía GITHUB_PATH.
+      - name: Rust (rustup + cargo en PATH)
+        run: |
+          set -euo pipefail
+          if [ ! -x "$HOME/.cargo/bin/rustup" ]; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+          fi
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      # Pre-carga el tar.gz en la caché del build-script de postgresql_embedded
+      # (~/.theseus/postgresql) para no llamar a la API de GitHub en cada build.
+      - name: Pre-descargar PostgreSQL embebido (caché build x86_64)
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.theseus/postgresql
+          TGZ=~/.theseus/postgresql/postgresql-18.3.0-x86_64-unknown-linux-gnu.tar.gz
+          if [ ! -f "$TGZ" ]; then
+            curl -fL -o "$TGZ" \
+              https://github.com/theseus-rs/postgresql-binaries/releases/download/18.3.0/postgresql-18.3.0-x86_64-unknown-linux-gnu.tar.gz
+          fi
+
+      - name: Install cargo-deb
+        run: command -v cargo-deb >/dev/null 2>&1 || cargo install cargo-deb --locked
+
+      - name: Build release
+        run: cargo build --release -p workshop-server
+
+      - name: Smoke test (server nativo arranca y responde)
+        run: |
+          ./target/release/workshop-server > /tmp/server-smoke.log 2>&1 &
+          SERVER_PID=$!
+          ok=""
+          for i in $(seq 1 45); do
+            if curl -fsSk https://127.0.0.1:8443/health > /dev/null 2>&1; then ok=1; break; fi
+            sleep 2
+          done
+          kill $SERVER_PID 2>/dev/null || true
+          if [ -z "$ok" ]; then
+            echo "::error::Smoke test falló: el server no respondió en 90s"
+            cat /tmp/server-smoke.log
+            exit 1
+          fi
+          echo "Smoke test OK: server nativo x86_64 arrancó (PG embebido correcto)"
+
+      - name: Build .deb
+        run: cargo deb -p workshop-server
+
+      - name: Preparar artefacto (binario + .deb)
+        run: |
+          set -euo pipefail
+          mkdir -p staging
+          cp target/release/workshop-server staging/workshop-server
+          cp target/debian/*.deb staging/
+
+      - name: Upload binario y .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-linux-x86_64
+          path: staging/
+          if-no-files-found: error
+
+  publish:
+    needs: build-linux-x64
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artefactos
+        uses: actions/download-artifact@v4
+        with:
+          name: server-linux-x86_64
+          path: staging
+
+      - name: Validar versión
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+            echo "::error::Versión inválida: usa solo letras, números, punto, guion y guion bajo (ej. v0.1.0-test1)"
+            exit 1
+          fi
+          if [ "$VERSION" = "latest" ]; then
+            echo "::error::'latest' está reservado (symlink)"
+            exit 1
+          fi
+
+      - name: Publicar en /srv/workshop-releases
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          ROOT=/srv/workshop-releases
+          DEST="$ROOT/$VERSION"
+          DEB_NAME="workshop-server_${VERSION}_amd64.deb"
+          PUB="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          # Re-publicar la misma versión es idempotente (se limpia la carpeta).
+          rm -rf "$DEST"
+          mkdir -p "$DEST"
+
+          cp staging/workshop-server "$DEST/workshop-server-linux-x86_64"
+          # cargo deb nombra el .deb con la versión del paquete, no con la del
+          # input: se renombra igual que en release.yml.
+          cp staging/*.deb "$DEST/$DEB_NAME"
+          chmod 755 "$DEST/workshop-server-linux-x86_64"
+          chmod 644 "$DEST/$DEB_NAME"
+
+          # manifest.json: archivos + tamaño + sha256 de esta versión
+          FILES='[]'
+          for f in "$DEST"/*; do
+            if [ ! -f "$f" ]; then continue; fi
+            base="$(basename "$f")"
+            if [ "$base" = "manifest.json" ]; then continue; fi
+            size="$(stat -c %s "$f")"
+            sha="$(sha256sum "$f" | awk '{print $1}')"
+            FILES="$(printf '%s' "$FILES" | jq --arg n "$base" --argjson s "$size" --arg h "$sha" '. + [{name:$n,size:$s,sha256:$h}')"
+          done
+          printf '%s' "$FILES" | jq empty
+          jq -n --arg version "$VERSION" --arg published_at "$PUB" --argjson files "$FILES" \
+            '{version:$version, published_at:$published_at, files:$files}' > "$DEST/manifest.json"
+
+          # versions.json en la raíz: se reconstruye desde todos los manifest.json
+          manifests=()
+          for m in "$ROOT"/*/manifest.json; do
+            if [ -f "$m" ]; then manifests+=("$m"); fi
+          done
+          if [ ${#manifests[@]} -eq 0 ]; then
+            echo "::error::No se encontró ningún manifest.json en $ROOT"
+            exit 1
+          fi
+          jq -s 'sort_by(.published_at) | reverse' "${manifests[@]}" > "$ROOT/versions.json"
+
+          # Página de descargas + symlink latest
+          cp deploy/index.html "$ROOT/index.html"
+          chmod 644 "$ROOT/index.html" "$ROOT/versions.json"
+          ln -sfn "$VERSION" "$ROOT/latest"
+
+          echo "Publicado en $DEST:"
+          ls -la "$DEST"
+
+      - name: Verificar por HTTP (nginx en la LAN)
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          DEB_NAME="workshop-server_${VERSION}_amd64.deb"
+          for url in "index.html" "versions.json" "$VERSION/$DEB_NAME" "latest/$DEB_NAME"; do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' "http://localhost/$url")"
+            echo "$url -> $code"
+            if [ "$code" != "200" ]; then
+              echo "::error::Respuesta $code para $url"
+              exit 1
+            fi
+          done
+          echo "OK: página y archivos servidos desde /srv/workshop-releases"
